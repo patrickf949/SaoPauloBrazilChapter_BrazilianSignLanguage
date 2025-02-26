@@ -1,0 +1,23 @@
+[project]
+name = "SaoPauloBrazilChapter_BrazilianSignLanguage"
+version = "0.1.0"
+description = "Brazilian Sign Language Recognition using Deep Learning"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = { text = "MIT" }
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "torch",
+    "torchvision",
+    "tensorflow",  # adding TensorFlow
+    "opencv-python",
+    "mediapipe",  # for landmark detection
+    "mlflow",     # for experiment tracking
+    "dvc",        # for data version control
+    "jupyter",    # for notebooks
+    "fastapi[standard]",  # using standard extras
+    "uvicorn",    # for serving the API
+    "pydantic",   # for data validation
+]
