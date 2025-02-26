@@ -3,68 +3,32 @@
 ```
 brazilian_sign_language/
 ├── data/                      # Tracked by DVC
-│   ├── raw/                  # Original, immutable data
-│   ├── interim/              # Intermediate data
-│   ├── processed/            # Final, canonical datasets
-│   └── external/             # Third party sources
+│   ├── raw/                  # Original data
+│   │   └── libras+movement  # Movement dataset
+│   ├── interim/             # Intermediate data
+│   ├── processed/           # Final datasets
+│   ├── external/            # Third party sources
+│   ├── papers/             # Related research papers
+│   └── README.md           # Data documentation
 │
-├── notebooks/
-│   ├── exploration/             # Jupyter notebooks for exploration
-│   ├── preprocessing/           # Data cleaning and preparation notebooks
-│   └── modeling/               # Model development notebooks
+├── notebooks/               # Jupyter notebooks
 │
-├── src/
-│   ├── data/
-│   │   ├── collection/         # Scripts for downloading and scraping data
-│   │   ├── cleaning/          # Data cleaning and validation
-│   │   └── preprocessing/     # Feature engineering and data transformation
-│   │
-│   ├── models/
-│   │   ├── cnn_lstm/         # CNN+LSTM model implementation
-│   │   └── landmark_lstm/    # Landmark+LSTM model implementation
-│   │
-│   ├── features/
-│   │   ├── video/           # Video feature extraction
-│   │   └── landmark/        # Pose and hand landmark extraction
-│   │
-│   └── webapp/
-│       ├── frontend/        # Web interface
-│       └── backend/         # API and model serving
+├── mlflow/                 # MLflow tracking
+│   ├── mlruns/            # Experiment runs
+│   └── models/            # Registered models
 │
-├── mlflow/                   # MLflow artifacts and metadata
-│   ├── mlruns/              # Experiment tracking
-│   └── models/              # Registered models
+├── models/                 # Model files (tracked by DVC)
+│   ├── checkpoints/       # Training checkpoints
+│   └── final/            # Production models
 │
-├── tests/                   # Unit tests
-│   ├── data/
-│   ├── models/
-│   └── features/
+├── tests/                 # Unit tests
+│   ├── data/             # Data processing tests
+│   └── models/           # Model tests
 │
-├── configs/
-│   ├── model_configs/
-│   ├── preprocessing_configs/
-│   └── mlflow_configs/      # MLflow configuration
-│
-├── models/                  # Model files (tracked by DVC)
-│   ├── checkpoints/
-│   └── final/
-│
-├── docs/                    # Documentation
-│   ├── data_dictionaries/
-│   ├── model_docs/
-│   └── api_docs/
-│
-├── .venv/                  # Virtual environment (created by uv)
-├── pyproject.toml          # Project metadata and dependencies
-├── uv.lock                 # Lock file for dependencies
-├── .dvc/                   # DVC configuration
-├── .dvcignore             # DVC ignore patterns
-├── dvc.yaml               # DVC pipeline definition
-├── dvc.lock               # DVC pipeline lock file
-├── .gitignore
-├── README.md
-├── STRUCTURE.md
-└── LICENSE
+├── pyproject.toml         # Project metadata and dependencies
+├── uv.lock               # Locked dependencies
+├── README.md             # Project documentation
+└── STRUCTURE.md          # This file
 ```
 
 ## Key Components
@@ -73,13 +37,12 @@ brazilian_sign_language/
 - `.dvc/`: DVC configuration and cache
 - `dvc.yaml`: Defines data processing and training pipelines
 - `dvc.lock`: Locks pipeline state
-- Data and model files are tracked by DVC, not Git
+- Data and model files are tracked by DVC
 
 ### MLflow Integration
 - `mlflow/`: Contains experiment tracking data
 - Experiments are organized by model type
 - Models can be registered and versioned
-- Configurations in `configs/mlflow_configs/`
 
 ### Python Environment (uv)
 - `pyproject.toml`: Project metadata and dependencies
@@ -93,6 +56,8 @@ brazilian_sign_language/
 - `interim/`: Intermediate data that has been transformed
 - `processed/`: Final, canonical data sets for modeling
 - `external/`: Data from third party sources
+- `papers/`: Related research papers
+- `README.md`: Data documentation
 
 ### `notebooks/`
 Jupyter notebooks for exploration, analysis, and model development:

@@ -58,13 +58,16 @@ See [STRUCTURE.md](STRUCTURE.md) for detailed project organization.
 
 ```
 SaoPauloBrazilChapter_BrazilianSignLanguage/
-├── data/                  # Tracked by DVC
+├── data/                  # Data files (tracked by DVC)
+│   ├── raw/              # Original data
+│   ├── interim/          # Intermediate processing
+│   ├── processed/        # Final datasets
+│   ├── external/         # Third party data
+│   └── papers/           # Related research
 ├── notebooks/            # Jupyter notebooks
-├── src/                  # Source code
-├── tests/               # Unit tests
-├── pyproject.toml       # Project metadata and dependencies
-├── uv.lock             # Locked dependencies for reproducibility
-└── ...
+├── mlflow/              # Experiment tracking
+├── models/              # Model files (tracked by DVC)
+└── tests/              # Unit tests
 ```
 
 See [STRUCTURE.md](STRUCTURE.md) for complete structure details.
