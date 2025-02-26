@@ -14,8 +14,9 @@ brazilian_sign_language/
 ├── notebooks/               # Jupyter notebooks
 │
 ├── mlflow/                 # MLflow tracking
-│   ├── mlruns/            # Experiment runs
+│   ├── mlruns/            # Local experiment runs
 │   └── models/            # Registered models
+│                         # Note: Will be configured with DagsHub for remote tracking
 │
 ├── models/                 # Model files (tracked by DVC)
 │   ├── checkpoints/       # Training checkpoints
@@ -43,6 +44,8 @@ brazilian_sign_language/
 - `mlflow/`: Contains experiment tracking data
 - Experiments are organized by model type
 - Models can be registered and versioned
+- Remote tracking will be configured through DagsHub
+- Metrics, parameters, and artifacts will be synchronized with DagsHub
 
 ### Python Environment (uv)
 - `pyproject.toml`: Project metadata and dependencies
