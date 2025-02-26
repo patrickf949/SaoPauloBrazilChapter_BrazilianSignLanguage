@@ -21,38 +21,40 @@ See [STRUCTURE.md](STRUCTURE.md) for detailed project organization.
    cd SaoPauloBrazilChapter_BrazilianSignLanguage
    ```
 
-2. Install project dependencies:
+2. Install dependencies:
    ```bash
    uv sync
    ```
-   This will:
-   - Create a virtual environment in `.venv/`
-   - Install all dependencies from `pyproject.toml`
-   - Create/update `uv.lock` for reproducible installations
+   This installs core dependencies (DVC, MLflow, etc.). For additional dependencies:
+   ```bash
+   uv sync --extra <group>  # Example: uv sync --extra data
+   ```
+   See `pyproject.toml` for available dependency groups (data, model, app).
 
 3. Using the environment:
-   Option 1 - Run commands directly:
-   ```bash
-   uv run python your_script.py
-   # or for Jupyter:
-   uv run jupyter notebook
-   ```
-   
-   Option 2 - Activate the virtual environment:
    ```bash
    source .venv/bin/activate  # On Unix/macOS
    # OR
    .venv\Scripts\activate     # On Windows
    ```
 
+   Or run commands directly without activation:
+   ```bash
+   uv run python your_script.py
+   # or for Jupyter:
+   uv run jupyter notebook
+   ```
+
 4. Adding new dependencies:
    ```bash
-   uv add package_name  # Example: uv add scikit-learn
+   # Add to core dependencies
+   uv add numpy
+
+   # Add to a specific group
+   uv add --extra data opencv-python  # For data processing tools
+   uv add --extra model tensorflow    # For ML frameworks
+   uv add --extra app fastapi         # For web app development
    ```
-   This will:
-   - Add the package to `pyproject.toml`
-   - Update `uv.lock`
-   - Install the package in your environment
 
 ## Project Structure
 
@@ -65,7 +67,7 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 │   ├── external/         # Third party data
 │   └── papers/           # Related research
 ├── notebooks/            # Jupyter notebooks
-├── mlflow/              # Experiment tracking
+├── mlflow/              # MLflow tracking (will be configured with DagsHub)
 ├── models/              # Model files (tracked by DVC)
 └── tests/              # Unit tests
 ```

@@ -6,18 +6,41 @@ readme = "README.md"
 requires-python = ">=3.11,<3.12"
 license = { text = "MIT" }
 
+# Core dependencies
 dependencies = [
+    "dvc",        # for data version control
+    "mlflow",     # for experiment tracking
     "numpy",
     "pandas",
-    "torch",
-    "torchvision",
-    "tensorflow",  # adding TensorFlow
+    "requests",
+    "jupyter",
+]
+
+[project.optional-dependencies]
+# Dependencies for data collection, cleaning, and preprocessing
+data = [
     "opencv-python",
-    "mediapipe",  # for landmark detection
-    "mlflow",     # for experiment tracking
-    "dvc",        # for data version control
-    "jupyter",    # for notebooks
-    "fastapi[standard]",  # using standard extras
-    "uvicorn",    # for serving the API
-    "pydantic",   # for data validation
+    "scikit-learn",  # for data preprocessing
+]
+
+# Dependencies for model development and training
+model = [
+    "tensorflow",
+    "tensorboard",   # for training visualization
+    "mediapipe",     # for landmark detection
+]
+
+# Dependencies for web application development
+app = [
+    "fastapi[standard]",
+    "uvicorn",
+    "pydantic",
+]
+
+
+# All dependencies combined
+all = [
+    "SaoPauloBrazilChapter_BrazilianSignLanguage[data]",
+    "SaoPauloBrazilChapter_BrazilianSignLanguage[model]",
+    "SaoPauloBrazilChapter_BrazilianSignLanguage[app]",
 ]

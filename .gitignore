@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+
+# Virtual Environment
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# handled by DagsHub / DVC / MLflow 
+/data/*
+/models/*
+/mlflow/*
+*.dvc
