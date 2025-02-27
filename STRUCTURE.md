@@ -1,162 +1,91 @@
 # Project Structure
 
 ```
-brazilian_sign_language/
-├── data/                      # Tracked by DVC
+SaoPauloBrazilChapter_BrazilianSignLanguage/
+├── data/                      # Data files
 │   ├── raw/                  # Original data
 │   │   ├── INES/           # INES dataset
-│   │   │   ├── videos/    # Raw video files
-│   │   │   └── ...       # Labels and metadata
+│   │   │   └── videos/    # Video files (stored on Google Drive)
 │   │   ├── SignBank/      # SignBank dataset
-│   │   │   ├── videos/   # Raw video files
-│   │   │   └── ...      # Labels and metadata
+│   │   │   └── videos/   # Video files (stored on Google Drive)
 │   │   ├── UFV/          # UFV dataset
-│   │   │   ├── videos/  # Raw video files
-│   │   │   └── ...     # Labels and metadata
+│   │   │   └── videos/  # Video files (stored on Google Drive)
 │   │   └── V-Librasil/  # V-Librasil dataset
-│   │       ├── videos/ # Raw video files
-│   │       └── ...    # Labels and metadata
+│   │       └── videos/ # Video files (stored on Google Drive)
 │   ├── interim/             # Intermediate data
 │   ├── processed/           # Final datasets
 │   ├── external/            # Third party sources
 │   ├── papers/             # Related research papers
 │   └── README.md           # Data documentation
 │
+├── code/                    # Source code
+│   ├── data/               # Data processing
+│   ├── models/             # Model implementations
+│
 ├── notebooks/               # Jupyter notebooks
+├── tests/                  # Unit tests
+│   ├── data/              # Data processing tests
+│   └── models/            # Model tests
 │
-├── mlflow/                 # MLflow tracking
-│   ├── mlruns/            # Local experiment runs
-│   └── models/            # Registered models
-│                         # Note: Will be configured with DagsHub for remote tracking
-│
-├── models/                 # Model files (tracked by DVC)
-│   ├── checkpoints/       # Training checkpoints
-│   └── final/            # Production models
-│
-├── tests/                 # Unit tests
-│   ├── data/             # Data processing tests
-│   └── models/           # Model tests
-│
-├── pyproject.toml         # Project metadata and dependencies
-├── uv.lock               # Locked dependencies
-├── README.md             # Project documentation
-└── STRUCTURE.md          # This file
+├── pyproject.toml          # Project metadata and dependencies
+├── uv.lock                # Locked dependencies
+├── README.md              # Project documentation
+└── STRUCTURE.md           # This file
 ```
 
-## Key Components
+## Data Management
 
-### Data Version Control (DVC)
-- `.dvc/`: DVC configuration and cache
-- `dvc.yaml`: Defines data processing and training pipelines
-- `dvc.lock`: Locks pipeline state
-- Data and model files are tracked by DVC
+### Video Storage
+- Large video files are stored on Google Drive, not tracked in Git
+- Video directories in the repository are placeholders
+- Download videos to your local `videos/` directories as needed
 
-### MLflow Integration
-- `mlflow/`: Contains experiment tracking data
-- Experiments are organized by model type
-- Models can be registered and versioned
-- Remote tracking will be configured through DagsHub
-- Metrics, parameters, and artifacts will be synchronized with DagsHub
+### Data Files
+- Small files like CSV files, labels, and metadata are tracked in Git
+- Processed data (features, embeddings) stored in `processed/`
+- Document data formats in respective directories
 
-### Python Environment (uv)
-- `pyproject.toml`: Project metadata and dependencies
-- `uv.lock`: Locked dependencies for reproducibility
-- `.venv/`: Virtual environment (automatically managed by uv)
+### Python Environment
+- Managed by `uv` package manager
+- Dependencies specified in `pyproject.toml`
+- Versions locked in `uv.lock`
 
 ## Directory Details
 
-### `data/` (DVC-tracked)
-- `raw/`: Original, immutable data dumps
-  - Each dataset (INES, SignBank, UFV, V-Librasil) contains:
-    - `videos/`: Raw video files in their original format
-    - Labels, metadata, and other dataset-specific files
-- `interim/`: Intermediate data that has been transformed
-- `processed/`: Final, canonical data sets for modeling
-- `external/`: Data from third party sources
-- `papers/`: Related research papers
-- `README.md`: Data documentation
+### `data/`
+- `raw/`: Original, immutable data
+  - Dataset directories (INES, SignBank, UFV, V-Librasil)
+  - Each dataset has a `videos/` subdirectory (videos on Google Drive)
+  - CSV files and labels tracked in Git
+- `interim/`: Intermediate processed data
+- `processed/`: Final, model input datasets
 
 ### `notebooks/`
-Jupyter notebooks for exploration, analysis, and model development:
-- `exploration/`: Initial data exploration and analysis
-- `preprocessing/`: Data cleaning and preparation steps
-- `modeling/`: Model development and evaluation
-
-### `src/`
-Source code for use in this project:
-- `data/`: Scripts for data operations
-- `models/`: Model implementations
-- `features/`: Feature extraction code
-- `webapp/`: Web application implementation
+- Jupyter notebooks for exploration and development
 
 ### `tests/`
-Test files for different components of the project
-
-### `configs/`
-Configuration files for different components:
-- Model hyperparameters
-- Preprocessing parameters
-- Environment configurations
-
-### `models/`
-Saved model files and checkpoints
-
-### `docs/`
-Project documentation:
-- Data dictionaries
-- Model architecture documentation
-- API documentation
-- Setup guides
-
-### `requirements/`
-Dependency management files for different environments
+- `data/`: Data processing tests
+- `models/`: Model testing
 
 ## Best Practices
 
-1. Data Version Control:
-   - Use DVC for tracking data and model files
-   - Define clear pipelines in `dvc.yaml`
-   - Keep data immutable in `raw/`
+1. Data Management:
+   - Keep video files organized on Google Drive
+   - Document video file locations and versions
+   - Track small data files (CSVs, labels) in Git
+   - Keep raw data immutable
 
-2. Experiment Tracking:
-   - Log all experiments with MLflow
-   - Track parameters, metrics, and artifacts
-   - Register production models
-
-3. Environment Management:
+2. Environment Management:
    - Use uv for dependency management
    - Keep `pyproject.toml` updated
    - Never edit `uv.lock` manually
 
-4. Code Organization:
+3. Code Organization:
    - Keep notebooks for exploration
-   - Use `src/` for production code
    - Write tests for critical components
-
-5. Documentation:
    - Document data transformations
-   - Track experiment configurations
-   - Keep API documentation current
 
-## Initial Setup Steps
-
-1. Initialize uv project:
-   ```bash
-   uv init
-   ```
-
-2. Initialize DVC:
-   ```bash
-   dvc init
-   dvc remote add -d storage s3://your-bucket/path  # or other remote
-   ```
-
-3. Configure MLflow:
-   ```bash
-   # Set up MLflow tracking URI in configs/mlflow_configs/
-   ```
-
-4. Create virtual environment:
-   ```bash
-   uv venv
-   ``` 
+4. Documentation:
+   - Document data formats and locations
+   - Keep README files updated
+   - Document setup steps for new team members 

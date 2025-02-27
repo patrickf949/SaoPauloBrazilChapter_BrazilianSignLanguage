@@ -9,6 +9,8 @@ __pycache__/
 */.ipynb_checkpoints/*
 
 # handled by DagsHub / DVC / MLflow 
-/data
-/models/*
-/mlflow/*
+/models
+/mlflow
+
+# Specifically ignore all video directories
+**/videos/
