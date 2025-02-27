@@ -62,6 +62,18 @@ See [STRUCTURE.md](STRUCTURE.md) for detailed project organization.
 SaoPauloBrazilChapter_BrazilianSignLanguage/
 ├── data/                  # Data files (tracked by DVC)
 │   ├── raw/              # Original data
+│   │   ├── INES/        # INES dataset
+│   │   │   ├── videos/  # Raw video files
+│   │   │   └── ...      # Labels and metadata
+│   │   ├── SignBank/    # SignBank dataset
+│   │   │   ├── videos/  # Raw video files
+│   │   │   └── ...      # Labels and metadata
+│   │   ├── UFV/         # UFV dataset
+│   │   │   ├── videos/  # Raw video files
+│   │   │   └── ...      # Labels and metadata
+│   │   └── V-Librasil/  # V-Librasil dataset
+│   │       ├── videos/  # Raw video files
+│   │       └── ...      # Labels and metadata
 │   ├── interim/          # Intermediate processing
 │   ├── processed/        # Final datasets
 │   ├── external/         # Third party data
