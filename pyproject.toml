@@ -8,12 +8,13 @@ license = { text = "MIT" }
 
 # Core dependencies
 dependencies = [
-    "dvc",        # for data version control
-    "mlflow",     # for experiment tracking
+    "dvc", # for data version control
+    "mlflow", # for experiment tracking
     "numpy",
     "pandas",
     "requests",
     "jupyter",
+    "dagshub>=0.5.8",
 ]
 
 [project.optional-dependencies]

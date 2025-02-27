@@ -4,7 +4,18 @@
 brazilian_sign_language/
 ├── data/                      # Tracked by DVC
 │   ├── raw/                  # Original data
-│   │   └── libras+movement  # Movement dataset
+│   │   ├── INES/           # INES dataset
+│   │   │   ├── videos/    # Raw video files
+│   │   │   └── ...       # Labels and metadata
+│   │   ├── SignBank/      # SignBank dataset
+│   │   │   ├── videos/   # Raw video files
+│   │   │   └── ...      # Labels and metadata
+│   │   ├── UFV/          # UFV dataset
+│   │   │   ├── videos/  # Raw video files
+│   │   │   └── ...     # Labels and metadata
+│   │   └── V-Librasil/  # V-Librasil dataset
+│   │       ├── videos/ # Raw video files
+│   │       └── ...    # Labels and metadata
 │   ├── interim/             # Intermediate data
 │   ├── processed/           # Final datasets
 │   ├── external/            # Third party sources
@@ -56,6 +67,9 @@ brazilian_sign_language/
 
 ### `data/` (DVC-tracked)
 - `raw/`: Original, immutable data dumps
+  - Each dataset (INES, SignBank, UFV, V-Librasil) contains:
+    - `videos/`: Raw video files in their original format
+    - Labels, metadata, and other dataset-specific files
 - `interim/`: Intermediate data that has been transformed
 - `processed/`: Final, canonical data sets for modeling
 - `external/`: Data from third party sources
