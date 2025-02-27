@@ -8,7 +8,6 @@ license = { text = "MIT" }
 
 # Core dependencies
 dependencies = [
-    "mlflow", # for experiment tracking
     "numpy",
     "pandas",
     "requests",
