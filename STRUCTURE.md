@@ -22,7 +22,6 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 │   ├── data/               # Data processing
 │   ├── models/             # Model implementations
 │
-├── notebooks/               # Jupyter notebooks
 ├── tests/                  # Unit tests
 │   ├── data/              # Data processing tests
 │   └── models/            # Model tests
