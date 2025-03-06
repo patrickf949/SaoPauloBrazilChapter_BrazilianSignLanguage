@@ -157,7 +157,8 @@ Benefício https://libras.cin.ufpe.br/sign/196
 Bermuda https://libras.cin.ufpe.br/sign/1335
 Biblioteca https://libras.cin.ufpe.br/sign/851
 Bicicleta https://libras.cin.ufpe.br/sign/198
-Bigode https://libras.cin.ufpe.br/sign/826Bilhão https://libras.cin.ufpe.br/sign/105
+Bigode https://libras.cin.ufpe.br/sign/826
+Bilhão https://libras.cin.ufpe.br/sign/105
 Biologia https://libras.cin.ufpe.br/sign/959
 Biquini https://libras.cin.ufpe.br/sign/172
 Bisbilhotar https://libras.cin.ufpe.br/sign/960
