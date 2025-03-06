@@ -5,8 +5,8 @@ import aiohttp
 from bs4 import BeautifulSoup
 
 BASE_URL = "https://libras.cin.ufpe.br/"
-WORDS_FILE = "v_librasil_words.txt"
-WORDS_N_LINKS_FILE = "v_librasil_words_n_links.txt"
+WORDS_FILE = "data/raw/V-Librasil/words/v_librasil_words.txt"
+WORDS_N_LINKS_FILE = "data/raw/V-Librasil/words/v_librasil_words_n_links.txt"
 PROGRESS_FILE = "progress.txt"
 
 
