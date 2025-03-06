@@ -12,6 +12,8 @@ dependencies = [
     "pandas",
     "requests",
     "jupyter",
+    "selenium>=4.29.0",
+    "tqdm>=4.67.1",
 ]
 
 [project.optional-dependencies]
