@@ -74,7 +74,6 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 ├── code/                 # Source code
 │   ├── data/            # Data processing
 │   ├── models/          # Model implementations
-├── notebooks/            # Jupyter notebooks
 └── tests/               # Unit tests
 ```
 
