@@ -32,6 +32,12 @@ This directory contains data files for the Brazilian Sign Language Recognition p
   - `sb`
   - `uf`
   - `vl`
+- We will also have `raw/combined` for storing:
+  - our combined raw video dataset, after we have decided our target words
+  - `metadata_combined.csv`
+    - containing information corresponding to all the videos in our combined target dataset
+- during the review stage, videos will be downloaded to the `data/raw/{data_source}/videos/` folder
+- during the creation of the (raw) combined dataset, videos will be downloaded to the `data/raw/combined/videos/` folder
 
 
 ### Metadata
@@ -54,6 +60,8 @@ The following columns should be present in all metadata.csv files regardless of 
 - `signer_number` - Identifier for the person performing the sign in the video.
   - Sometimes taken directly from the source e.g. V-Librasil
   - Sometimes assigned by us e.g. SignBank
+  - Left as 0 when it hasn't been reviewed
+- `data_source` - Lowercase, two character string, indicating which data-source the entry belongs to. e.g `vl` for V-librasil
 
 ### INES Dataset
 Columns in INES metadata:
