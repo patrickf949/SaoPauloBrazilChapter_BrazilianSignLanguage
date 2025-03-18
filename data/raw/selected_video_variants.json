@@ -103,5 +103,725 @@
         "dataset": "SIGNBANK",
         "word": "aconselhar",
         "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "acontecer",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "abacaxi",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "abacaxi",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "abacaxi",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "abanar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "abanar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "abanar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "abandonar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "abandonar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "abandonar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "abelha",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "abelha",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aben\u00e7oar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aben\u00e7oar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aben\u00e7oar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acabar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acabar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aceitar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aceitar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aceitar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acidente",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acidente",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acompanhar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acompanhar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acompanhar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aconselhar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aconselhar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aconselhar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "acontecer",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "acontecer",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acontecer",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acontecer",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acontecer",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "acontecer",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "acrescentar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acrescentar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "acrescentar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "adulto",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "adulto",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "adulto",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "adulto",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "adulto",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "agora",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "agora",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "agora",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "agora",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "agora",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ainda",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ainda",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "ainda",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "ajudar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "ajudar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ajudar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ajudar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ajudar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "alce",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "alce",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "alce",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "alce",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "alce",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "alto",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "alto",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "alto",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "alto",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "alto",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "amanh\u00e3",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "amanh\u00e3",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "amanh\u00e3",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "amanh\u00e3",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "amarelo",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "amarelo",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "amarelo",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "amarelo",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "amarelo",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "amigo",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "amigo",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "amigo",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "amigo",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "amigo",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "animal",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "animal",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "animal",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "animal",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "animal",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "anivers\u00e1rio",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "anivers\u00e1rio",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "anivers\u00e1rio",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "anivers\u00e1rio",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "anivers\u00e1rio",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "ano",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "ano",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ano",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ano",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ano",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "antes",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "antes",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "antes",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "antes",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "aparelho_auditivo",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "aparelho_auditivo",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aparelho_auditivo",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aparelho_auditivo",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aparelho_auditivo",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "aprender",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "aprender",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aprender",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aprender",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aprender",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "aranha",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "aranha",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aranha",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aranha",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aranha",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "assistir",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "assistir",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "assistir",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "assistir",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "associa\u00e7\u00e3o",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "associa\u00e7\u00e3o",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "associa\u00e7\u00e3o",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "associa\u00e7\u00e3o",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "assumir",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "assumir",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "assumir",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "at\u00f4nito",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "at\u00f4nito",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "at\u00f4nito",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "at\u00f4nito",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "at\u00f4nito",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "aumentar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "aumentar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aumentar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aumentar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "aumentar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "avi\u00e3o",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "avi\u00e3o",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "avi\u00e3o",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "avi\u00e3o",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "avi\u00e3o",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "azul",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "azul",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "azul",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "azul",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "azul",
+        "chosen_video": 2
     }
 ]
