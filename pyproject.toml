@@ -31,6 +31,7 @@ model = [
     "tensorflow",
     "tensorboard",   # for training visualization
     "mediapipe",     # for landmark detection
+    "torch>=2.6.0"
 ]
 
 # Dependencies for web application development
