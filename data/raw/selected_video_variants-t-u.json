@@ -1,0 +1,347 @@
+[
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tabela",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tabela",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tabela",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "tabela",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tamb\u00e9m",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tamb\u00e9m",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "tamb\u00e9m",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "tamb\u00e9m",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tarde",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tarde",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tarde",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tatuagem",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "tatuagem",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "teimoso",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "teimoso",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "teimoso",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "teimoso",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "telesc\u00f3pio",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "telesc\u00f3pio",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tempo",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tempo",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "teoria",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "teoria",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "teoria",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "ter",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "ter",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ter",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ter",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "term\u00f4metro",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "term\u00f4metro",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "todo_dia",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "todo_dia",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "todo_dia",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "todo_dia",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "todo_dia",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tomada",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "tomada",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "tomada",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tomate",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tomate",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "tomate",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "total",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "total",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "trazer",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "trazer",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "trazer",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "trem",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "trem",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tribunal",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "tribunal",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "trof\u00e9u",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "trof\u00e9u",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "t\u00e9cnico",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "t\u00e9cnico",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "t\u00e9cnico",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "t\u00edmido",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "t\u00edmido",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "t\u00edmido",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "um",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "um",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "um",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "um",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "universidade",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "universidade",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "universidade",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "urgente",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "urgente",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "urso",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "urso",
+        "chosen_video": 2
+    }
+]
