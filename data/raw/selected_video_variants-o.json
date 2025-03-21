@@ -2,57 +2,12 @@
     {
         "dataset": "V-LIBRASIL",
         "word": "objetivo",
-        "chosen_video": 3
-    },
-    {
-        "dataset": "V-LIBRASIL",
-        "word": "ocupado",
-        "chosen_video": 1
-    },
-    {
-        "dataset": "V-LIBRASIL",
-        "word": "oeste",
-        "chosen_video": 3
-    },
-    {
-        "dataset": "V-LIBRASIL",
-        "word": "oficina",
-        "chosen_video": 3
-    },
-    {
-        "dataset": "V-LIBRASIL",
-        "word": "oi",
-        "chosen_video": 1
-    },
-    {
-        "dataset": "V-LIBRASIL",
-        "word": "onde",
-        "chosen_video": 3
-    },
-    {
-        "dataset": "V-LIBRASIL",
-        "word": "ontem",
-        "chosen_video": 3
-    },
-    {
-        "dataset": "V-LIBRASIL",
-        "word": "opini\u00e3o",
-        "chosen_video": 3
-    },
-    {
-        "dataset": "V-LIBRASIL",
-        "word": "outro",
-        "chosen_video": 1
-    },
-    {
-        "dataset": "V-LIBRASIL",
-        "word": "ouvir",
-        "chosen_video": 1
-    },
-    {
-        "dataset": "V-LIBRASIL",
-        "word": "ovelha",
         "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "objetivo",
+        "chosen_video": 1
     },
     {
         "dataset": "V-LIBRASIL",
@@ -60,9 +15,54 @@
         "chosen_video": 3
     },
     {
+        "dataset": "INES",
+        "word": "objetivo",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "objetivo",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "ocupado",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "ocupado",
+        "chosen_video": 0
+    },
+    {
         "dataset": "V-LIBRASIL",
         "word": "ocupado",
         "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ocupado",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ocupado",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "oeste",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "oeste",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "oeste",
+        "chosen_video": 1
     },
     {
         "dataset": "V-LIBRASIL",
@@ -76,7 +76,37 @@
     },
     {
         "dataset": "V-LIBRASIL",
+        "word": "oficina",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "oficina",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
         "word": "oi",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "oi",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "oi",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "oi",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "onde",
         "chosen_video": 2
     },
     {
@@ -85,9 +115,69 @@
         "chosen_video": 1
     },
     {
+        "dataset": "INES",
+        "word": "onde",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "onde",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "onde",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "onde",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "ontem",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "ontem",
+        "chosen_video": 0
+    },
+    {
         "dataset": "V-LIBRASIL",
         "word": "ontem",
         "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ontem",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ontem",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "opini\u00e3o",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "opini\u00e3o",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "opini\u00e3o",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "opini\u00e3o",
+        "chosen_video": 1
     },
     {
         "dataset": "V-LIBRASIL",
@@ -95,9 +185,44 @@
         "chosen_video": 3
     },
     {
+        "dataset": "SIGNBANK",
+        "word": "outro",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "outro",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "outro",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "outro",
+        "chosen_video": 2
+    },
+    {
         "dataset": "V-LIBRASIL",
         "word": "outro",
         "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "ouvir",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "ouvir",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ouvir",
+        "chosen_video": 2
     },
     {
         "dataset": "V-LIBRASIL",
@@ -106,7 +231,37 @@
     },
     {
         "dataset": "V-LIBRASIL",
+        "word": "ouvir",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "ovelha",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "SIGNBANK",
+        "word": "ovelha",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "ovelha",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
         "word": "ovelha",
         "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ovelha",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ovelha",
+        "chosen_video": 3
     }
 ]
