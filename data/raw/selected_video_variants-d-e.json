@@ -1,0 +1,817 @@
+[
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "deixar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "deixar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "deixar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "deixar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "deixar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "demitir",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "demitir",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "demitir",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "demitir",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "democracia",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "democracia",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "democracia",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "democracia",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "desafio",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "desafio",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "desafio",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "descobrir",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "descobrir",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "descobrir",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "descobrir",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "desenvolver",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "desenvolver",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "desenvolver",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "desenvolver",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "deus",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "deus",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "deus",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "deus",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dia",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dia",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dia",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dicion\u00e1rio",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dicion\u00e1rio",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dicion\u00e1rio",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "dicion\u00e1rio",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dif\u00edcil",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dif\u00edcil",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dif\u00edcil",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "dif\u00edcil",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "diminuir",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "diminuir",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "diminuir",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dinheiro",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dinheiro",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dinheiro",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "dinheiro",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dinossauro",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dinossauro",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dinossauro",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "direito",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "direito",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "direito",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "direto",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "direto",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "direto",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "direto",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dirigir",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dirigir",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dirigir",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "dirigir",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "INES",
+        "word": "dirigir",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "disciplina",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "disciplina",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "disciplina",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "disciplina",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dividir",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dividir",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "dividir",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "dividir",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "dividir",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "doce",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "doce",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "doce",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "doce",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "documento",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "documento",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "documento",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "doente",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "doente",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "doente",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "doente",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "doente",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "d\u00f3lar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "d\u00f3lar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "d\u00f3lar",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "elefante",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "elefante",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "elefante",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "elevador",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "elevador",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "elevador",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "elevador",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "embaixo",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "embaixo",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "embaixo",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "encontrar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "encontrar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "encontrar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "encontrar",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "enganar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "enganar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "enganar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "engra\u00e7ado",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "engra\u00e7ado",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "engra\u00e7ado",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ensinar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "ensinar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "ensinar",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "entrar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "entrar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "entrar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "entrar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "INES",
+        "word": "entrar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "escola",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "escola",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "escola",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "escola",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "escolher",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "escolher",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "escolher",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "escrever",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "escrever",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "escrever",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "escrever",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "espelho",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "espelho",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "espelho",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "espelho",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "INES",
+        "word": "esperar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "esperar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "esperar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "esperar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "esquecer",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "esquecer",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "esquecer",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "esquecer",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "estado",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "estado",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "estado",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "estranho",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "estranho",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "estranho",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "estrela",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "estrela",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "estrela",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "evitar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "evitar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "evitar",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "evitar",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "experi\u00eancia",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "experi\u00eancia",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "experi\u00eancia",
+        "chosen_video": 3
+    },
+    {
+        "dataset": "INES",
+        "word": "experi\u00eancia",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "explicar",
+        "chosen_video": 1
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "explicar",
+        "chosen_video": 2
+    },
+    {
+        "dataset": "INES",
+        "word": "explicar",
+        "chosen_video": 0
+    },
+    {
+        "dataset": "V-LIBRASIL",
+        "word": "explicar",
+        "chosen_video": 3
+    }
+]
