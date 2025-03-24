@@ -27,6 +27,13 @@ leite: milk
 nervoso: nervous
 não: no
 ouvir: to listen
+pai: father
+perigo: danger
+pesado: heavy
+pessoa: person
+pior: worse/worst
+problema: problem
+pão: bread
 quebrar: to break
 quente: hot
 relatório: report
