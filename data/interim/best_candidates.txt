@@ -1,0 +1,50 @@
+abacaxi: pineapple
+adulto: adulto
+ajudar: to help
+amarelo: yellow
+animal: animal
+aniversário: birthday
+ano: year
+aparelho_auditivo: hearing aid
+banana: banana
+banheiro: bathroom
+bebê: baby
+cabeça: head
+café: coffee
+cama: bed
+carne: meat
+casa: house/home
+cebola: onion
+cego: blind
+cigarro: cigarette
+comer: to eat
+como: how
+coração: heart
+cortar: to cut
+crescer: to grow
+jovem: young/young person
+leite: milk
+nervoso: nervous
+não: no
+ouvir: to listen
+quebrar: to break
+quente: hot
+relatório: report
+respirar: to breathe
+ruim: bad
+sanduíche: sandwich
+sentir: to feel
+sexo: sex
+sim: yes
+sofrer: to suffer
+sopa: soup
+sorvete: ice cream
+sujo: dirty
+surdo: deaf
+sutiã: bar
+vagina: vagina
+vazio: empty
+verme: worm (parasite)
+vinho: wine
+viver: to live
+vomitar: to vomit
