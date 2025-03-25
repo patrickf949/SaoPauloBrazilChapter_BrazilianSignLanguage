@@ -22,6 +22,15 @@ como: how
 coração: heart
 cortar: to cut
 crescer: to grow
+família: family
+filho: son/child
+fome: hunger
+forte: strong
+fraco: weak
+frio: cold
+garganta: throat
+homem: man
+hospital: hospital
 jovem: young/young person
 leite: milk
 nervoso: nervous
