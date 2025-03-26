@@ -6492,27 +6492,7 @@
     {
         "dataset": "INES",
         "word": "pai",
-        "chosen_video": 1
-    },
-    {
-        "dataset": "SIGNBANK",
-        "word": "pai",
-        "chosen_video": 4
-    },
-    {
-        "dataset": "INES",
-        "word": "pai",
         "chosen_video": 2
-    },
-    {
-        "dataset": "SIGNBANK",
-        "word": "pai",
-        "chosen_video": 4
-    },
-    {
-        "dataset": "SIGNBANK",
-        "word": "pai",
-        "chosen_video": 3
     },
     {
         "dataset": "SIGNBANK",
@@ -7048,11 +7028,6 @@
         "dataset": "INES",
         "word": "pessoa",
         "chosen_video": 2
-    },
-    {
-        "dataset": "SIGNBANK",
-        "word": "pessoa",
-        "chosen_video": 3
     },
     {
         "dataset": "V-LIBRASIL",
