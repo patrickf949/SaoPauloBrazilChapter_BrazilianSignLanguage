@@ -1,0 +1,26 @@
+ajudar: to help
+animal: animal
+aniversário: birthday
+ano: year
+banana: banana
+banheiro: bathroom
+bebê: baby
+cabeça: head
+café: coffee
+carne: meat
+casa: house/home
+cebola: onion
+comer: to eat
+cortar: to cut
+crescer: to grow
+família: family
+filho: son/child
+garganta: throat
+homem: man
+jovem: young/young person
+ouvir: to listen
+pai: father
+pessoa: person
+sopa: soup
+sorvete: ice cream
+vagina: vagina
