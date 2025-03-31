@@ -897,6 +897,11 @@ class Preprocessor:
             
         Returns:
             Array of scaled landmarks
+            
+        Note:
+            Scale factors > 1 make the content larger
+            Scale factors < 1 make the content smaller
+            The scaling is applied relative to the center point (0.5, 0.5)
         """
         x_scale = self.params["x_scale_factor"]
         y_scale = self.params["y_scale_factor"]
@@ -924,9 +929,11 @@ class Preprocessor:
                         dy = lm.y - center_y
                         
                         # Apply scale relative to center
-                        new_x = center_x + dx / x_scale
+                        # For scale < 1, the distance from center should decrease
+                        # For scale > 1, the distance from center should increase
+                        new_x = center_x + (dx * x_scale)
                         if lm.y <= center_y:
-                            new_y = center_y + dy / y_scale
+                            new_y = center_y + (dy * y_scale)
                         else:
                             new_y = lm.y
                         
