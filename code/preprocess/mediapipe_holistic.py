@@ -142,251 +142,6 @@ class MediaPipeHolistic:
     def __del__(self):
         """Clean up resources"""
         self.holistic.close()
-
-    ### Visualization
-    
-    def draw_landmarks_on_frame(self, image: np.ndarray, results: Dict) -> np.ndarray:
-        """
-        Draw landmarks and connections on the image.
-        
-        Args:
-            image: Input image in BGR format
-            results: Dictionary containing detection results
-        
-        Returns:
-            Image with landmarks drawn
-        """
-        # Create a copy of the image to draw on
-        annotated_image = image.copy()
-        
-        # Draw face landmarks
-        if results['face_landmarks']:
-            self.mp_drawing.draw_landmarks(
-                image=annotated_image,
-                landmark_list=results['face_landmarks'],
-                connections=self.mp_holistic.FACEMESH_TESSELATION,
-                landmark_drawing_spec=None,
-                connection_drawing_spec=self.mp_drawing_styles.get_default_face_mesh_tesselation_style()
-            )
-            # Draw face contours
-            self.mp_drawing.draw_landmarks(
-                image=annotated_image,
-                landmark_list=results['face_landmarks'],
-                connections=self.mp_holistic.FACEMESH_CONTOURS,
-                landmark_drawing_spec=None,
-                connection_drawing_spec=self.mp_drawing_styles.get_default_face_mesh_contours_style()
-            )
-        
-        # Draw pose landmarks
-        if results['pose_landmarks']:
-            self.mp_drawing.draw_landmarks(
-                image=annotated_image,
-                landmark_list=results['pose_landmarks'],
-                connections=self.mp_holistic.POSE_CONNECTIONS,
-                landmark_drawing_spec=self.mp_drawing_styles.get_default_pose_landmarks_style()
-            )
-        
-        # Draw left hand landmarks
-        if results['left_hand_landmarks']:
-            self.mp_drawing.draw_landmarks(
-                image=annotated_image,
-                landmark_list=results['left_hand_landmarks'],
-                connections=self.mp_holistic.HAND_CONNECTIONS,
-                landmark_drawing_spec=self.mp_drawing_styles.get_default_hand_landmarks_style(),
-                connection_drawing_spec=self.mp_drawing_styles.get_default_hand_connections_style()
-            )
-        
-        # Draw right hand landmarks
-        if results['right_hand_landmarks']:
-            self.mp_drawing.draw_landmarks(
-                image=annotated_image,
-                landmark_list=results['right_hand_landmarks'],
-                connections=self.mp_holistic.HAND_CONNECTIONS,
-                landmark_drawing_spec=self.mp_drawing_styles.get_default_hand_landmarks_style(),
-                connection_drawing_spec=self.mp_drawing_styles.get_default_hand_connections_style()
-            )
-        
-        return annotated_image
-
-    def draw_landmarks_on_video(self, 
-                              video_path: str,
-                              results_list: List[Dict],
-                              output_path: str) -> None:
-        """
-        Process a video and draw landmarks on each frame.
-        
-        Args:
-            video_path: Path to input video file
-            results_list: List of dictionaries containing detection results for each frame
-            output_path: Path to save the processed video with landmarks drawn
-        """
-        cap = cv2.VideoCapture(video_path)
-        if not cap.isOpened():
-            raise ValueError(f"Could not open video file: {video_path}")
-        
-        # Get video properties
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        if fps <= 0:
-            fps = 30
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        
-        # Initialize video writer
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-        
-        try:
-            frame_idx = 0
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                
-                if frame_idx >= len(results_list):
-                    break
-                
-                # Get results for this frame
-                results = results_list[frame_idx]
-                
-                # Draw landmarks on frame
-                annotated_frame = self.draw_landmarks_on_frame(frame, results)
-                
-                # Write to output video
-                out.write(annotated_frame)
-                
-                frame_idx += 1
-        
-        finally:
-            cap.release()
-            out.release()
-        print(f"Landmarks drawn video saved to {output_path}")
-
-    def draw_landmarks_3d(self, results: Dict, figsize: Tuple[int, int] = (10, 10),
-                         elev: float = 0, azim: float = 0,
-                         xlim: Optional[Tuple[float, float]] = None,
-                         ylim: Optional[Tuple[float, float]] = None,
-                         zlim: Optional[Tuple[float, float]] = None) -> plt.Figure:
-        """
-        Draw landmarks in 3D using matplotlib.
-        
-        Args:
-            results: Dictionary containing detection results
-            figsize: Figure size in inches (width, height)
-            elev: Elevation angle in degrees (vertical rotation)
-                 0 = front view, positive = looking down, negative = looking up
-            azim: Azimuth angle in degrees (horizontal rotation)
-                 0 = front view, 90 = right side, -90 = left side, 180 = back
-            xlim: Optional tuple of (min, max) for x-axis limits
-            ylim: Optional tuple of (min, max) for y-axis limits
-            zlim: Optional tuple of (min, max) for z-axis limits
-        
-        Returns:
-            Matplotlib figure with 3D visualization
-        """
-        fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111, projection='3d')
-        
-        # Set viewing angle
-        ax.view_init(elev=elev, azim=azim)
-        
-        # Draw pose landmarks if available
-        if results['pose_world_landmarks']:
-            landmarks = results['pose_world_landmarks'].landmark
-            
-            # Transform coordinates to make front view the default
-            # MediaPipe: x = right/left, y = up/down, z = forward/backward
-            # Desired: x = right/left, y = forward/backward, z = up/down
-            x = [lm.x for lm in landmarks]  # x stays the same (right/left)
-            y = [-lm.z for lm in landmarks]  # negative z becomes y (forward/backward)
-            z = [-lm.y for lm in landmarks]  # negative y becomes z (up/down)
-            
-            # Draw hands first if available, using pose landmarks as reference points
-            hand_landmarks = {
-                'left_hand_landmarks': (
-                    '#FF3366', 'Left Hand',  # Bright pink
-                    landmarks[15],  # Left wrist landmark
-                    landmarks[13]   # Left elbow landmark for orientation
-                ),
-                'right_hand_landmarks': (
-                    '#33FF66', 'Right Hand',  # Bright green
-                    landmarks[16],  # Right wrist landmark
-                    landmarks[14]   # Right elbow landmark for orientation
-                )
-            }
-            
-            for hand_key, (color, label, wrist_ref, elbow_ref) in hand_landmarks.items():
-                if results[hand_key]:
-                    hand_landmarks = results[hand_key].landmark
-                    
-                    # Transform hand coordinates
-                    hand_x = []
-                    hand_y = []
-                    hand_z = []
-                    scale = 1  # Increased scale factor for hand size
-                    
-                    # Transform wrist reference point
-                    wrist_pos = np.array([wrist_ref.x, -wrist_ref.z, -wrist_ref.y])
-                    
-                    for lm in hand_landmarks:
-                        # Center hand at wrist and scale
-                        rel_x = (lm.x - hand_landmarks[0].x) * scale
-                        rel_y = -(lm.z - hand_landmarks[0].z) * scale  # Transform z to y
-                        rel_z = -(lm.y - hand_landmarks[0].y) * scale  # Transform y to z
-                        
-                        # Add to wrist position
-                        hand_x.append(wrist_pos[0] + rel_x)
-                        hand_y.append(wrist_pos[1] + rel_y)
-                        hand_z.append(wrist_pos[2] + rel_z)
-                    
-                    # Plot hand points with larger markers
-                    ax.scatter(hand_x, hand_y, hand_z, 
-                             c=color, marker='o', s=100,  
-                             label=label, zorder=3)  # Higher zorder to stay on top
-                    
-                    # Draw hand connections with thicker lines
-                    for connection in self.mp_holistic.HAND_CONNECTIONS:
-                        start_idx = connection[0]
-                        end_idx = connection[1]
-                        ax.plot([hand_x[start_idx], hand_x[end_idx]],
-                               [hand_y[start_idx], hand_y[end_idx]],
-                               [hand_z[start_idx], hand_z[end_idx]], 
-                               color, linewidth=2, zorder=2)  # Thicker lines
-            
-            # Then draw pose skeleton
-            # Plot pose points with smaller markers
-            ax.scatter(x, y, z, c='#3366FF', marker='o', s=50,  # Bright blue, smaller circles
-                      label='Pose', zorder=1)
-            
-            # Draw pose connections
-            for connection in self.mp_holistic.POSE_CONNECTIONS:
-                start_idx = connection[0]
-                end_idx = connection[1]
-                ax.plot([x[start_idx], x[end_idx]],
-                       [y[start_idx], y[end_idx]],
-                       [z[start_idx], z[end_idx]], 
-                       color='#CCCCCC', linewidth=1, zorder=0)  # Light gray, thinner lines
-        
-        # Set axis labels with correct orientation description
-        ax.set_xlabel('X (Right/Left)')
-        ax.set_ylabel('Y (Forward/Backward)')
-        ax.set_zlabel('Z (Up/Down)')
-        
-        # Set axis limits if provided
-        if xlim:
-            ax.set_xlim(xlim)
-        if ylim:
-            ax.set_ylim(ylim)
-        if zlim:
-            ax.set_zlim(zlim)
-        
-        # Add legend
-        ax.legend()
-        
-        # Equal aspect ratio
-        ax.set_box_aspect([1, 1, 1])
-        
-        plt.tight_layout()
-        return fig
     
     ### Post Processing
 
@@ -435,61 +190,6 @@ class MediaPipeHolistic:
         
         return offsets
 
-    def get_video_horizontal_offsets(self, results_list: List[Dict],
-                                  use_shoulders: bool = True,
-                                  use_face: bool = True,
-                                  use_hips: bool = False) -> Dict[str, Dict[str, float]]:
-        """
-        Calculate statistics for horizontal offsets across multiple frames.
-        
-        Args:
-            results_list: List of dictionaries containing detection results for each frame
-            use_shoulders: Whether to calculate shoulder midpoint offset
-            use_face: Whether to calculate face center offset
-            use_hips: Whether to calculate hip midpoint offset
-        
-        Returns:
-            Dictionary containing statistics for each reference point's horizontal offset:
-            {
-                'reference_point': {
-                    'mean': float,
-                    'median': float,
-                    'max': float,
-                    'min': float
-                }
-            }
-        """
-        # Initialize storage for each reference point
-        offsets_by_point = {}
-        
-        # Get offsets for each frame
-        for results in results_list:
-            frame_offsets = self.get_frame_horizontal_offset(
-                results,
-                use_shoulders=use_shoulders,
-                use_face=use_face,
-                use_hips=use_hips
-            )
-            
-            # Store offsets for each reference point
-            for point, offset in frame_offsets.items():
-                if point not in offsets_by_point:
-                    offsets_by_point[point] = []
-                offsets_by_point[point].append(offset)
-        
-        # Calculate statistics for each reference point
-        stats = {}
-        for point, offsets in offsets_by_point.items():
-            if offsets:  # Only calculate if we have measurements
-                stats[point] = {
-                    'mean': np.mean(offsets),
-                    'median': np.median(offsets),
-                    'max': np.max(offsets),
-                    'min': np.min(offsets)
-                }
-        
-        return stats
-
     def get_frame_vertical_offset(self, results: Dict, 
                            use_shoulders: bool = True,
                            use_face: bool = True,
@@ -534,188 +234,6 @@ class MediaPipeHolistic:
             offsets['hips'] = (left_hip.y + right_hip.y) / 2
         
         return offsets
-
-    def shift_landmarks_horizontally(self, results: Dict, offset: float) -> Dict:
-        """
-        Shift all landmarks horizontally by a given offset.
-        
-        Args:
-            results: Dictionary containing detection results
-            offset: Horizontal offset to apply (in normalized coordinates, 0.0 to 1.0)
-                   Positive values shift right, negative values shift left
-        
-        Returns:
-            Dictionary containing shifted landmark coordinates
-        """
-        shifted_results = results.copy()
-        
-        # Helper function to shift a single landmark
-        def shift_landmark(lm):
-            # Add offset to x coordinate, clamping between 0 and 1
-            new_x = max(0.0, min(1.0, lm.x + offset))
-            return type(lm)(x=new_x, y=lm.y, z=lm.z)
-        
-        # Shift pose landmarks
-        if results['pose_landmarks']:
-            shifted_landmarks = []
-            for lm in results['pose_landmarks'].landmark:
-                shifted_landmarks.append(shift_landmark(lm))
-            shifted_results['pose_landmarks'] = type(results['pose_landmarks'])(landmark=shifted_landmarks)
-        
-        # Shift face landmarks
-        if results['face_landmarks']:
-            shifted_landmarks = []
-            for lm in results['face_landmarks'].landmark:
-                shifted_landmarks.append(shift_landmark(lm))
-            shifted_results['face_landmarks'] = type(results['face_landmarks'])(landmark=shifted_landmarks)
-        
-        # Shift hand landmarks
-        if results['left_hand_landmarks']:
-            shifted_landmarks = []
-            for lm in results['left_hand_landmarks'].landmark:
-                shifted_landmarks.append(shift_landmark(lm))
-            shifted_results['left_hand_landmarks'] = type(results['left_hand_landmarks'])(landmark=shifted_landmarks)
-        
-        if results['right_hand_landmarks']:
-            shifted_landmarks = []
-            for lm in results['right_hand_landmarks'].landmark:
-                shifted_landmarks.append(shift_landmark(lm))
-            shifted_results['right_hand_landmarks'] = type(results['right_hand_landmarks'])(landmark=shifted_landmarks)
-        
-        return shifted_results
-
-    def shift_landmarks_series_horizontally(self, results_list: List[Dict], offset: float) -> List[Dict]:
-        """
-        Shift all landmarks in a series of results horizontally by a given offset.
-        
-        Args:
-            results_list: List of dictionaries containing detection results for each frame
-            offset: Horizontal offset to apply (in normalized coordinates, 0.0 to 1.0)
-                   Positive values shift right, negative values shift left
-        
-        Returns:
-            List of dictionaries containing shifted landmark coordinates
-        """
-        return [self.shift_landmarks_horizontally(results, offset) for results in results_list]
-
-    def get_video_vertical_offsets(self, results_list: List[Dict],
-                                use_shoulders: bool = True,
-                                use_face: bool = True,
-                                use_hips: bool = False) -> Dict[str, Dict[str, float]]:
-        """
-        Calculate statistics for vertical offsets across multiple frames.
-        
-        Args:
-            results_list: List of dictionaries containing detection results for each frame
-            use_shoulders: Whether to calculate shoulder midpoint offset
-            use_face: Whether to calculate face center offset
-            use_hips: Whether to calculate hip midpoint offset
-        
-        Returns:
-            Dictionary containing statistics for each reference point's vertical offset:
-            {
-                'reference_point': {
-                    'mean': float,
-                    'median': float,
-                    'max': float,
-                    'min': float
-                }
-            }
-        """
-        # Initialize storage for each reference point
-        offsets_by_point = {}
-        
-        # Get offsets for each frame
-        for results in results_list:
-            frame_offsets = self.get_frame_vertical_offset(
-                results,
-                use_shoulders=use_shoulders,
-                use_face=use_face,
-                use_hips=use_hips
-            )
-            
-            # Store offsets for each reference point
-            for point, offset in frame_offsets.items():
-                if point not in offsets_by_point:
-                    offsets_by_point[point] = []
-                offsets_by_point[point].append(offset)
-        
-        # Calculate statistics for each reference point
-        stats = {}
-        for point, offsets in offsets_by_point.items():
-            if offsets:  # Only calculate if we have measurements
-                stats[point] = {
-                    'mean': np.mean(offsets),
-                    'median': np.median(offsets),
-                    'max': np.max(offsets),
-                    'min': np.min(offsets)
-                }
-        
-        return stats
-    
-    def shift_landmarks_vertically(self, results: Dict, offset: float) -> Dict:
-        """
-        Shift all landmarks vertically by a given offset.
-        
-        Args:
-            results: Dictionary containing detection results
-            offset: Vertical offset to apply (in normalized coordinates, 0.0 to 1.0)
-                   Positive values shift down, negative values shift up
-        
-        Returns:
-            Dictionary containing shifted landmark coordinates
-        """
-        shifted_results = results.copy()
-        
-        # Helper function to shift a single landmark
-        def shift_landmark(lm):
-            # Add offset to y coordinate, clamping between 0 and 1
-            new_y = max(0.0, min(1.0, lm.y + offset))
-            return type(lm)(x=lm.x, y=new_y, z=lm.z)
-        
-        # Shift pose landmarks
-        if results['pose_landmarks']:
-            shifted_landmarks = []
-            for lm in results['pose_landmarks'].landmark:
-                shifted_landmarks.append(shift_landmark(lm))
-            shifted_results['pose_landmarks'] = type(results['pose_landmarks'])(landmark=shifted_landmarks)
-        
-        # Shift face landmarks
-        if results['face_landmarks']:
-            shifted_landmarks = []
-            for lm in results['face_landmarks'].landmark:
-                shifted_landmarks.append(shift_landmark(lm))
-            shifted_results['face_landmarks'] = type(results['face_landmarks'])(landmark=shifted_landmarks)
-        
-        # Shift hand landmarks
-        if results['left_hand_landmarks']:
-            shifted_landmarks = []
-            for lm in results['left_hand_landmarks'].landmark:
-                shifted_landmarks.append(shift_landmark(lm))
-            shifted_results['left_hand_landmarks'] = type(results['left_hand_landmarks'])(landmark=shifted_landmarks)
-        
-        if results['right_hand_landmarks']:
-            shifted_landmarks = []
-            for lm in results['right_hand_landmarks'].landmark:
-                shifted_landmarks.append(shift_landmark(lm))
-            shifted_results['right_hand_landmarks'] = type(results['right_hand_landmarks'])(landmark=shifted_landmarks)
-        
-        return shifted_results
-
-    def shift_landmarks_series_vertically(self, results_list: List[Dict], offset: float) -> List[Dict]:
-        """
-        Shift all landmarks in a series of results vertically by a given offset.
-        
-        Args:
-            results_list: List of dictionaries containing detection results for each frame
-            offset: Vertical offset to apply (in normalized coordinates, 0.0 to 1.0)
-                   Positive values shift down, negative values shift up
-        
-        Returns:
-            List of dictionaries containing shifted landmark coordinates
-        """
-        return [self.shift_landmarks_vertically(results, offset) for results in results_list]
-
 
     def get_frame_landmark_measurements(self, results: Dict) -> Dict[str, float]:
         """
@@ -813,12 +331,14 @@ class MediaPipeHolistic:
         
         return measurements
 
-    def get_video_landmark_measurements(self, results_list: List[Dict]) -> Dict[str, Dict[str, float]]:
+    def apply_frame_analysis_to_video(self, results_list: List[Dict], frame_processing_function, **kwargs) -> Dict[str, Dict[str, float]]:
         """
-        Calculate statistics for all measurements across multiple frames.
+        Generalized method to calculate statistics for a given frame processing function across multiple frames.
         
         Args:
-            results_list: List of dictionaries containing detection results for each frame
+            results_list: List of dictionaries containing detection results for each frame.
+            frame_processing_function: Function to process a single frame and return measurements.
+            **kwargs: Additional arguments to pass to the frame processing function.
         
         Returns:
             Dictionary containing statistics for each measurement:
@@ -826,19 +346,20 @@ class MediaPipeHolistic:
                 'measurement_name': {
                     'mean': float,
                     'median': float,
-                    'max': float
+                    'max': float,
+                    'min': float
                 }
             }
         """
-        # Initialize measurement storage
+        # Initialize storage for measurements
         all_measurements = {}
-        
+
         # Process each frame
         for results in results_list:
-            measurements = self.get_frame_landmark_measurements(results)
+            frame_measurements = frame_processing_function(results, **kwargs)
             
             # Store measurements
-            for name, value in measurements.items():
+            for name, value in frame_measurements.items():
                 if name not in all_measurements:
                     all_measurements[name] = []
                 all_measurements[name].append(value)
@@ -850,303 +371,41 @@ class MediaPipeHolistic:
                 stats[name] = {
                     'mean': np.mean(values),
                     'median': np.median(values),
-                    'max': np.max(values)
+                    'max': np.max(values),
+                    'min': np.min(values)
                 }
         
         return stats
 
-    def calculate_scale_factors(self, 
-                              measurements: Dict[str, Dict[str, float]],
-                              reference_measurements: Dict[str, float]) -> Dict[str, float]:
+    def get_video_horizontal_offsets(self, results_list: List[Dict], use_shoulders: bool = True, use_face: bool = True, use_hips: bool = False) -> Dict[str, Dict[str, float]]:
         """
-        Calculate x and y scale factors based on reference measurements.
-        
-        Args:
-            measurements: Dictionary containing statistics for each measurement
-            reference_measurements: Dictionary containing target values for each measurement
-        
-        Returns:
-            Dictionary containing scale factors for x and y dimensions:
-            {
-                'x': float,  # Scale factor for horizontal dimension
-                'y': float   # Scale factor for vertical dimension
-            }
+        Calculate statistics for horizontal offsets across multiple frames.
         """
-        # Define which measurements are primarily horizontal vs vertical
-        horizontal_measurements = {
-            'shoulder_width': 1.0,
-            'hip_width': 1.0,
-            'face_width': 1.0
-        }
-        
-        vertical_measurements = {
-            'shoulder_to_hip': 1.0,
-            'face_height': 1.0,
-            'left_arm_length': 1.0,
-            'right_arm_length': 1.0,
-            'top_head_to_shoulders': 1.0,
-            'nose_to_shoulders': 1.0,
-            'chin_to_shoulders': 1.0
-        }
-        
-        # Calculate scale factors for each measurement
-        x_scales = []
-        y_scales = []
-        
-        # Use all keys from reference_measurements
-        for measurement in reference_measurements.keys():
-            if measurement not in measurements:
-                continue
-                
-            # Get the mean value from our measurements
-            measured_value = measurements[measurement]['mean']
-            if measured_value == 0:  # Avoid division by zero
-                continue
-                
-            # Calculate scale factor
-            scale = reference_measurements[measurement] / measured_value
-            
-            # Add to appropriate list based on measurement type
-            if measurement in horizontal_measurements:
-                x_scales.append(scale)
-            elif measurement in vertical_measurements:
-                y_scales.append(scale)
-        
-        # Calculate final scale factors (use median to be robust to outliers)
-        return {
-            'x': np.median(x_scales) if x_scales else 1.0,
-            'y': np.median(y_scales) if y_scales else 1.0
-        }
-
-    def scale_frame(self, 
-                   frame: np.ndarray,
-                   scale_factors: Dict[str, float],
-                   center_point: Tuple[float, float] = (0.5, 0.5)) -> np.ndarray:
-        """
-        Scale a frame around a center point using different factors for x and y dimensions,
-        while maintaining the original frame size.
-        For y-dimension, only scales upward (never crops/pads bottom edge).
-        
-        Args:
-            frame: Input frame in BGR format
-            scale_factors: Dictionary containing scale factors for x and y dimensions
-            center_point: Tuple of (x, y) coordinates (0.0 to 1.0) around which to scale
-        
-        Returns:
-            Scaled frame with same dimensions as input frame
-        """
-        height, width = frame.shape[:2]
-        
-        # Convert center point to pixel coordinates
-        center_x = int(center_point[0] * width)
-        center_y = int(center_point[1] * height)
-        
-        # Calculate new dimensions
-        new_width = int(width * scale_factors['x'])
-        # For y, only scale up if needed
-        new_height = max(height, int(height * scale_factors['y']))
-        
-        # Create temporary frame for scaling
-        temp_frame = np.zeros((new_height, new_width, 3), dtype=frame.dtype)
-        
-        # Calculate source and destination regions for scaling
-        src_x1 = max(0, center_x - width // 2)
-        src_x2 = min(width, center_x + width // 2)
-        src_y1 = max(0, center_y - height // 2)
-        src_y2 = min(height, center_y + height // 2)
-        
-        dst_x1 = max(0, center_x - new_width // 2)
-        dst_x2 = min(new_width, center_x + new_width // 2)
-        dst_y1 = max(0, center_y - new_height // 2)
-        dst_y2 = min(new_height, center_y + new_height // 2)
-        
-        # Copy and scale the region
-        temp_frame[dst_y1:dst_y2, dst_x1:dst_x2] = cv2.resize(
-            frame[src_y1:src_y2, src_x1:src_x2],
-            (dst_x2 - dst_x1, dst_y2 - dst_y1),
-            interpolation=cv2.INTER_LINEAR
+        return self.apply_frame_analysis_to_video(
+            results_list,
+            self.get_frame_horizontal_offset,
+            use_shoulders=use_shoulders,
+            use_face=use_face,
+            use_hips=use_hips
         )
-        
-        # Create output frame with original dimensions
-        output_frame = np.zeros((height, width, 3), dtype=frame.dtype)
-        
-        # Calculate regions for copying back to original size
-        if scale_factors['x'] > 1.0:  # Scaling up - crop
-            src_x1 = max(0, center_x - width // 2)
-            src_x2 = min(new_width, center_x + width // 2)
-            dst_x1 = 0
-            dst_x2 = width
-        else:  # Scaling down - pad with edge values
-            src_x1 = max(0, center_x - new_width // 2)
-            src_x2 = min(new_width, center_x + new_width // 2)
-            dst_x1 = max(0, center_x - width // 2)
-            dst_x2 = min(width, center_x + width // 2)
-            
-        # For y, always keep the bottom edge and only crop/pad the top
-        if scale_factors['y'] > 1.0:  # Scaling up - crop from top
-            src_y1 = max(0, center_y - height // 2)
-            src_y2 = min(new_height, center_y + height // 2)
-            dst_y1 = 0
-            dst_y2 = height
-        else:  # Scaling down - pad top with edge values
-            src_y1 = max(0, center_y - new_height // 2)
-            src_y2 = min(new_height, center_y + new_height // 2)
-            dst_y1 = max(0, center_y - height // 2)
-            dst_y2 = height  # Always keep the bottom edge
-        
-        # Copy scaled region back to original size
-        output_frame[dst_y1:dst_y2, dst_x1:dst_x2] = temp_frame[src_y1:src_y2, src_x1:src_x2]
-        
-        # If scaling down, fill empty regions with edge values
-        if scale_factors['x'] < 1.0:
-            if dst_x1 > 0:
-                output_frame[:, :dst_x1] = output_frame[:, dst_x1]
-            if dst_x2 < width:
-                output_frame[:, dst_x2:] = output_frame[:, dst_x2-1]
-                
-        if scale_factors['y'] < 1.0:
-            if dst_y1 > 0:
-                output_frame[:dst_y1, :] = output_frame[dst_y1, :]
-            # No need to pad bottom edge
-        
-        return output_frame
 
-    def scale_landmarks(self, 
-                       results: Dict,
-                       scale_factors: Dict[str, float],
-                       center_point: Tuple[float, float] = (0.5, 0.5)) -> Dict:
+    def get_video_vertical_offsets(self, results_list: List[Dict], use_shoulders: bool = True, use_face: bool = True, use_hips: bool = False) -> Dict[str, Dict[str, float]]:
         """
-        Scale landmark coordinates using the same scale factors as the frame.
-        For y-dimension, only scales upward (never scales down).
-        
-        Args:
-            results: Dictionary containing detection results
-            scale_factors: Dictionary containing scale factors for x and y dimensions
-            center_point: Tuple of (x, y) coordinates (0.0 to 1.0) around which to scale
-        
-        Returns:
-            Dictionary containing scaled landmark coordinates
+        Calculate statistics for vertical offsets across multiple frames.
         """
-        scaled_results = results.copy()
-        
-        # Helper function to scale a single landmark
-        def scale_landmark(lm, frame_width: int, frame_height: int):
-            # Convert to pixel coordinates
-            x = lm.x * frame_width
-            y = lm.y * frame_height
-            
-            # Convert center point to pixel coordinates
-            center_x = center_point[0] * frame_width
-            center_y = center_point[1] * frame_height
-            
-            # Scale relative to center point
-            x = center_x + (x - center_x) * scale_factors['x']
-            # For y, only scale up if needed
-            if scale_factors['y'] > 1.0:
-                y = center_y + (y - center_y) * scale_factors['y']
-            
-            # Convert back to normalized coordinates
-            return type(lm)(x / frame_width, y / frame_height, lm.z)
-        
-        # Scale pose landmarks
-        if results['pose_landmarks']:
-            scaled_landmarks = []
-            for lm in results['pose_landmarks'].landmark:
-                scaled_landmarks.append(scale_landmark(lm, 1, 1))  # MediaPipe landmarks are already normalized
-            scaled_results['pose_landmarks'] = type(results['pose_landmarks'])(landmark=scaled_landmarks)
-        
-        # Scale face landmarks
-        if results['face_landmarks']:
-            scaled_landmarks = []
-            for lm in results['face_landmarks'].landmark:
-                scaled_landmarks.append(scale_landmark(lm, 1, 1))
-            scaled_results['face_landmarks'] = type(results['face_landmarks'])(landmark=scaled_landmarks)
-        
-        # Scale hand landmarks
-        if results['left_hand_landmarks']:
-            scaled_landmarks = []
-            for lm in results['left_hand_landmarks'].landmark:
-                scaled_landmarks.append(scale_landmark(lm, 1, 1))
-            scaled_results['left_hand_landmarks'] = type(results['left_hand_landmarks'])(landmark=scaled_landmarks)
-        
-        if results['right_hand_landmarks']:
-            scaled_landmarks = []
-            for lm in results['right_hand_landmarks'].landmark:
-                scaled_landmarks.append(scale_landmark(lm, 1, 1))
-            scaled_results['right_hand_landmarks'] = type(results['right_hand_landmarks'])(landmark=scaled_landmarks)
-        
-        return scaled_results
+        return self.apply_frame_analysis_to_video(
+            results_list,
+            self.get_frame_vertical_offset,
+            use_shoulders=use_shoulders,
+            use_face=use_face,
+            use_hips=use_hips
+        )
 
-    def process_video_with_scaling(self, 
-                                 video_path: str,
-                                 results_list: List[Dict],
-                                 scale_factors: Dict[str, float],
-                                 center_point: Tuple[float, float] = (0.5, 0.5),
-                                 output_path: Optional[str] = None) -> Tuple[List[np.ndarray], List[Dict]]:
+    def get_video_landmark_measurements(self, results_list: List[Dict]) -> Dict[str, Dict[str, float]]:
         """
-        Process a video and its landmarks with scaling.
-        
-        Args:
-            video_path: Path to input video file
-            results_list: List of dictionaries containing detection results for each frame
-            scale_factors: Dictionary containing scale factors for x and y dimensions
-            center_point: Tuple of (x, y) coordinates (0.0 to 1.0) around which to scale
-            output_path: Optional path to save the processed video
-        
-        Returns:
-            Tuple containing:
-            - List of scaled frames
-            - List of scaled landmark results
+        Calculate statistics for all measurements across multiple frames.
         """
-        cap = cv2.VideoCapture(video_path)
-        if not cap.isOpened():
-            raise ValueError(f"Could not open video file: {video_path}")
-        
-        # Get video properties
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        if fps <= 0:
-            fps = 30
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        
-        if output_path:
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-        
-        scaled_frames = []
-        scaled_results = []
-        
-        try:
-            frame_idx = 0
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                
-                if frame_idx >= len(results_list):
-                    break
-                
-                # Get results for this frame
-                results = results_list[frame_idx]
-                
-                # Scale frame
-                scaled_frame = self.scale_frame(frame, scale_factors, center_point)
-                scaled_frames.append(scaled_frame)
-                
-                # Scale landmarks
-                scaled_result = self.scale_landmarks(results, scale_factors, center_point)
-                scaled_results.append(scaled_result)
-                
-                # Write to output video if path is provided
-                if output_path:
-                    annotated_frame = self.draw_landmarks_on_frame(scaled_frame, scaled_result)
-                    out.write(annotated_frame)
-                
-                frame_idx += 1
-        
-        finally:
-            cap.release()
-            if output_path:
-                out.release()
-        
-        return scaled_frames, scaled_results
+        return self.apply_frame_analysis_to_video(
+            results_list,
+            self.get_frame_landmark_measurements
+        )
