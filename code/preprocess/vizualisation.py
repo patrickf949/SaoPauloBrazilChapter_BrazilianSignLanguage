@@ -17,6 +17,146 @@ def get_frame(frame_index, video_path):
     if not ret:
         print(f"Could not read frame {frame_index} from video")
         frame = None
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    return frame
+
+def landmarks_to_key_landmarks(mediapipe_landmarks_set):
+    face_horizontal = mediapipe_landmarks_set['face_landmarks'].landmark[5].x # nose tip
+    face_vertical = mediapipe_landmarks_set['face_landmarks'].landmark[5].y # nose tip
+    left_face = mediapipe_landmarks_set['face_landmarks'].landmark[234]  # Left face edge
+    right_face = mediapipe_landmarks_set['face_landmarks'].landmark[454]  # Right face edge
+    face_width = np.sqrt(
+        (left_face.x - right_face.x)**2 + 
+        (left_face.y - right_face.y)**2
+    )
+    top_head = mediapipe_landmarks_set['face_landmarks'].landmark[10]  # Top of head
+    chin = mediapipe_landmarks_set['face_landmarks'].landmark[152]  # Chin
+    face_height = np.sqrt(
+        (top_head.x - chin.x)**2 + 
+        (top_head.y - chin.y)**2
+    )
+    left_shoulder = mediapipe_landmarks_set['pose_landmarks'].landmark[11]
+    right_shoulder = mediapipe_landmarks_set['pose_landmarks'].landmark[12]
+    shoulders_horizontal = (left_shoulder.x + right_shoulder.x) / 2
+    shoulders_vertical = (left_shoulder.y + right_shoulder.y) / 2
+    shoulders_width = np.sqrt(
+        (left_shoulder.x - right_shoulder.x)**2 + 
+        (left_shoulder.y - right_shoulder.y)**2
+    )
+    
+    key_points = {
+        'face_horizontal_offset': face_horizontal,
+        'face_vertical_offset': face_vertical,
+        'face_width': face_width,
+        'face_height': face_height,
+        'shoulders_horizontal_offset': shoulders_horizontal,
+        'shoulders_vertical_offset': shoulders_vertical,
+        'shoulders_width': shoulders_width,
+    }
+    return key_points
+
+def plot_key_landmarks(
+    landmark_points: dict, 
+    frame = None, 
+    line_color = (0,255,0),
+    line_width = 2,
+    axis_lines = True,
+    triangle = True,
+    ):
+    """
+    Plotting the key landmarks used as references to get the Horizontal and Vertical offsets, and the Scaling Factors.
+    """
+    if frame is None:
+        frame = np.zeros([1000,1000,3])
+    frame_height, frame_width = frame.shape[0], frame.shape[1]
+
+    # get face points    
+    face_center_x = landmark_points['face_horizontal_offset']*frame_width
+    face_center_y = landmark_points['face_vertical_offset']*frame_height
+    face_width = landmark_points['face_width']*frame_width
+    face_height = landmark_points['face_height']*frame_height
+
+    # draw an oval matching the points
+    # cv2.ellipse(image, center, axes, angle, startAngle, endAngle, color, thickness)
+    cv2.ellipse(
+        frame, 
+        (int(face_center_x), int(face_center_y)), 
+        (int(face_width/2), int(face_height/2)), 
+        0, 
+        0, 
+        360, 
+        line_color, 
+        line_width
+    )
+    # draw line on the ellipse axes
+    if axis_lines:
+        cv2.line(
+            frame, 
+            (int(face_center_x - face_width/2), int(face_center_y)), 
+            (int(face_center_x + face_width/2), int(face_center_y)), 
+            line_color, 
+            line_width
+        )
+        cv2.line(
+            frame, 
+            (int(face_center_x), int(face_center_y - face_height/2)), 
+            (int(face_center_x), int(face_center_y + face_height/2)), 
+            line_color, 
+            line_width
+        )
+    
+    # get shoulder points
+    shoulders_center_x = landmark_points['shoulders_horizontal_offset']*frame_width
+    shoulders_center_y = landmark_points['shoulders_vertical_offset']*frame_height
+    shoulders_width = landmark_points['shoulders_width']*frame_width
+
+    if triangle:
+        shoulder_left = (int(shoulders_center_x - shoulders_width/2), int(shoulders_center_y))
+        shoulder_right = (int(shoulders_center_x + shoulders_width/2), int(shoulders_center_y))
+        torso_bottom = (int(shoulders_center_x), frame.shape[0])
+
+        cv2.line(
+            frame,
+            shoulder_left,
+            shoulder_right,
+            line_color, 
+            line_width
+        )
+        cv2.line(
+            frame,
+            shoulder_left,
+            torso_bottom,
+            line_color, 
+            line_width
+        )
+        cv2.line(
+            frame,
+            shoulder_right,
+            torso_bottom,
+            line_color, 
+            line_width
+        )
+        
+    if not triangle:
+        # draw a rectangle from the shoulder line to the bottom
+        shoulder_left = (int(shoulders_center_x - shoulders_width/2), int(shoulders_center_y))
+        shoulder_right = (int(shoulders_center_x + shoulders_width/2), frame.shape[0]) 
+        cv2.rectangle(
+            frame,
+            shoulder_left,
+            shoulder_right,
+            line_color, 
+            line_width
+        )
+    if axis_lines:
+        # draw line on the shoulder line
+        cv2.line(
+            frame, 
+            (int(shoulders_center_x), int(shoulders_center_y)), 
+            (int(shoulders_center_x), frame.shape[0]), 
+            line_color, 
+            line_width
+        )
     return frame
 
 ### MediaPipe Pose Landmarks Visualisation
@@ -402,3 +542,78 @@ class MediaPipeHolistic:
         
         plt.tight_layout()
         return fig
+
+def plot_video_frames_with_fps(video_path: str, duration_seconds: int = 1, frame_height: int = 50, spacing: int = 10):
+    """
+    Plot a video timeline with vertical lines for each frame and small images of frames below the plot.
+
+    Args:
+        video_path: Path to the video file.
+        duration_seconds: Number of seconds to display on the x-axis.
+        frame_height: Height of each frame image in the plot (width is scaled proportionally).
+        spacing: Spacing between rows of frame images.
+    """
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise ValueError(f"Could not open video file: {video_path}")
+
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    central_frame = total_frames // 2
+    duration_frames = int(fps * duration_seconds)
+    half_duration_frames = duration_frames // 2
+    start_frame = max(0, central_frame - half_duration_frames)
+    end_frame = min(total_frames, central_frame + half_duration_frames)
+
+    # Extract frames and timestamps
+    frames = []
+    timestamps = []
+    for i in range(total_frames):
+        if i < start_frame:
+            continue
+        if i > end_frame:
+            break
+        # Set the frame position and read the frame
+        cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frames.append(frame_rgb)
+        timestamps.append((i - start_frame) / fps)
+    if len(frames) != duration_frames:
+        print(f"Warning: Extracted {len(frames)} frames, but expected {duration_frames} frames.")
+    cap.release()
+
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(15, 5))
+    ax.set_xlim(0, duration_seconds)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("Time (seconds)")
+    ax.set_ylabel("Frames")
+    ax.set_title("Video Frames and FPS Visualization")
+
+    # Plot vertical lines for each frame
+    for t in timestamps:
+        ax.axvline(x=t, color='gray', linestyle='--', alpha=0.5)
+    # get the plot as an image
+    fig.canvas.draw()
+    plot_image = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
+
+    # TODO: Fix this code
+    # # Add frame images below the plot
+    # frame_width = int(frame_height * frames[0].shape[1] / frames[0].shape[0])
+    # max_row_width = fig.get_size_inches()[0] * fig.dpi  # Maximum width in pixels
+    # current_x = 0
+    # current_y = fig.get_size_inches()[1] * fig.dpi - frame_height - spacing
+
+    # for i, (frame, t) in enumerate(zip(frames, timestamps)):
+    #     if current_x + frame_width > max_row_width:
+    #         current_x = 0
+    #         current_y -= frame_height + spacing
+
+    #     # Add the frame image
+    #     fig.figimage(frame, xo=current_x, yo=current_y, origin='upper')
+    #     current_x += frame_width + spacing
+
+    return plot_image
