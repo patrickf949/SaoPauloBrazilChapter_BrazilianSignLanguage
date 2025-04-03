@@ -14,6 +14,76 @@ This is an outline of the preprocessing pipeline. The pipeline processes videos 
 ### Data Organization
 - Metadata stored in `data/raw/{data_source}/metadata.csv`
 
+### Folder Structure and File Processing
+The preprocessing pipeline organizes data in the following structure:
+
+```
+/data/
+|
+├── raw/
+│   └── combined/
+│       └── videos/
+│           └── [original video files]
+|
+├── interim/
+│   ├── Debug/
+│   |   ├── videos/
+│   |   |   └── [intermediate video files for inspecting each preprocessing step]
+│   |   └── landmarks/
+│   |       └── [intermediate landmark files for inspecting each preprocessing step]
+│   ├── RawMotionMeasurements/
+│   |   └── versionA/
+│   |       └── [Raw motion measurements using version A of the method / parameters]
+│   ├── RawPoseLandmarks/
+│   |   └── versionA/
+│   |       └── [Raw pose landmarks using version A of the method / parameters]
+│   └── Videos/
+│       └── [preprocessed video files before some additional processing steps]
+|
+└── preprocessed/
+    ├── landmarks_metadata_v1.csv [metadata about the landmarks preprocessed with version 1]
+    ├── landmarks_metadata_v2.csv
+    ├── video_metadata_v1.csv [metadata about the videos preprocessed with version 1]
+    ├── video_metadata_v2.csv
+    ├── videos/
+    │   ├── v1/
+    │   │   ├── individual_metadata/
+    │   │   │   └── [per-video JSON metadata that is used to make the video_metadata_v1.csv file]
+    │   │   └── [preprocessed video files]
+    │   └── v2/
+    │       ├── individual_metadata/
+    │       └── [preprocessed video files]
+    └── landmarks/
+        ├── v1/
+        │   ├── individual_metadata/
+        │   │   └── [per-landmark JSON metadata that is used to make the landmarks_metadata_v1.csv file]
+        │   └── [preprocessed landmark files]
+        └── v2/
+            ├── individual_metadata/
+            └── [preprocessed landmark files]
+```
+
+**File Processing**:
+1. **Input Files**:
+   - Original videos are read from `data/raw/combined/videos/`
+   - Each video is processed independently
+
+2. **Intermediate Files**:
+   - When `save_intermediate=True`, intermediate results are saved in the `debug/` subdirectories
+   - These files are named with the step name as a suffix (e.g., `filename_trimmed.mp4`)
+   - Useful for debugging and visualizing preprocessing steps
+
+3. **Output Files**:
+   - Preprocessed videos are saved in version-specific directories (v1/v2)
+   - Each video has a corresponding JSON metadata file in the `individual_metadata/` directory
+   - Full metadata is aggregated in CSV files at the root of the preprocessed directory
+   - Version-specific metadata files allow tracking different preprocessing configurations
+
+4. **Metadata Files**:
+   - Individual JSON files contain detailed preprocessing information for each file
+   - CSV files aggregate metadata across all files for a given version
+   - Both types of metadata include original and processed file information
+
 ## Preprocessing Steps
 
 ### 1. Unify Signer Orientation

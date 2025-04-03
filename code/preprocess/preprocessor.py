@@ -25,8 +25,9 @@ class Preprocessor:
         metadata_row: Dict,
         params_dict: Dict,
         path_to_root: str,
-        preprocess_version: str = "v1",
-        verbose: bool = True
+        preprocess_version: str = "v2",
+        verbose: bool = True,
+        save_intermediate: bool = False
     ):
         """
         Initialize the Preprocessor with metadata and parameters.
@@ -37,6 +38,7 @@ class Preprocessor:
             path_to_root: Path to the root directory of the project
             preprocess_version: Version identifier for this preprocessing (default: "v1")
             verbose: Whether to print details about processing steps
+            save_intermediate: Whether to save intermediate results after each preprocessing step
         """
         # Store inputs
         self.metadata = metadata_row
@@ -44,6 +46,7 @@ class Preprocessor:
         self.path_to_root = path_to_root
         self.preprocess_version = preprocess_version
         self.verbose = verbose
+        self.save_intermediate = save_intermediate
         
         # Extract key metadata
         self.filename = metadata_row["filename"]
@@ -62,20 +65,32 @@ class Preprocessor:
         self.raw_videos_dir = os.path.join(self.raw_dir, "videos")
         
         # Interim paths
+        self.interim_debug_dir = os.path.join(self.interim_dir, "Debug")
+        self.interim_debug_videos_dir = os.path.join(self.interim_debug_dir, "videos")
+        self.interim_debug_landmarks_dir = os.path.join(self.interim_debug_dir, "landmarks")
+        self.interim_motion_dir = os.path.join(self.interim_dir, "RawMotionMeasurements", "versionA")
+        self.interim_landmarks_dir = os.path.join(self.interim_dir, "RawPoseLandmarks", "versionA")
         self.interim_videos_dir = os.path.join(self.interim_dir, "Videos")
-        self.interim_landmarks_dir = os.path.join(self.interim_dir, "RawPoseLandmarks")
         
         # Preprocessed paths
-        self.preprocessed_videos_dir = os.path.join(self.preprocessed_dir, "Videos", preprocess_version)
-        self.preprocessed_landmarks_dir = os.path.join(self.preprocessed_dir, "Landmarks", preprocess_version)
+        self.preprocessed_videos_dir = os.path.join(self.preprocessed_dir, "videos", preprocess_version)
+        self.preprocessed_landmarks_dir = os.path.join(self.preprocessed_dir, "landmarks", preprocess_version)
+        
+        # Individual metadata paths
+        self.video_metadata_dir = os.path.join(self.preprocessed_dir, "videos", preprocess_version, "individual_metadata")
+        self.landmarks_metadata_dir = os.path.join(self.preprocessed_dir, "landmarks", preprocess_version, "individual_metadata")
         
         # Create output directories if they don't exist
         for directory in [
+            self.interim_debug_videos_dir,
+            self.interim_debug_landmarks_dir,
+            self.interim_motion_dir,
+            self.interim_landmarks_dir,
             self.interim_videos_dir,
-            os.path.join(self.preprocessed_videos_dir, "videos"),
-            os.path.join(self.preprocessed_videos_dir, "individual_metadata"),
-            os.path.join(self.preprocessed_landmarks_dir, "landmarks"),
-            os.path.join(self.preprocessed_landmarks_dir, "individual_metadata")
+            self.preprocessed_videos_dir,
+            self.preprocessed_landmarks_dir,
+            self.video_metadata_dir,
+            self.landmarks_metadata_dir
         ]:
             if not os.path.exists(directory):
                 os.makedirs(directory)
@@ -132,13 +147,10 @@ class Preprocessor:
         if self.params["end_frame"] <= self.params["start_frame"] or self.params["end_frame"] >= self.frame_count:
             raise ValueError(f"end_frame must be between {self.params['start_frame']+1} and {self.frame_count-1}, got {self.params['end_frame']}")
     
-    def preprocess_video(self, save_intermediate: bool = False) -> str:
+    def preprocess_video(self) -> str:
         """
         Apply preprocessing steps to video and save result.
         
-        Args:
-            save_intermediate: Whether to save after each major step
-            
         Returns:
             Path to preprocessed video
         """
@@ -169,32 +181,33 @@ class Preprocessor:
             
         # Step 1: Trim frames
         trimmed_frames = self._trim_frames(frames)
-        if save_intermediate:
-            self._save_intermediate_video(trimmed_frames, "trimmed")
+        if self.save_intermediate:
+            self._save_interim_video(trimmed_frames, "trimmed")
             
         # Step 2: Horizontal alignment
         aligned_frames = self._horizontal_align_frames(trimmed_frames)
-        if save_intermediate:
-            self._save_intermediate_video(aligned_frames, "h_aligned")
+        if self.save_intermediate:
+            self._save_interim_video(aligned_frames, "h_aligned")
             
         # Step 3: Scale content
         scaled_frames = self._scale_frames(aligned_frames)
-        if save_intermediate:
-            self._save_intermediate_video(scaled_frames, "scaled")
+        if self.save_intermediate:
+            self._save_interim_video(scaled_frames, "scaled")
             
         # Step 4: Vertical alignment
         v_aligned_frames = self._vertical_align_frames(scaled_frames)
-        
-        # Save after vertical alignment to interim directory
-        interim_video_path = self._save_interim_video(v_aligned_frames)
+        if self.save_intermediate:
+            self._save_interim_video(v_aligned_frames, "v_aligned")
         
         # Step 5: Padding to target duration
         padded_frames = self._pad_frames_to_duration(v_aligned_frames)
-        if save_intermediate:
-            self._save_intermediate_video(padded_frames, "padded")
+        if self.save_intermediate:
+            self._save_interim_video(padded_frames, "padded")
             
         # Step 6: Crop/resize if needed
         processed_frames = self._crop_resize_frames(padded_frames)
+        if self.save_intermediate:
+            self._save_interim_video(processed_frames, "cropped")
         
         # Step 7: Save final preprocessed video
         output_path = self._save_preprocessed_video(processed_frames)
@@ -214,7 +227,6 @@ class Preprocessor:
         # Get landmarks path
         landmarks_path = os.path.join(
             self.interim_landmarks_dir, 
-            landmark_version, 
             f"{self.filename.split('.')[0]}.npy"
         )
         
@@ -232,49 +244,33 @@ class Preprocessor:
             
         # Step 1: Trim landmarks
         trimmed_landmarks = self._trim_landmarks(landmarks)
-
-        output_filename = f"{self.filename.split('.')[0]}_1_trimmed.npy"
-        output_path = os.path.join(self.interim_landmarks_dir, "versionA", output_filename)
-        np.save(output_path, trimmed_landmarks)
+        if self.save_intermediate:
+            self._save_intermediate_landmarks(trimmed_landmarks, "trimmed")
 
         # Step 2: Horizontal alignment
         aligned_landmarks = self._horizontal_align_landmarks(trimmed_landmarks)
-        
-        # DEBUG: Compare trimmed and aligned landmarks
-        self._debug_landmarks_format(trimmed_landmarks, aligned_landmarks, frame_idx=0, 
-                                  label1="Trimmed", label2="Horizontally Aligned")
-
-        output_filename = f"{self.filename.split('.')[0]}_2_h_aligned.npy"
-        output_path = os.path.join(self.interim_landmarks_dir, "versionA", output_filename)
-        np.save(output_path, aligned_landmarks)
+        if self.save_intermediate:
+            self._save_intermediate_landmarks(aligned_landmarks, "h_aligned")
         
         # Step 3: Scale landmarks
         scaled_landmarks = self._scale_landmarks(aligned_landmarks)
-
-        output_filename = f"{self.filename.split('.')[0]}_3_scaled.npy"
-        output_path = os.path.join(self.interim_landmarks_dir, "versionA", output_filename)
-        np.save(output_path, scaled_landmarks)
+        if self.save_intermediate:
+            self._save_intermediate_landmarks(scaled_landmarks, "scaled")
         
         # Step 4: Vertical alignment
         v_aligned_landmarks = self._vertical_align_landmarks(scaled_landmarks)
-
-        output_filename = f"{self.filename.split('.')[0]}_4_v_aligned.npy"
-        output_path = os.path.join(self.interim_landmarks_dir, "versionA", output_filename)
-        np.save(output_path, v_aligned_landmarks)
+        if self.save_intermediate:
+            self._save_intermediate_landmarks(v_aligned_landmarks, "v_aligned")
         
         # Step 5: Padding to target duration
         padded_landmarks = self._pad_landmarks_to_duration(v_aligned_landmarks)
-        
-        output_filename = f"{self.filename.split('.')[0]}_5_padded.npy"
-        output_path = os.path.join(self.interim_landmarks_dir, "versionA", output_filename)
-        np.save(output_path, padded_landmarks)
+        if self.save_intermediate:
+            self._save_intermediate_landmarks(padded_landmarks, "padded")
         
         # Step 6: Crop/resize if needed (equivalent for landmarks)
         processed_landmarks = self._crop_resize_landmarks(padded_landmarks)
-        
-        output_filename = f"{self.filename.split('.')[0]}_6_cropped.npy"
-        output_path = os.path.join(self.interim_landmarks_dir, "versionA", output_filename)
-        np.save(output_path, processed_landmarks)
+        if self.save_intermediate:
+            self._save_intermediate_landmarks(processed_landmarks, "cropped")
         
         # Step 7: Save final preprocessed landmarks
         output_path = self._save_preprocessed_landmarks(processed_landmarks)
@@ -573,18 +569,19 @@ class Preprocessor:
         # For now, we'll just return the frames as-is
         return frames
     
-    def _save_interim_video(self, frames: List[np.ndarray]) -> str:
+    def _save_interim_video(self, frames: List[np.ndarray], step_name: str) -> str:
         """
-        Save the processed frames to the interim directory.
+        Save an intermediate video for debugging.
         
         Args:
             frames: List of frames to save
+            step_name: Name of the preprocessing step
             
         Returns:
             Path to saved video
         """
-        output_filename = f"{self.filename.split('.')[0]}_processed.mp4"
-        output_path = os.path.join(self.interim_videos_dir, output_filename)
+        output_filename = f"{self.filename.split('.')[0]}_{step_name}.mp4"
+        output_path = os.path.join(self.interim_debug_videos_dir, output_filename)
         
         # Define the codec and create VideoWriter object
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -598,7 +595,7 @@ class Preprocessor:
         out.release()
         
         if self.verbose:
-            print(f"Saved interim processed video to {output_path}")
+            print(f">> Saved intermediate {step_name} video to {output_path}")
             
         return output_path
     
@@ -613,7 +610,7 @@ class Preprocessor:
             Path to saved video
         """
         output_filename = self.filename
-        output_path = os.path.join(self.preprocessed_videos_dir, "videos", output_filename)
+        output_path = os.path.join(self.preprocessed_videos_dir, output_filename)
         
         # Define the codec and create VideoWriter object
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -630,43 +627,10 @@ class Preprocessor:
         self._save_video_metadata(output_path)
         
         if self.verbose:
-            print(f"Saved preprocessed video to {output_path}")
+            print(f">> Saved preprocessed video to {output_path}")
             
         # Update the master metadata CSV
         self._update_video_metadata_csv()
-            
-        return output_path
-    
-    def _save_intermediate_video(self, frames: List[np.ndarray], step_name: str) -> str:
-        """
-        Save an intermediate video for debugging.
-        
-        Args:
-            frames: List of frames to save
-            step_name: Name of the preprocessing step
-            
-        Returns:
-            Path to saved video
-        """
-        debug_dir = os.path.join(self.interim_videos_dir, "debug")
-        os.makedirs(debug_dir, exist_ok=True)
-        
-        output_filename = f"{self.filename.split('.')[0]}_{step_name}.mp4"
-        output_path = os.path.join(debug_dir, output_filename)
-        
-        # Define the codec and create VideoWriter object
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        height, width = frames[0].shape[:2]
-        out = cv2.VideoWriter(output_path, fourcc, self.fps, (width, height))
-        
-        # Write frames
-        for frame in frames:
-            out.write(frame)
-        
-        out.release()
-        
-        if self.verbose:
-            print(f"Saved intermediate {step_name} video to {output_path}")
             
         return output_path
     
@@ -718,19 +682,19 @@ class Preprocessor:
         
         # Save to individual metadata file
         metadata_filename = f"{self.filename.split('.')[0]}.json"
-        metadata_path = os.path.join(self.preprocessed_videos_dir, "individual_metadata", metadata_filename)
+        metadata_path = os.path.join(self.video_metadata_dir, metadata_filename)
         
         with open(metadata_path, "w") as f:
             json.dump(metadata, f, indent=4)
             
         if self.verbose:
-            print(f"Saved video metadata to {metadata_path}")
+            print(f">> Saved video metadata to {metadata_path}")
     
     def _update_video_metadata_csv(self) -> None:
         """
         Update the master CSV file with this video's metadata.
         """
-        csv_path = os.path.join(self.preprocessed_videos_dir, "video_metadata.csv")
+        csv_path = os.path.join(self.preprocessed_dir, f"video_metadata_{self.preprocess_version}.csv")
         
         # Create a new row for this video
         row = {
@@ -772,7 +736,7 @@ class Preprocessor:
         df.to_csv(csv_path, index=False)
         
         if self.verbose:
-            print(f"Updated video metadata CSV at {csv_path}")
+            print(f">> Updated video metadata CSV at {csv_path}")
     
     # Landmark processing methods
     
@@ -1079,7 +1043,7 @@ class Preprocessor:
             Path to saved landmarks
         """
         output_filename = f"{self.filename.split('.')[0]}.npy"
-        output_path = os.path.join(self.preprocessed_landmarks_dir, "landmarks", output_filename)
+        output_path = os.path.join(self.preprocessed_landmarks_dir, output_filename)
         
         # Save landmarks
         np.save(output_path, landmarks)
@@ -1088,7 +1052,7 @@ class Preprocessor:
         self._save_landmarks_metadata(output_path)
         
         if self.verbose:
-            print(f"Saved preprocessed landmarks to {output_path}")
+            print(f">> Saved preprocessed landmarks to {output_path}")
             
         # Update the master metadata CSV
         self._update_landmarks_metadata_csv()
@@ -1141,19 +1105,19 @@ class Preprocessor:
         
         # Save to individual metadata file
         metadata_filename = f"{self.filename.split('.')[0]}.json"
-        metadata_path = os.path.join(self.preprocessed_landmarks_dir, "individual_metadata", metadata_filename)
+        metadata_path = os.path.join(self.landmarks_metadata_dir, metadata_filename)
         
         with open(metadata_path, "w") as f:
             json.dump(metadata, f, indent=4)
             
         if self.verbose:
-            print(f"Saved landmarks metadata to {metadata_path}")
+            print(f">> Saved landmarks metadata to {metadata_path}")
     
     def _update_landmarks_metadata_csv(self) -> None:
         """
         Update the master CSV file with this landmarks' metadata.
         """
-        csv_path = os.path.join(self.preprocessed_landmarks_dir, "landmarks_metadata.csv")
+        csv_path = os.path.join(self.preprocessed_dir, f"landmarks_metadata_{self.preprocess_version}.csv")
         
         # Create a new row for this landmarks file
         row = {
@@ -1193,7 +1157,7 @@ class Preprocessor:
         df.to_csv(csv_path, index=False)
         
         if self.verbose:
-            print(f"Updated landmarks metadata CSV at {csv_path}")
+            print(f">> Updated landmarks metadata CSV at {csv_path}")
 
     def _debug_landmarks_format(self, landmarks1, landmarks2, frame_idx=0, label1="Original", label2="Modified"):
         """
@@ -1267,3 +1231,25 @@ class Preprocessor:
                             missing_landmark_attrs = [attr for attr in l1_attrs if attr not in l2_attrs]
                             if missing_landmark_attrs:
                                 print(f"  Landmark attributes in {label1} but not in {label2}: {missing_landmark_attrs}")
+
+    def _save_intermediate_landmarks(self, landmarks: np.ndarray, step_name: str) -> str:
+        """
+        Save intermediate landmarks to the debug directory.
+        
+        Args:
+            landmarks: Array of landmarks to save
+            step_name: Name of the preprocessing step
+            
+        Returns:
+            Path to saved landmarks
+        """
+        output_filename = f"{self.filename.split('.')[0]}_{step_name}.npy"
+        output_path = os.path.join(self.interim_debug_landmarks_dir, output_filename)
+        
+        # Save landmarks
+        np.save(output_path, landmarks)
+        
+        if self.verbose:
+            print(f">> Saved intermediate {step_name} landmarks to {output_path}")
+            
+        return output_path
