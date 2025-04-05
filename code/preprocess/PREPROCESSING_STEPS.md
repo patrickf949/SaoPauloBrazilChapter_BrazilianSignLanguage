@@ -22,6 +22,8 @@ The preprocessing pipeline organizes data in the following structure:
 |
 ├── raw/
 │   └── combined/
+│       ├── target_dataset_video_metadata.csv 
+│       │   (metadata about the videos in the target dataset made using `video_scraping.ipynb`)
 │       └── videos/
 │           └── [original video files]
 |
@@ -41,14 +43,12 @@ The preprocessing pipeline organizes data in the following structure:
 │       └── [preprocessed video files before some additional processing steps]
 |
 └── preprocessed/
-    ├── landmarks_metadata_v1.csv [metadata about the landmarks preprocessed with version 1]
-    ├── landmarks_metadata_v2.csv
-    ├── video_metadata_v1.csv [metadata about the videos preprocessed with version 1]
-    ├── video_metadata_v2.csv
+    ├── metadata_v1.csv [metadata about the videos preprocessed with version 1]
+    ├── metadata_v2.csv
     ├── videos/
     │   ├── v1/
     │   │   ├── individual_metadata/
-    │   │   │   └── [per-video JSON metadata that is used to make the video_metadata_v1.csv file]
+    │   │   │   └── [per-video JSON metadata that is used to make the metadata_v1.csv file]
     │   │   └── [preprocessed video files]
     │   └── v2/
     │       ├── individual_metadata/
@@ -56,7 +56,7 @@ The preprocessing pipeline organizes data in the following structure:
     └── landmarks/
         ├── v1/
         │   ├── individual_metadata/
-        │   │   └── [per-landmark JSON metadata that is used to make the landmarks_metadata_v1.csv file]
+        │   │   └── [per-landmark JSON metadata that is used to make the metadata_v1.csv file]
         │   └── [preprocessed landmark files]
         └── v2/
             ├── individual_metadata/
