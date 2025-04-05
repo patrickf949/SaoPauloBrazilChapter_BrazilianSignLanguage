@@ -14,6 +14,95 @@ except ImportError:
     print("MediaPipeHolistic not available. Pose estimation functions will not work.")
 
 
+def get_processing_params(analysis_info):
+    """
+    Utility function for getting processing parameters from analysis info.
+    Will be applied to the analysis info dict saved at the end of VideoAnalyzer.
+
+    """
+    reference_values = {
+        'face_horizontal_offset': 0.5,
+        'face_vertical_offset': 0.275,
+        'face_width': 0.11,
+        'face_height': 0.23,
+        'shoulders_horizontal_offset': 0.5,
+        'shoulders_vertical_offset': 0.52,
+        'shoulders_width': 0.25,
+        'target_duration': 6
+        }
+
+    start_frame = analysis_info["motion_analysis"]["start_frame"]
+    end_frame = analysis_info["motion_analysis"]["end_frame"]
+
+    # horizontal offset
+    shoulders_median = analysis_info["pose_analysis"]["horizontal_offsets"]["shoulders"]["median"]
+    face_median = analysis_info["pose_analysis"]["horizontal_offsets"]["face"]["median"]
+
+    shoulders_reference = 0.5 # (because we want the signer to be horizontally centered)
+    face_reference = 0.5 # (because we want the signer to be horizontally centered)
+
+    shoulders_offset = shoulders_reference - shoulders_median
+    face_offset = face_reference - face_median
+
+    shoulders_weight = 0.7 # (arbitrarily chosen, because I assume shoulders move less than the face)
+    face_weight = 0.3 # (arbitrarily chosen, because I assume shoulders move less than the face)
+    horizontal_offset = shoulders_weight * shoulders_offset + face_weight * face_offset
+
+    # Measurements from the video
+    ## Horizontal
+    shoulder_width = analysis_info["pose_analysis"]["landmark_measurements"]["shoulder_width"]["mean"]
+    face_width = analysis_info["pose_analysis"]["landmark_measurements"]["face_width"]["mean"]
+    ## Vertical
+    face_height = analysis_info["pose_analysis"]["landmark_measurements"]["face_height"]["mean"]
+    shoulders_to_bottom = 1 - analysis_info["pose_analysis"]["vertical_offsets"]["shoulders"]["median"]
+
+    # Reference values to scale to
+    ## Horizontal
+    reference_shoulder_width = reference_values["shoulders_width"]
+    reference_face_width = reference_values["face_width"]
+    ## Vertical
+    reference_face_height = reference_values["face_height"]
+    reference_shoulders_to_bottom = 1 - reference_values["shoulders_vertical_offset"]
+
+    # Scale Factors
+    ## Horizontal
+    shoulder_width_weight = 0.7
+    face_width_weight = 0.3
+    x_scale_factor = shoulder_width_weight * reference_shoulder_width / shoulder_width + face_width_weight * reference_face_width / face_width
+    ## Vertical
+    face_height_weight = 0.7
+    shoulders_to_bottom_weight = 0.3
+    y_scale_factor = face_height_weight * reference_face_height / face_height + shoulders_to_bottom_weight * reference_shoulders_to_bottom / shoulders_to_bottom
+
+
+    # Measured
+    shoulders_median = analysis_info["pose_analysis"]["vertical_offsets"]["shoulders"]["median"]
+    face_median = analysis_info["pose_analysis"]["vertical_offsets"]["face"]["median"]
+    # Reference
+    reference_shoulders = reference_values["shoulders_vertical_offset"]
+    reference_face = reference_values["face_vertical_offset"]
+
+    shoulders_offset = reference_shoulders - shoulders_median
+    face_offset = reference_face - face_median
+
+    # Weighted Average
+    shoulders_weight = 0.6
+    face_weight = 0.4
+    vertical_offset = shoulders_weight * shoulders_offset + face_weight * face_offset
+
+
+    params_dict = {
+        "start_frame": start_frame,
+        "end_frame": end_frame,
+        "horizontal_offset": horizontal_offset,
+        "vertical_offset": vertical_offset,
+        "x_scale_factor": x_scale_factor,
+        "y_scale_factor": y_scale_factor,
+        "target_duration": reference_values["target_duration"],
+    }
+
+    return params_dict
+
 class VideoAnalyzer:
     """
     VideoAnalyzer class for processing and analyzing videos with motion detection and pose estimation.
@@ -31,7 +120,7 @@ class VideoAnalyzer:
         timestamp: str,
         path_to_root: str,
         params_dict: Dict = None,
-        verbose: bool = True,
+        verbose: bool = False,
         motion_detection_version: str = "versionA",
         pose_detection_version: str = "versionA",
         ):
@@ -52,13 +141,18 @@ class VideoAnalyzer:
         self.path_to_root = path_to_root
         self.motion_detection_version = motion_detection_version
         self.pose_detection_version = pose_detection_version
+        self.verbose = verbose
         
         # Set up base directories
         self.interim_dir = os.path.join(self.path_to_root, "data", "interim")
         self.motion_detection_dir = os.path.join(self.interim_dir, "RawMotionMeasurements")
         self.pose_estimation_dir = os.path.join(self.interim_dir, "RawPoseLandmarks")
         self.videos_dir = os.path.join(self.interim_dir, "Videos")
-        self.results_dir = os.path.join(self.interim_dir, "Analysis", self.timestamp, "individual_json")
+        self.results_dir = os.path.join(
+            self.interim_dir, 
+            "Analysis", 
+            f"{self.timestamp}_motion{self.motion_detection_version}_pose{self.pose_detection_version}"
+        )
         
         # Create directories if they don't exist
         for directory in [
@@ -72,7 +166,8 @@ class VideoAnalyzer:
         ]:
             if not os.path.exists(directory):
                 os.makedirs(directory, exist_ok=True)
-                print(f"Created directory: {directory}")
+                if self.verbose:
+                    print(f"Created directory: {directory}")
 
         # Set attributes from metadata
         self.attributes_from_metadata(metadata_row)
@@ -87,8 +182,9 @@ class VideoAnalyzer:
         self.start_frame = None
         self.end_frame = None
         
-        print(f"Initialized VideoAnalyzer for {self.filename}")
-        print(f"Video properties: {self.fps} fps, {self.width}x{self.height}, {self.duration_sec:.2f} seconds")
+        if self.verbose:
+            print(f"Initialized VideoAnalyzer for {self.filename}")
+            print(f"Video properties: {self.fps} fps, {self.width}x{self.height}, {self.duration_sec:.2f} seconds")
     
     def attributes_from_metadata(self, metadata: Dict) -> None:
         """
@@ -270,11 +366,10 @@ class VideoAnalyzer:
         weights = weights or self.params.get("motion_avg_weights")
         window_duration = window_duration or self.params.get("moving_avg_window_duration")
         load = load if load is not None else self.params.get("reuse_results")
-        verbose = self.params.get("verbose", True)
         
         # Try to load previous results if requested
         if load:
-            previous_results = self.load_previous_results("motion", verbose=verbose)
+            previous_results = self.load_previous_results("motion", verbose=self.verbose)
             if previous_results:
                 self.motion_data = previous_results
                 
@@ -284,7 +379,7 @@ class VideoAnalyzer:
         
         # If no previous results or not loading, run motion detection
         video_path = self.get_raw_video_path()
-        if verbose:
+        if self.verbose:
             print(f"Running motion detection on {video_path}")
         
         # Run motion detection algorithms
@@ -298,7 +393,7 @@ class VideoAnalyzer:
         }
         
         # Calculate derived metrics
-        self._process_motion_data(weights, window_duration, verbose)
+        self._process_motion_data(weights, window_duration)
         
         # Save results
         self._save_raw_motion_results()
@@ -372,7 +467,8 @@ class VideoAnalyzer:
         if motion_data is None:
             raise ValueError("No motion data available. Run motion_detect first.")
         
-        print(f"Analyzing motion using {method} method with thresholds {start_threshold}/{end_threshold}")
+        if self.verbose:
+            print(f"Analyzing motion using {method} method with thresholds {start_threshold}/{end_threshold}")
         
         # Detect motion boundaries
         if method == "simple":
@@ -403,7 +499,8 @@ class VideoAnalyzer:
             "duration_sec": (end_frame - start_frame) / self.fps if (start_frame is not None and end_frame is not None) else None
         }
         
-        print(f"Motion detected from frame {start_frame} to {end_frame} ({result['duration_sec']:.2f} seconds)")
+        if self.verbose:
+            print(f"Motion detected from frame {start_frame} to {end_frame} ({result['duration_sec']:.2f} seconds)")
         
         # Store analysis results
         self.motion_data["analysis"] = result
@@ -488,23 +585,13 @@ class VideoAnalyzer:
         """
         Analyze pose data to get various measurements and statistics.
         
-        Args:
-            use_shoulders: Whether to use shoulder measurements
-            use_face: Whether to use face measurements
-            use_hips: Whether to use hip measurements
-            
         Returns:
-            Dictionary containing analysis results:
-            - horizontal_offsets: Statistics for horizontal alignment
-            - vertical_offsets: Statistics for vertical alignment
-            - landmark_measurements: Statistics for various body measurements
-            - scale_factors: Calculated scale factors if reference measurements provided
+            Dictionary containing analysis results
         """
         if not hasattr(self, "pose_data") or not self.pose_data:
             raise ValueError("No pose data available. Run pose_detect first.")
         
-        verbose = self.params.get("verbose", True)
-        if verbose:
+        if self.verbose:
             print("Analyzing pose data...")
         
         mp_holistic = mph.MediaPipeHolistic()
@@ -530,7 +617,7 @@ class VideoAnalyzer:
             "landmark_measurements": landmark_measurements
         }
         
-        if verbose:
+        if self.verbose:
             print("Pose analysis complete")
             print(f"Horizontal offsets: {horizontal_offsets}")
             print(f"Vertical offsets: {vertical_offsets}")
@@ -541,13 +628,9 @@ class VideoAnalyzer:
     def save_analysis_info(self) -> Dict:
         """
         Save analysis information to a JSON file.
-        Only saves parameters and results from analysis methods, not raw data arrays.
         
         Returns:
             Dictionary of analysis info that was saved
-            
-        Raises:
-            ValueError: If any required analysis data is missing
         """
         def convert_numpy(obj):
             """Convert numpy types to Python native types."""
@@ -620,5 +703,6 @@ class VideoAnalyzer:
         with open(output_path, "w") as f:
             json.dump(analysis_info, f, indent=4)
         
-        print(f"Saved analysis info to {output_path}")
+        if self.verbose:
+            print(f"Saved analysis info to {output_path}")
         return analysis_info
