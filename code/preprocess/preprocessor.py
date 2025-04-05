@@ -161,6 +161,13 @@ class Preprocessor:
         if self.verbose:
             print(f"Preprocessing video: {video_path}")
             
+        # If save_intermediate is True, save original to debug
+        if self.save_intermediate:
+            debug_path = os.path.join(self.interim_debug_videos_dir, f"{self.filename.split('.')[0]}_original.mp4")
+            shutil.copy2(video_path, debug_path)
+            if self.verbose:
+                print(f">> Saved original video to {debug_path}")
+            
         # Open the video
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
@@ -182,35 +189,51 @@ class Preprocessor:
         # Step 1: Trim frames
         trimmed_frames = self._trim_frames(frames)
         if self.save_intermediate:
-            self._save_interim_video(trimmed_frames, "trimmed")
+            self._save_interim_video(trimmed_frames, "motion_trimmed")
+        del frames  # Clear original frames from memory
+        frames = None
             
         # Step 2: Horizontal alignment
         aligned_frames = self._horizontal_align_frames(trimmed_frames)
         if self.save_intermediate:
             self._save_interim_video(aligned_frames, "h_aligned")
+        del trimmed_frames  # Clear trimmed frames from memory
+        trimmed_frames = None
             
         # Step 3: Scale content
         scaled_frames = self._scale_frames(aligned_frames)
         if self.save_intermediate:
             self._save_interim_video(scaled_frames, "scaled")
+        del aligned_frames  # Clear aligned frames from memory
+        aligned_frames = None
             
         # Step 4: Vertical alignment
         v_aligned_frames = self._vertical_align_frames(scaled_frames)
         if self.save_intermediate:
             self._save_interim_video(v_aligned_frames, "v_aligned")
+        del scaled_frames  # Clear scaled frames from memory
+        scaled_frames = None
         
         # Step 5: Padding to target duration
         padded_frames = self._pad_frames_to_duration(v_aligned_frames)
         if self.save_intermediate:
             self._save_interim_video(padded_frames, "padded")
+        del v_aligned_frames  # Clear vertically aligned frames from memory
+        v_aligned_frames = None
             
         # Step 6: Crop/resize if needed
         processed_frames = self._crop_resize_frames(padded_frames)
         if self.save_intermediate:
             self._save_interim_video(processed_frames, "cropped")
+        del padded_frames  # Clear padded frames from memory
+        padded_frames = None
         
         # Step 7: Save final preprocessed video
         output_path = self._save_preprocessed_video(processed_frames)
+        
+        # Clear processed frames from memory
+        del processed_frames
+        processed_frames = None
         
         return output_path
     
@@ -236,6 +259,13 @@ class Preprocessor:
         if self.verbose:
             print(f"Preprocessing landmarks: {landmarks_path}")
             
+        # If save_intermediate is True, save original to debug
+        if self.save_intermediate:
+            debug_path = os.path.join(self.interim_debug_landmarks_dir, f"{self.filename.split('.')[0]}_original.npy")
+            shutil.copy2(landmarks_path, debug_path)
+            if self.verbose:
+                print(f">> Saved original landmarks to {debug_path}")
+            
         # Load landmarks
         landmarks = np.load(landmarks_path, allow_pickle=True)
         
@@ -245,35 +275,51 @@ class Preprocessor:
         # Step 1: Trim landmarks
         trimmed_landmarks = self._trim_landmarks(landmarks)
         if self.save_intermediate:
-            self._save_intermediate_landmarks(trimmed_landmarks, "trimmed")
+            self._save_intermediate_landmarks(trimmed_landmarks, "motion_trimmed")
+        del landmarks  # Clear original landmarks from memory
+        landmarks = None
 
         # Step 2: Horizontal alignment
         aligned_landmarks = self._horizontal_align_landmarks(trimmed_landmarks)
         if self.save_intermediate:
             self._save_intermediate_landmarks(aligned_landmarks, "h_aligned")
+        del trimmed_landmarks  # Clear trimmed landmarks from memory
+        trimmed_landmarks = None
         
         # Step 3: Scale landmarks
         scaled_landmarks = self._scale_landmarks(aligned_landmarks)
         if self.save_intermediate:
             self._save_intermediate_landmarks(scaled_landmarks, "scaled")
+        del aligned_landmarks  # Clear aligned landmarks from memory
+        aligned_landmarks = None
         
         # Step 4: Vertical alignment
         v_aligned_landmarks = self._vertical_align_landmarks(scaled_landmarks)
         if self.save_intermediate:
             self._save_intermediate_landmarks(v_aligned_landmarks, "v_aligned")
+        del scaled_landmarks  # Clear scaled landmarks from memory
+        scaled_landmarks = None
         
         # Step 5: Padding to target duration
         padded_landmarks = self._pad_landmarks_to_duration(v_aligned_landmarks)
         if self.save_intermediate:
             self._save_intermediate_landmarks(padded_landmarks, "padded")
+        del v_aligned_landmarks  # Clear vertically aligned landmarks from memory
+        v_aligned_landmarks = None
         
-        # Step 6: Crop/resize if needed (equivalent for landmarks)
+        # Step 6: Crop/resize if needed
         processed_landmarks = self._crop_resize_landmarks(padded_landmarks)
         if self.save_intermediate:
             self._save_intermediate_landmarks(processed_landmarks, "cropped")
+        del padded_landmarks  # Clear padded landmarks from memory
+        padded_landmarks = None
         
         # Step 7: Save final preprocessed landmarks
         output_path = self._save_preprocessed_landmarks(processed_landmarks)
+        
+        # Clear processed landmarks from memory
+        del processed_landmarks
+        processed_landmarks = None
         
         return output_path
     
@@ -537,7 +583,17 @@ class Preprocessor:
         if current_frame_count >= target_frame_count:
             if self.verbose:
                 print(f"No padding needed, current frame count {current_frame_count} >= target {target_frame_count}")
-            return frames
+            # Calculate trimming positions
+            trim_total = current_frame_count - target_frame_count
+            trim_start = trim_total // 2
+            trim_end = trim_total - trim_start
+            
+            # Store frame positions for metadata
+            self.preprocessed_start_frame = self.params["start_frame"] + trim_start
+            self.preprocessed_end_frame = self.params["end_frame"] - trim_end
+            
+            # Trim frames
+            return frames[trim_start:current_frame_count-trim_end]
         
         # Calculate how many frames to add
         frames_to_add = target_frame_count - current_frame_count
@@ -545,6 +601,10 @@ class Preprocessor:
         # Split the padding between start and end
         pad_start = frames_to_add // 2
         pad_end = frames_to_add - pad_start
+        
+        # Store frame positions for metadata
+        self.preprocessed_start_frame = pad_start
+        self.preprocessed_end_frame = pad_start + current_frame_count - 1
         
         # Create padded frames
         padded_frames = ([frames[0]] * pad_start) + frames + ([frames[-1]] * pad_end)
@@ -595,7 +655,7 @@ class Preprocessor:
         out.release()
         
         if self.verbose:
-            print(f">> Saved intermediate {step_name} video to {output_path}")
+            print(f">> Saved intermediate {step_name} video to {output_path}\n")
             
         return output_path
     
@@ -630,7 +690,17 @@ class Preprocessor:
             print(f">> Saved preprocessed video to {output_path}")
             
         # Update the master metadata CSV
-        self._update_video_metadata_csv()
+        self._update_metadata_csv()
+        
+        # If save_intermediate is True, also save to debug directory
+        if self.save_intermediate:
+            debug_path = os.path.join(self.interim_debug_videos_dir, f"{self.filename.split('.')[0]}_final.mp4")
+            out = cv2.VideoWriter(debug_path, fourcc, self.fps, (width, height))
+            for frame in frames:
+                out.write(frame)
+            out.release()
+            if self.verbose:
+                print(f">> Saved preprocessed video to {debug_path}")
             
         return output_path
     
@@ -690,24 +760,28 @@ class Preprocessor:
         if self.verbose:
             print(f">> Saved video metadata to {metadata_path}")
     
-    def _update_video_metadata_csv(self) -> None:
+    def _update_metadata_csv(self) -> None:
         """
         Update the master CSV file with this video's metadata.
         """
-        csv_path = os.path.join(self.preprocessed_dir, f"video_metadata_{self.preprocess_version}.csv")
+        csv_path = os.path.join(self.preprocessed_dir, f"preprocessed_metadata_{self.preprocess_version}.csv")
         
         # Create a new row for this video
         row = {
             "filename": self.filename,
+            "label": self.metadata.get("label", ""),
+            "data_source": self.metadata.get("data_source", ""),
             "original_fps": self.fps,
             "original_width": self.width,
             "original_height": self.height,
             "original_frame_count": self.frame_count,
             "original_duration_sec": self.duration_sec,
+            "original_start_frame": self.params["start_frame"],
+            "original_end_frame": self.params["end_frame"],
             "preprocessed_frame_count": int(self.params["target_duration"] * self.fps),
             "preprocessed_duration_sec": self.params["target_duration"],
-            "start_frame": self.params["start_frame"],
-            "end_frame": self.params["end_frame"],
+            "preprocessed_start_frame": self.preprocessed_start_frame,
+            "preprocessed_end_frame": self.preprocessed_end_frame,
             "horizontal_offset": self.params["horizontal_offset"],
             "vertical_offset": self.params["vertical_offset"],
             "x_scale_factor": self.params["x_scale_factor"],
@@ -722,7 +796,7 @@ class Preprocessor:
             
             # Check if this file is already in the CSV
             if self.filename in df["filename"].values:
-                # Update the row - use DataFrame.update or replace the row completely
+                # Update the row
                 idx = df.index[df["filename"] == self.filename].tolist()[0]
                 df.loc[idx] = pd.Series(row)
             else:
@@ -736,7 +810,7 @@ class Preprocessor:
         df.to_csv(csv_path, index=False)
         
         if self.verbose:
-            print(f">> Updated video metadata CSV at {csv_path}")
+            print(f">> Updated preprocessing metadata CSV at {csv_path}")
     
     # Landmark processing methods
     
@@ -1056,6 +1130,13 @@ class Preprocessor:
             
         # Update the master metadata CSV
         self._update_landmarks_metadata_csv()
+        
+        # If save_intermediate is True, also save to debug directory
+        if self.save_intermediate:
+            debug_path = os.path.join(self.interim_debug_landmarks_dir, f"{self.filename.split('.')[0]}_final.npy")
+            np.save(debug_path, landmarks)
+            if self.verbose:
+                print(f">> Saved preprocessed landmarks to {debug_path}")
             
         return output_path
     
@@ -1115,49 +1196,9 @@ class Preprocessor:
     
     def _update_landmarks_metadata_csv(self) -> None:
         """
-        Update the master CSV file with this landmarks' metadata.
+        This method is now deprecated as metadata is handled by _update_video_metadata_csv.
         """
-        csv_path = os.path.join(self.preprocessed_dir, f"landmarks_metadata_{self.preprocess_version}.csv")
-        
-        # Create a new row for this landmarks file
-        row = {
-            "filename": self.filename,
-            "original_fps": self.fps,
-            "original_frame_count": self.frame_count,
-            "original_duration_sec": self.duration_sec,
-            "preprocessed_frame_count": int(self.params["target_duration"] * self.fps),
-            "preprocessed_duration_sec": self.params["target_duration"],
-            "start_frame": self.params["start_frame"],
-            "end_frame": self.params["end_frame"],
-            "horizontal_offset": self.params["horizontal_offset"],
-            "vertical_offset": self.params["vertical_offset"],
-            "x_scale_factor": self.params["x_scale_factor"],
-            "y_scale_factor": self.params["y_scale_factor"],
-            "preprocess_version": self.preprocess_version
-        }
-        
-        # Check if the CSV exists
-        if os.path.exists(csv_path):
-            # Load existing data
-            df = pd.read_csv(csv_path)
-            
-            # Check if this file is already in the CSV
-            if self.filename in df["filename"].values:
-                # Update the row - use DataFrame.update or replace the row completely
-                idx = df.index[df["filename"] == self.filename].tolist()[0]
-                df.loc[idx] = pd.Series(row)
-            else:
-                # Append the row
-                df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
-        else:
-            # Create a new DataFrame
-            df = pd.DataFrame([row])
-            
-        # Save the CSV
-        df.to_csv(csv_path, index=False)
-        
-        if self.verbose:
-            print(f">> Updated landmarks metadata CSV at {csv_path}")
+        pass
 
     def _debug_landmarks_format(self, landmarks1, landmarks2, frame_idx=0, label1="Original", label2="Modified"):
         """
@@ -1250,6 +1291,6 @@ class Preprocessor:
         np.save(output_path, landmarks)
         
         if self.verbose:
-            print(f">> Saved intermediate {step_name} landmarks to {output_path}")
+            print(f">> Saved intermediate {step_name} landmarks to {output_path}\n")
             
         return output_path
