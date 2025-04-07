@@ -153,7 +153,7 @@ class MediaPipeHolistic:
                                "nose_tip", 
                                "mean_point",
                                "pupils",
-                               "cheeck_bones",
+                               "cheeks",
                                "ears",
                                ] = "nose_tip") -> Dict[str, float]:
         """
@@ -168,7 +168,7 @@ class MediaPipeHolistic:
                     - "nose_tip": Use the nose tip landmark for face offset.
                     - "mean_point": Use the mean of the top of head and chin landmarks for face offset.
                     - "pupils": Use the mean of the left and right eye landmarks for face offset.
-                    - "cheeck_bones": Use the mean of the left and right cheek landmarks for face offset.
+                    - "cheeks": Use the mean of the left and right cheek landmarks for face offset.
                     - "ears": Use the mean of the left and right ear landmarks for face offset.
         
         Returns:
@@ -205,7 +205,7 @@ class MediaPipeHolistic:
                     left_pupil = face_landmarks[133]  # Left eye
                     right_pupil = face_landmarks[362]  # Right eye
                     offsets['face'] = (left_pupil.x + right_pupil.x) / 2
-                case "cheeck_bones":
+                case "cheeks":
                     left_cheek = face_landmarks[234]
                     right_cheek = face_landmarks[454]
                     offsets['face'] = (left_cheek.x + right_cheek.x) / 2
