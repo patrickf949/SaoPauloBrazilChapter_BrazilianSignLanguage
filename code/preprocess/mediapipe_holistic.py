@@ -425,7 +425,7 @@ class MediaPipeHolistic:
         
         return stats
 
-    def get_video_horizontal_offsets(self, results_list: List[Dict], use_shoulders: bool = True, use_face: bool = True, use_hips: bool = False) -> Dict[str, Dict[str, float]]:
+    def get_video_horizontal_offsets(self, results_list: List[Dict], use_shoulders: bool = True, use_face: bool = True, use_hips: bool = False, face_ref:Literal["nose_tip","mean_point","pupils","cheeks","ears"] = "nose_tip") -> Dict[str, Dict[str, float]]:
         """
         Calculate statistics for horizontal offsets across multiple frames.
         """
@@ -434,10 +434,11 @@ class MediaPipeHolistic:
             self.get_frame_horizontal_offset,
             use_shoulders=use_shoulders,
             use_face=use_face,
-            use_hips=use_hips
+            use_hips=use_hips,
+            face_ref=face_ref
         )
 
-    def get_video_vertical_offsets(self, results_list: List[Dict], use_shoulders: bool = True, use_face: bool = True, use_hips: bool = False) -> Dict[str, Dict[str, float]]:
+    def get_video_vertical_offsets(self, results_list: List[Dict], use_shoulders: bool = True, use_face: bool = True, use_hips: bool = False, face_ref:Literal["nose_tip", "mean_point"]="nose_tip") -> Dict[str, Dict[str, float]]:
         """
         Calculate statistics for vertical offsets across multiple frames.
         """
@@ -446,7 +447,8 @@ class MediaPipeHolistic:
             self.get_frame_vertical_offset,
             use_shoulders=use_shoulders,
             use_face=use_face,
-            use_hips=use_hips
+            use_hips=use_hips,
+            face_ref=face_ref
         )
 
     def get_video_landmark_measurements(self, results_list: List[Dict]) -> Dict[str, Dict[str, float]]:
