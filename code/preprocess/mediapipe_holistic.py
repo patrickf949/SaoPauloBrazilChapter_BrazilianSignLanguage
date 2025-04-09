@@ -459,3 +459,66 @@ class MediaPipeHolistic:
             results_list,
             self.get_frame_landmark_measurements
         )
+    
+    def shift_landmarks_horizontally(self, results: Dict, offset: float) -> Dict:
+         """
+         Shift all landmarks horizontally by a given offset.
+         
+         Args:
+             results: Dictionary containing detection results
+             offset: Horizontal offset to apply (in normalized coordinates, 0.0 to 1.0)
+                    Positive values shift right, negative values shift left
+         
+         Returns:
+             Dictionary containing shifted landmark coordinates
+         """
+         shifted_results = results.copy()
+         
+         # Helper function to shift a single landmark
+         def shift_landmark(lm):
+             # Add offset to x coordinate, clamping between 0 and 1
+             new_x = max(0.0, min(1.0, lm.x + offset))
+             return type(lm)(x=new_x, y=lm.y, z=lm.z)
+         
+         # Shift pose landmarks
+         if results['pose_landmarks']:
+             shifted_landmarks = []
+             for lm in results['pose_landmarks'].landmark:
+                 shifted_landmarks.append(shift_landmark(lm))
+             shifted_results['pose_landmarks'] = type(results['pose_landmarks'])(landmark=shifted_landmarks)
+         
+         # Shift face landmarks
+         if results['face_landmarks']:
+             shifted_landmarks = []
+             for lm in results['face_landmarks'].landmark:
+                 shifted_landmarks.append(shift_landmark(lm))
+             shifted_results['face_landmarks'] = type(results['face_landmarks'])(landmark=shifted_landmarks)
+         
+         # Shift hand landmarks
+         if results['left_hand_landmarks']:
+             shifted_landmarks = []
+             for lm in results['left_hand_landmarks'].landmark:
+                 shifted_landmarks.append(shift_landmark(lm))
+             shifted_results['left_hand_landmarks'] = type(results['left_hand_landmarks'])(landmark=shifted_landmarks)
+         
+         if results['right_hand_landmarks']:
+             shifted_landmarks = []
+             for lm in results['right_hand_landmarks'].landmark:
+                 shifted_landmarks.append(shift_landmark(lm))
+             shifted_results['right_hand_landmarks'] = type(results['right_hand_landmarks'])(landmark=shifted_landmarks)
+         
+         return shifted_results
+ 
+    def shift_landmarks_series_horizontally(self, results_list: List[Dict], offset: float) -> List[Dict]:
+         """
+         Shift all landmarks in a series of results horizontally by a given offset.
+         
+         Args:
+             results_list: List of dictionaries containing detection results for each frame
+             offset: Horizontal offset to apply (in normalized coordinates, 0.0 to 1.0)
+                    Positive values shift right, negative values shift left
+         
+         Returns:
+             List of dictionaries containing shifted landmark coordinates
+         """
+         return [self.shift_landmarks_horizontally(results, offset) for results in results_list]
