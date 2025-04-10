@@ -66,7 +66,6 @@ class MediaPipeHolistic:
             - pose_landmarks: 33 pose landmarks if detected
             - left_hand_landmarks: 21 left hand landmarks if detected
             - right_hand_landmarks: 21 right hand landmarks if detected
-            - pose_world_landmarks: 3D pose landmarks
             - timestamp_ms: Frame timestamp
         """
         # Convert BGR to RGB
@@ -486,8 +485,6 @@ class MediaPipeHolistic:
             use_hips=use_hips,
             face_ref=face_ref
         )
-
-
 
     def get_video_landmark_measurements(self, results_list: List[Dict]) -> Dict[str, Dict[str, float]]:
         """
