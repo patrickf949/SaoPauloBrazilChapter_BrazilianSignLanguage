@@ -66,7 +66,9 @@ class MediaPipeHolistic:
             - pose_landmarks: 33 pose landmarks if detected
             - left_hand_landmarks: 21 left hand landmarks if detected
             - right_hand_landmarks: 21 right hand landmarks if detected
+            - pose_world_landmarks: 3D pose landmarks
             - timestamp_ms: Frame timestamp
+            - bounding_range: Dictionary with max_left_x, max_right_x, max_top_y values if pose landmarks are detected
         """
         # Convert BGR to RGB
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -74,8 +76,8 @@ class MediaPipeHolistic:
         # Process frame with holistic model
         results = self.holistic.process(frame_rgb)  # Pass numpy array directly
         
-        # Package results
-        return {
+        # Package basic results
+        result_dict = {
             'face_landmarks': results.face_landmarks,  # 468 landmarks
             'pose_landmarks': results.pose_landmarks,  # 33 landmarks
             'left_hand_landmarks': results.left_hand_landmarks,  # 21 landmarks
@@ -83,6 +85,12 @@ class MediaPipeHolistic:
             'pose_world_landmarks': results.pose_world_landmarks,  # 3D pose landmarks
             'timestamp_ms': timestamp_ms
         }
+        
+        # Add bounding range information if pose landmarks are detected
+        if results.pose_landmarks:
+            result_dict['bounding_range'] = self.get_frame_bounding_range(result_dict)
+        
+        return result_dict
 
     def process_video(self, video_path: str, output_path: Optional[str] = None) -> List[Dict]:
         """
@@ -377,6 +385,8 @@ class MediaPipeHolistic:
             measurements['nose_to_shoulders'] = abs(nose_tip.y - shoulder_mid[1])
             measurements['chin_to_shoulders'] = abs(chin.y - shoulder_mid[1])
         
+
+        
         return measurements
 
     def apply_frame_analysis_to_video(self, results_list: List[Dict], frame_processing_function, **kwargs) -> Dict[str, Dict[str, float]]:
@@ -451,6 +461,61 @@ class MediaPipeHolistic:
             face_ref=face_ref
         )
 
+
+    def get_frame_bounding_range(self, results: Dict) -> Dict[str, float]:
+        """
+        Calculate the bounding range of visible body parts from pose landmarks.
+        
+        Args:
+            results: Dictionary containing detection results
+        
+        Returns:
+            Dictionary containing the bounding range values:
+            - max_left_x: x-value of the furthest left landmark (smallest x)
+            - max_right_x: x-value of the furthest right landmark (largest x)
+            - max_top_y: y-value of the highest landmark (smallest y)
+        """
+        bounding_range = {}
+        
+        if not results['pose_landmarks']:
+            return bounding_range
+            
+        pose_landmarks = results['pose_landmarks'].landmark
+        
+        # ====== BOUNDING RANGE DETECTION FOR CROPPING ======
+        # This section finds the extreme points of the body to ensure
+        # proper cropping for sign language videos
+        
+        # Initialize with the first landmark's coordinates
+        init_landmark = pose_landmarks[0]  # Nose landmark
+        max_left_x = init_landmark.x
+        max_right_x = init_landmark.x
+        max_top_y = init_landmark.y
+        
+        # Examine all pose landmarks to find the extremes
+        for landmark in pose_landmarks:
+            # Find furthest left point (smallest x-coordinate)
+            # This ensures left-hand gestures aren't cropped out
+            if landmark.x < max_left_x:
+                max_left_x = landmark.x
+            
+            # Find furthest right point (largest x-coordinate)
+            # This ensures right-hand gestures aren't cropped out
+            if landmark.x > max_right_x:
+                max_right_x = landmark.x
+            
+            # Find highest point (smallest y-coordinate, since y increases downward)
+            # This ensures overhead gestures aren't cropped out
+            if landmark.y < max_top_y:
+                max_top_y = landmark.y
+        
+        # Add the bounding range values to the dictionary
+        bounding_range['max_left_x'] = max_left_x
+        bounding_range['max_right_x'] = max_right_x
+        bounding_range['max_top_y'] = max_top_y
+        
+        return bounding_range
+        
     def get_video_landmark_measurements(self, results_list: List[Dict]) -> Dict[str, Dict[str, float]]:
         """
         Calculate statistics for all measurements across multiple frames.
