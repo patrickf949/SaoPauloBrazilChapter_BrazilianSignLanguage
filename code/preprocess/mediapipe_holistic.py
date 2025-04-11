@@ -302,6 +302,9 @@ class MediaPipeHolistic:
             - top_head_to_shoulders: Vertical distance from top of head to shoulder midpoint
             - nose_to_shoulders: Vertical distance from nose tip to shoulder midpoint
             - chin_to_shoulders: Vertical distance from chin to shoulder midpoint
+            - max_left_x: The x-coordinate of the furthest left landmark (for cropping)
+            - max_right_x: The x-coordinate of the furthest right landmark (for cropping)
+            - max_top_y: The y-coordinate of the highest landmark (for cropping)
         """
         measurements = {}
         
@@ -376,6 +379,38 @@ class MediaPipeHolistic:
             measurements['top_head_to_shoulders'] = abs(top_head.y - shoulder_mid[1])
             measurements['nose_to_shoulders'] = abs(nose_tip.y - shoulder_mid[1])
             measurements['chin_to_shoulders'] = abs(chin.y - shoulder_mid[1])
+        
+        # ====== BOUNDING RANGE DETECTION FOR CROPPING ======
+        # This section finds the extreme points of the body to ensure
+        # proper cropping for sign language videos
+        
+        # Initialize with the first landmark's coordinates
+        init_landmark = pose_landmarks[0]  # Nose landmark
+        max_left_x = init_landmark.x
+        max_right_x = init_landmark.x
+        max_top_y = init_landmark.y
+        
+        # Examine all pose landmarks to find the extremes
+        for landmark in pose_landmarks:
+            # Find furthest left point (smallest x-coordinate)
+            # This ensures left-hand gestures aren't cropped out
+            if landmark.x < max_left_x:
+                max_left_x = landmark.x
+            
+            # Find furthest right point (largest x-coordinate)
+            # This ensures right-hand gestures aren't cropped out
+            if landmark.x > max_right_x:
+                max_right_x = landmark.x
+            
+            # Find highest point (smallest y-coordinate, since y increases downward)
+            # This ensures overhead gestures aren't cropped out
+            if landmark.y < max_top_y:
+                max_top_y = landmark.y
+        
+        # Add the bounding range values to the measurements dictionary
+        measurements['max_left_x'] = max_left_x
+        measurements['max_right_x'] = max_right_x
+        measurements['max_top_y'] = max_top_y
         
         return measurements
 
