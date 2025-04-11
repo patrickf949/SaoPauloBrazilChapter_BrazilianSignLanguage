@@ -1,5 +1,5 @@
 from typing import Union, Dict, List, Tuple, Iterable
-from models.landmark.dataset.utils import (
+from models.landmark.utils import (
     check_mode,
     check_difference_type,
     check_landmark_type,

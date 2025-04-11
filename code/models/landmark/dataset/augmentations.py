@@ -2,7 +2,6 @@ from typing import Dict
 import numpy as np
 
 
-
 class RotateLandmarks:
     def __init__(self, angle_range: float = 10.0):
         self.angle_range = angle_range
@@ -46,8 +45,11 @@ class LandmarksNoise:
         return landmarks
 
 
-AUGMENTATIONS = {"train": [{"augmentation": RotateLandmarks, "p": 0.5}, 
-                           {"augmentation": LandmarksNoise,
-                            "p": 0.5}], 
-                 "val": [], 
-                 "test": []}
+AUGMENTATIONS = {
+    "train": [
+        {"augmentation": RotateLandmarks, "p": 0.5},
+        {"augmentation": LandmarksNoise, "p": 0.5},
+    ],
+    "val": [],
+    "test": [],
+}

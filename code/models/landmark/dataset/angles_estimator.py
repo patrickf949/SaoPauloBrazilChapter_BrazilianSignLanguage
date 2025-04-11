@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Union, Dict, List, Tuple, Iterable
-from models.landmark.dataset.utils import (
+from models.landmark.utils import (
     check_mode,
     check_landmark_type,
     check_angle_type,
