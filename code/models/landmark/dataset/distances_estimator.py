@@ -81,6 +81,7 @@ class DistancesEstimator:
         mode: str,
         distance_type: str,
     ) -> List[float]:
+        landmarks = landmarks.landmark
         return [
             distance(landmarks[start], landmarks[end], mode, distance_type)
             for start, end in landmark_pairs
@@ -89,8 +90,8 @@ class DistancesEstimator:
     def compute_distances(
         self,
         landmarks: Iterable,
-        mode: str,
         landmark_type: str,
+        mode: str,
         distance_type: str = "shifted_dist",
     ) -> List[float]:
         """
@@ -127,8 +128,8 @@ class DistancesEstimator:
     def compute_annotated_distances(
         self,
         landmarks: Iterable,
-        mode: str,
         landmark_type: str,
+        mode: str,
         distance_type: str = "shifted_dist",
     ) -> Dict[str, float]:
         """

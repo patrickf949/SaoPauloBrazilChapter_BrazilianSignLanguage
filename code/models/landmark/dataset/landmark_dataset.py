@@ -11,6 +11,7 @@ from models.landmark.dataset.frame2frame_differences_estimator import (
 )
 from models.landmark.dataset.augmentations import AUGMENTATIONS
 from functools import partial
+import os
 
 
 def uniform_intervals(start: int, end: int, interval: int):
@@ -87,21 +88,22 @@ class LandmarkDataset(Dataset):
         self.distance_type = config["distance_type"]
         self.angle_type = config["angle_type"]
         self.diff_type = config["diff_type"]
+        
+        self.angle_mode = config["distance_mode"]
+        self.distance_mode = config["distance_mode"]
+        self.diff_mode = config["diff_mode"]
 
         self.angle_estimator = AnglesEstimator(
             hand_angles=config["hand_angle_triplets"],
-            pose_angles=config["pose_angle_triplets"],
-            mode=config.get("mode", "3D"),
+            pose_angles=config["pose_angle_triplets"]
         )
         self.distance_estimator = DistancesEstimator(
             hand_distances=config["hand_distance_pairs"],
-            pose_distances=config["pose_distance_pairs"],
-            mode=config.get("mode", "3D"),
+            pose_distances=config["pose_distance_pairs"]
         )
         self.diff_estimator = DifferencesEstimator(
             hand_differences=config["hand_differences"],
-            pose_differences=config["pose_differences"],
-            mode=config.get("mode", "3D"),
+            pose_differences=config["pose_differences"]
         )
 
         self.joiner = LandmarkFeatureTorchJoiner(self.landmark_feature_list)
@@ -110,7 +112,7 @@ class LandmarkDataset(Dataset):
         return self.data.shape[0]
 
     def __getitem__(self, idx: int):
-        landmark_path = self.data_dir / self.data.loc[idx, "filename"]
+        landmark_path = os.path.join(self.data_dir, self.data.loc[idx, "filename"])
         frames = np.load(landmark_path, allow_pickle=True)
 
         # Get timestamps and select relevant frame indices
@@ -127,22 +129,27 @@ class LandmarkDataset(Dataset):
             for aug in self.augmentations:
                 if np.random.uniform() <= aug["p"]:
                     frame = aug["augmentation"](frame)
-
             features = {}
 
             if "angles" in self.landmark_feature_list:
+                features["angles"] = []
                 if frame["pose_landmarks"]:
                     features["angles"] += self.angle_estimator.compute_angles(
-                        frame["pose_landmarks"], "pose", angle_type=self.angle_type
+                        frame["pose_landmarks"], "pose", 
+                        mode=self.angle_mode,
+                        angle_type=self.angle_type
                     )
                 if frame["left_hand_landmarks"]:
                     features["angles"] += self.angle_estimator.compute_angles(
-                        frame["left_hand_landmarks"], "hand", angle_type=self.angle_type
+                        frame["left_hand_landmarks"], "hand", 
+                        mode=self.angle_mode,
+                        angle_type=self.angle_type
                     )
                 if frame["right_hand_landmarks"]:
                     features["angles"] += self.angle_estimator.compute_angles(
                         frame["right_hand_landmarks"],
                         "hand",
+                        mode=self.angle_mode,
                         angle_type=self.angle_type,
                     )
 
@@ -152,18 +159,21 @@ class LandmarkDataset(Dataset):
                     features["distances"] += self.distance_estimator.compute_distances(
                         frame["pose_landmarks"],
                         "pose",
+                        mode=self.distance_mode,
                         distance_type=self.distance_type,
                     )
                 if frame["left_hand_landmarks"]:
                     features["distances"] += self.distance_estimator.compute_distances(
                         frame["left_hand_landmarks"],
                         "hand",
+                        mode=self.distance_mode,
                         distance_type=self.distance_type,
                     )
                 if frame["right_hand_landmarks"]:
                     features["distances"] += self.distance_estimator.compute_distances(
                         frame["right_hand_landmarks"],
                         "hand",
+                        mode=self.distance_mode,
                         distance_type=self.distance_type,
                     )
 
@@ -172,29 +182,32 @@ class LandmarkDataset(Dataset):
                 features["differences"] = []
                 if frame["pose_landmarks"]:
                     features["differences"] += (
-                        self.distance_estimator.compute_distances(
+                        self.diff_estimator.compute_differences(
                             prev_frame["pose_landmarks"],
                             frame["pose_landmarks"],
                             "pose",
-                            distance_type=self.diff_type,
+                            mode=self.diff_mode,
+                            diff_type=self.diff_type,
                         )
                     )
                 if frame["left_hand_landmarks"]:
                     features["differences"] += (
-                        self.distance_estimator.compute_distances(
+                        self.diff_estimator.compute_differences(
                             prev_frame["left_hand_landmarks"],
                             frame["left_hand_landmarks"],
                             "hand",
-                            distance_type=self.diff_type,
+                             mode=self.diff_mode,
+                            diff_type=self.diff_type,
                         )
                     )
                 if frame["right_hand_landmarks"]:
                     features["differences"] += (
-                        self.distance_estimator.compute_distances(
+                        self.diff_estimator.compute_differences(
                             prev_frame["right_hand_landmarks"],
                             frame["right_hand_landmarks"],
                             "hand",
-                            distance_type=self.diff_type,
+                             mode=self.diff_mode,
+                            diff_type=self.diff_type,
                         )
                     )
 

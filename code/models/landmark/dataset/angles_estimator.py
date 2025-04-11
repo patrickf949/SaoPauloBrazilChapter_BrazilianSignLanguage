@@ -109,6 +109,7 @@ class AnglesEstimator:
         mode: str,
         angle_type: str,
     ) -> List[float]:
+        landmarks = landmarks.landmark
         return [
             angle(
                 landmarks[start],
