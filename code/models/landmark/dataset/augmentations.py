@@ -20,7 +20,7 @@ class RotateLandmarks:
 
         for key in ["pose_landmarks", "left_hand_landmarks", "right_hand_landmarks"]:
             if key in landmarks and landmarks[key]:
-                landmarks[key] = rotate(landmarks[key].landmark)
+                landmarks[key] = rotate(landmarks[key])
 
         return landmarks
 
@@ -39,7 +39,7 @@ class LandmarksNoise:
             return lms
         for key in ["pose_landmarks", "left_hand_landmarks", "right_hand_landmarks"]:
             if key in landmarks and landmarks[key]:
-                landmarks[key] = add_noise(landmarks[key].landmark)
+                landmarks[key] = add_noise(landmarks[key])
 
         return landmarks
 
