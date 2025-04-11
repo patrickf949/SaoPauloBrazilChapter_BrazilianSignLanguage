@@ -11,11 +11,15 @@ distance_type: shifted_dist
 angle_type: func
 diff_type: normalized_diff
 
-hand_angle_triplets: hand_angles.yaml
-pose_angle_triplets: pose_angles.yaml
+distance_mode: 3D
+angle_mode: 3D
+diff_mode: 3D
 
-hand_distance_pairs: hand_distances.yaml
-pose_distance_pairs: pose_distances.yaml
+hand_angle_triplets: /home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/hand_angles.yaml
+pose_angle_triplets: /home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/pose_angles.yaml
 
-hand_differences: hand_differences.yaml
-pose_differences: pose_distances.yaml
+hand_distance_pairs: /home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/hand_distances.yaml
+pose_distance_pairs: /home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/pose_distances.yaml
+
+hand_differences: /home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/hand_differences.yaml
+pose_differences: /home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/pose_distances.yaml
