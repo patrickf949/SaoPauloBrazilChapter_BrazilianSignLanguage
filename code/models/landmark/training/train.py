@@ -3,20 +3,23 @@ import csv
 import torch
 from torch import nn
 from sklearn.metrics import accuracy_score
+from models.landmark.utils import load_config
+from typing import Union, Dict
 
 
 def train(
     model,
-    train_loader,
-    test_loader,
-    num_epochs,
-    patience=5,
-    device="cuda",
-    log_path=None,
+    train_loader: torch.utils.data.DataLoader,
+    test_loader: torch.utils.data.DataLoader,
+    config: Union[str, Dict],
 ):
-    model = model.to(device)
+    config = load_config(config, "training_config")
+    device = config["device"]
+    num_epochs = config["num_epochs"]
+
+    model = model.to(config["device"])
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"])
 
     best_loss = float("inf")
     patience_counter = 0
@@ -80,8 +83,8 @@ def train(
             patience_counter = 0
         else:
             patience_counter += 1
-            print(f"Patience: {patience_counter}/{patience}")
-            if patience_counter >= patience:
+            print(f"Patience: {patience_counter}/{config['patience']}")
+            if patience_counter >= config["patience"]:
                 print("Early stopping triggered.")
                 break
 
@@ -95,7 +98,8 @@ def train(
     print(f"\n Best Epoch: {best_epoch} | Test Accuracy: {acc:.4f}")
 
     # ----- optional logging to file -----
-    if log_path:
+    if "log_path" in config:
+        log_path = config["log_path"]
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
         with open(log_path, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=["epoch", "train_loss", "val_loss"])
@@ -106,7 +110,7 @@ def train(
     return acc, best_epoch, log_data
 
 
-def evaluate(model, val_loader, device="cuda"):
+def evaluate(model, val_loader: torch.utils.data.DataLoader, device: str = "cuda"):
     model.eval()
     y_true = []
     y_pred = []
