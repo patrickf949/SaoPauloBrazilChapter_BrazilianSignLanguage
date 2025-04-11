@@ -6,7 +6,9 @@ from models.landmark.dataset.utils import load_config
 from typing import Dict, List, Union, Callable
 from models.landmark.dataset.angles_estimator import AnglesEstimator
 from models.landmark.dataset.distances_estimator import DistancesEstimator
-from models.landmark.dataset.frame2frame_differences_estimator import DifferencesEstimator
+from models.landmark.dataset.frame2frame_differences_estimator import (
+    DifferencesEstimator,
+)
 from functools import partial
 
 
