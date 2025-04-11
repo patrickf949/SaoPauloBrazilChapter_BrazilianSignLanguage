@@ -2,11 +2,11 @@ from torch.utils.data import Dataset
 import pandas as pd
 import numpy as np
 import torch
-from utils import load_config
+from models.landmark.dataset.utils import load_config
 from typing import Dict, List, Union, Callable
-from angles_estimator import AnglesEstimator
-from distances_estimator import DistancesEstimator
-from frame2frame_differences_estimator import DifferencesEstimator
+from models.landmark.dataset.angles_estimator import AnglesEstimator
+from models.landmark.dataset.distances_estimator import DistancesEstimator
+from models.landmark.dataset.frame2frame_differences_estimator import DifferencesEstimator
 from functools import partial
 
 
@@ -95,7 +95,8 @@ class LandmarkDataset(Dataset):
             mode=config.get("mode", "3D"),
         )
         self.diff_estimator = DifferencesEstimator(
-            difference_points=config["difference_points"],
+            hand_differences=config["hand_differences"],
+            pose_differences=config["pose_differences"],
             mode=config.get("mode", "3D"),
         )
 
