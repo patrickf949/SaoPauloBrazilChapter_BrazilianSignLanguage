@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from typing import List, Tuple
-import numpy as np 
+import numpy as np
 import matplotlib.patches as patches
 
 POSE_CONNECTIONS = [
@@ -39,20 +39,32 @@ POSE_CONNECTIONS = [
 
 HAND_CONNECTIONS = [
     # Thumb
-    (0, 1), (1, 2), (2, 3), (3, 4),
-    
+    (0, 1),
+    (1, 2),
+    (2, 3),
+    (3, 4),
     # Index Finger
-    (0, 5), (5, 6), (6, 7), (7, 8),
-    
+    (0, 5),
+    (5, 6),
+    (6, 7),
+    (7, 8),
     # Middle Finger
-    (0, 9), (9, 10), (10, 11), (11, 12),
-    
+    (0, 9),
+    (9, 10),
+    (10, 11),
+    (11, 12),
     # Ring Finger
-    (0, 13), (13, 14), (14, 15), (15, 16),
-    
+    (0, 13),
+    (13, 14),
+    (14, 15),
+    (15, 16),
     # Pinky Finger
-    (0, 17), (17, 18), (18, 19), (19, 20)
+    (0, 17),
+    (17, 18),
+    (18, 19),
+    (19, 20),
 ]
+
 
 def draw_angle_arc(ax, a, b, c, color="orange", radius=0.05, linewidth=1):
     # Vectors BA and BC
@@ -63,9 +75,9 @@ def draw_angle_arc(ax, a, b, c, color="orange", radius=0.05, linewidth=1):
     v1_norm = v1 / np.linalg.norm(v1)
     v2_norm = v2 / np.linalg.norm(v2)
 
-    # Get angle in radians and degrees
-    angle_rad = np.arccos(np.clip(np.dot(v1_norm, v2_norm), -1.0, 1.0))
-    angle_deg = np.degrees(angle_rad)
+    # # Get angle in radians and degrees
+    # angle_rad = np.arccos(np.clip(np.dot(v1_norm, v2_norm), -1.0, 1.0))
+    # angle_deg = np.degrees(angle_rad)
 
     # Calculate start and end angles for the arc (in degrees)
     start_angle = np.degrees(np.arctan2(v1_norm[1], v1_norm[0]))
@@ -76,12 +88,16 @@ def draw_angle_arc(ax, a, b, c, color="orange", radius=0.05, linewidth=1):
     if end_angle < start_angle:
         end_angle += 360
 
-    arc = patches.Arc(b, width=2*radius, height=2*radius,
-                      angle=0,
-                      theta1=start_angle,
-                      theta2=end_angle,
-                      color=color,
-                      linewidth=linewidth)
+    arc = patches.Arc(
+        b,
+        width=2 * radius,
+        height=2 * radius,
+        angle=0,
+        theta1=start_angle,
+        theta2=end_angle,
+        color=color,
+        linewidth=linewidth,
+    )
     ax.add_patch(arc)
 
 
@@ -90,7 +106,7 @@ def visualize_landmark_features(
     landmark_type: str,
     distances: List[Tuple[int, int]] = None,
     angles: List[Tuple[int, int, int]] = None,
-    title: str = "Landmark Feature Visualization"
+    title: str = "Landmark Feature Visualization",
 ):
     """
     Visualizes a set of landmarks with optional skeleton, distances, and angles.
@@ -99,17 +115,17 @@ def visualize_landmark_features(
     -----------
     landmarks : mp.framework.formats.landmark_pb2.NormalizedLandmarkList
         The list of MediaPipe landmarks to visualize. Each landmark should have `x` and `y` attributes.
-    
+
     landmark_type : str
         Either 'pose' or 'hand'. Determines which default skeleton connections to draw.
 
     distances : List[Tuple[int, int]], optional
         A list of (start_index, end_index) pairs representing custom distances to draw as green lines.
-    
+
     angles : List[Tuple[int, int, int]], optional
         A list of (point_a, point_b, point_c) triplets representing angle connections (V-shapes), drawn in orange.
         Each triplet defines an angle at point_b between segments AB and CB.
-    
+
     title : str
         Title of the plot.
 
@@ -148,7 +164,6 @@ def visualize_landmark_features(
         for start, end in distances:
             plt.plot([x[start], x[end]], [y[start], y[end]], "g--", linewidth=2)
 
-
     # Draw angle connections (orange V-shapes)
     if angles:
         ax = plt.gca()  # get current axis
@@ -174,7 +189,7 @@ def visualize_differences(
     next_landmarks: List,
     landmark_type: str,
     landmark_differences: List[int],
-    title: str = "2D Landmark Differences"
+    title: str = "2D Landmark Differences",
 ):
     """
     Visualizes motion between two 2D landmark frames using red arrows.
@@ -189,7 +204,7 @@ def visualize_differences(
 
     landmark_type : str
         Either 'pose' or 'hand'. Determines which default skeleton connections to draw.
-        
+
     landmarks_differences: List of landmarks
 
     title : str
@@ -201,10 +216,10 @@ def visualize_differences(
     y1 = [lm.y for lm in prev_landmarks]
     x2 = [lm.x for lm in next_landmarks]
     y2 = [lm.y for lm in next_landmarks]
-  
+
     plt.figure(figsize=(8, 10))
-    plt.scatter(x1, y1, c='blue', label='Prev Frame')
-    plt.scatter(x2, y2, c='green', label='Next Frame')
+    plt.scatter(x1, y1, c="blue", label="Prev Frame")
+    plt.scatter(x2, y2, c="green", label="Next Frame")
 
     if landmark_type == "pose":
         connections = POSE_CONNECTIONS
@@ -213,18 +228,25 @@ def visualize_differences(
         connections = HAND_CONNECTIONS
         head_width = 0.005
 
-     # Skeleton connections (prev frame)
+    # Skeleton connections (prev frame)
     for start, end in connections:
-        plt.plot([x1[start], x1[end]], [y1[start], y1[end]], 'b--', linewidth=1)
+        plt.plot([x1[start], x1[end]], [y1[start], y1[end]], "b--", linewidth=1)
 
     # Skeleton connections (next frame)
     for start, end in connections:
-        plt.plot([x2[start], x2[end]], [y2[start], y2[end]], 'g--', linewidth=1)
+        plt.plot([x2[start], x2[end]], [y2[start], y2[end]], "g--", linewidth=1)
 
     # Arrows: movement from prev to next
     for i in landmark_differences:
-        plt.arrow(x1[i], y1[i], x2[i] - x1[i], y2[i] - y1[i],
-                  head_width=head_width, color='red', alpha=0.6)
+        plt.arrow(
+            x1[i],
+            y1[i],
+            x2[i] - x1[i],
+            y2[i] - y1[i],
+            head_width=head_width,
+            color="red",
+            alpha=0.6,
+        )
 
     plt.gca().invert_yaxis()
     plt.title(title)
