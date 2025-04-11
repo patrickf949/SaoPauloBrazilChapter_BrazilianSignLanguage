@@ -1,10 +1,12 @@
 from typing import List, Tuple
-import matplotlib.pyplot as plt 
-from models.landmark.visualization.utils2d import  POSE_CONNECTIONS, HAND_CONNECTIONS
-from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+from models.landmark.visualization.utils2d import POSE_CONNECTIONS, HAND_CONNECTIONS
 import numpy as np
 
-def draw_angle_arc_3d(ax, a, b, c, radius=0.05, color='orange', linewidth=1, resolution=30):
+
+def draw_angle_arc_3d(
+    ax, a, b, c, radius=0.05, color="orange", linewidth=1, resolution=30
+):
     """
     Draws an arc in 3D between vectors BA and BC, centered at B.
 
@@ -36,21 +38,29 @@ def draw_angle_arc_3d(ax, a, b, c, radius=0.05, color='orange', linewidth=1, res
         # Rodrigues' rotation formula to rotate ba around normal
         v = ba
         k = normal
-        rotated = (v * np.cos(t) +
-                   np.cross(k, v) * np.sin(t) +
-                   k * np.dot(k, v) * (1 - np.cos(t)))
+        rotated = (
+            v * np.cos(t)
+            + np.cross(k, v) * np.sin(t)
+            + k * np.dot(k, v) * (1 - np.cos(t))
+        )
         arc_points.append(np.array(b) + radius * rotated)
 
     arc_points = np.array(arc_points)
-    ax.plot(arc_points[:, 0], arc_points[:, 1], arc_points[:, 2],
-            color=color, linewidth=linewidth)
+    ax.plot(
+        arc_points[:, 0],
+        arc_points[:, 1],
+        arc_points[:, 2],
+        color=color,
+        linewidth=linewidth,
+    )
+
 
 def visualize_landmark_features(
-    landmarks: List,  
+    landmarks: List,
     landmark_type: str,
     distances: List[Tuple[int, int]] = None,
     angles: List[Tuple[int, int, int]] = None,
-    title: str = "3D Landmark Feature Visualization"
+    title: str = "3D Landmark Feature Visualization",
 ):
     """
     Visualizes a set of 3D landmarks with optional skeleton, distances, and angles.
@@ -85,8 +95,8 @@ def visualize_landmark_features(
     y, z = z, [-yi for yi in y]
 
     fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(x, y, z, c='blue', label="Landmarks")
+    ax = fig.add_subplot(111, projection="3d")
+    ax.scatter(x, y, z, c="blue", label="Landmarks")
 
     # Define default connections
     if landmark_type == "pose":
@@ -98,12 +108,24 @@ def visualize_landmark_features(
 
     # Draw skeleton in blue
     for start, end in connections:
-        ax.plot([x[start], x[end]], [y[start], y[end]], [z[start], z[end]], c='blue', linewidth=1)
+        ax.plot(
+            [x[start], x[end]],
+            [y[start], y[end]],
+            [z[start], z[end]],
+            c="blue",
+            linewidth=1,
+        )
 
     # Draw distances in green
     if distances:
         for start, end in distances:
-            ax.plot([x[start], x[end]], [y[start], y[end]], [z[start], z[end]], 'g--', linewidth=2)
+            ax.plot(
+                [x[start], x[end]],
+                [y[start], y[end]],
+                [z[start], z[end]],
+                "g--",
+                linewidth=2,
+            )
 
     # Draw angles in orange (V-shapes)
     if angles:
@@ -112,17 +134,17 @@ def visualize_landmark_features(
             b = (x[b_idx], y[b_idx], z[b_idx])
             c = (x[c_idx], y[c_idx], z[c_idx])
 
-            draw_angle_arc_3d(ax, a, b, c, radius=radius, color='orange', linewidth=1)
+            draw_angle_arc_3d(ax, a, b, c, radius=radius, color="orange", linewidth=1)
 
     # Add landmark indices
     for i, (xi, yi, zi) in enumerate(zip(x, y, z)):
-        ax.text(xi, yi, zi, str(i), color='red', fontsize=8)
+        ax.text(xi, yi, zi, str(i), color="red", fontsize=8)
     ax.view_init(elev=10, azim=-70)
     ax.set_title(title)
     ax.set_xlabel("X")
     ax.set_ylabel("Z")
     ax.set_zlabel("Y")
-    
+
     ax.legend()
     plt.tight_layout()
     plt.show()
@@ -133,7 +155,7 @@ def visualize_differences(
     next_landmarks: List,
     landmark_type: str,
     landmark_differences: List[int],
-    title: str = "3D Hand Landmark Differences"
+    title: str = "3D Hand Landmark Differences",
 ):
     """
     Visualizes 3D hand motion using arrows from selected key landmarks.
@@ -163,9 +185,9 @@ def visualize_differences(
     y2, z2 = z2, [-yi for yi in y2]
 
     fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(x1, y1, z1, c='blue', label="Prev")
-    ax.scatter(x2, y2, z2, c='green', label="Next")
+    ax = fig.add_subplot(111, projection="3d")
+    ax.scatter(x1, y1, z1, c="blue", label="Prev")
+    ax.scatter(x2, y2, z2, c="green", label="Next")
 
     if landmark_type == "pose":
         connections = POSE_CONNECTIONS
@@ -183,9 +205,16 @@ def visualize_differences(
     # Draw motion arrows
     for i in landmark_differences:
         ax.quiver(
-            x1[i], y1[i], z1[i],
-            x2[i] - x1[i], y2[i] - y1[i], z2[i] - z1[i],
-            color='red', linewidth=2, alpha=0.6, arrow_length_ratio=0.4
+            x1[i],
+            y1[i],
+            z1[i],
+            x2[i] - x1[i],
+            y2[i] - y1[i],
+            z2[i] - z1[i],
+            color="red",
+            linewidth=2,
+            alpha=0.6,
+            arrow_length_ratio=0.4,
         )
 
     ax.view_init(elev=10, azim=-70)
