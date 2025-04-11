@@ -9,6 +9,7 @@ from models.landmark.dataset.distances_estimator import DistancesEstimator
 from models.landmark.dataset.frame2frame_differences_estimator import (
     DifferencesEstimator,
 )
+from models.landmark.dataset.augmentations import AUGMENTATIONS
 from functools import partial
 
 
@@ -74,9 +75,9 @@ class LandmarkDataset(Dataset):
     def __init__(self, config: Union[str, Dict]):
         config = load_config(config, "dataset_config")
         self.data_dir = config["data_dir"]
-        self.augmentations = config["augmentations"]
         self.data = pd.read_csv(config["data_path"])
         self.data = self.data[self.data["dataset_split"] == config["dataset_split"]]
+        self.augmentations = AUGMENTATIONS[config["dataset_split"]]
         self.landmark_order = config["landmark_order"]
         self.landmark_feature_list = config["landmark_feature_list"]
         self.frame_interval_fn = partial(
