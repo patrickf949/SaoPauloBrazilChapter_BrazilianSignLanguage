@@ -1,6 +1,11 @@
 import numpy as np
 from typing import Union, Dict, List, Tuple, Iterable
-from models.landmark.dataset.utils import check_mode, check_landmark_type, check_angle_type, load_config
+from models.landmark.dataset.utils import (
+    check_mode,
+    check_landmark_type,
+    check_angle_type,
+    load_config,
+)
 
 
 def angle(
