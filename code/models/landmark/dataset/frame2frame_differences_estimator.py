@@ -1,5 +1,5 @@
 from typing import Union, Dict, List, Tuple, Iterable
-from utils import check_mode, check_difference_type, check_landmark_type, load_config
+from models.landmark.dataset.utils import check_mode, check_difference_type, check_landmark_type, load_config
 
 
 def difference(

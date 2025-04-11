@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Union, Dict, List, Tuple, Iterable
-from utils import check_mode, check_landmark_type, check_distance_type, load_config
+from models.landmark.dataset.utils import check_mode, check_landmark_type, check_distance_type, load_config
 
 
 def distance(p1, p2, mode: str = "3D", distance_type: str = "shifted_dist") -> float:
