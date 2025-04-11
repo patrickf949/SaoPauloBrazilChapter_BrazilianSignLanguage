@@ -72,12 +72,13 @@ class LandmarkFeatureTorchJoiner:
 
 
 class LandmarkDataset(Dataset):
-    def __init__(self, config: Union[str, Dict]):
+    def __init__(self, config: Union[str, Dict],
+                 dataset_split: str):
         config = load_config(config, "dataset_config")
         self.data_dir = config["data_dir"]
         self.data = pd.read_csv(config["data_path"])
-        self.data = self.data[self.data["dataset_split"] == config["dataset_split"]]
-        self.augmentations = AUGMENTATIONS[config["dataset_split"]]
+        self.data = self.data[self.data["dataset_split"] == dataset_split]
+        self.augmentations = AUGMENTATIONS[dataset_split]
         self.landmark_order = config["landmark_order"]
         self.landmark_feature_list = config["landmark_feature_list"]
         self.frame_interval_fn = partial(

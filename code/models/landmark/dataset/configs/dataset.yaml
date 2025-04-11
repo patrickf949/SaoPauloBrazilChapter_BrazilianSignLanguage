@@ -1,6 +1,5 @@
-data_dir: ...
-data_path: ...
-dataset_split: test
+data_dir: /home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/data/processed/v1
+data_path: /home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/data/processed/target_dataset_video_metadata.csv
 
 landmark_order: [angles, distances, differences]
 landmark_feature_list: [angles, distances,differences]
