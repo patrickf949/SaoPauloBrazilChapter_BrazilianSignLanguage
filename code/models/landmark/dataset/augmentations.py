@@ -1,9 +1,6 @@
 from typing import Dict
 import numpy as np
 
-TRAIN_AUGMENTATIONS = []
-TEST_AUGMENTATIONS = []
-VAL_AUGMENTATIONS = []
 
 
 class RotateLandmarks:
@@ -29,7 +26,7 @@ class RotateLandmarks:
         return landmarks
 
 
-class AddLandmarksNoise:
+class LandmarksNoise:
     def __init__(self, noise_std: float = 0.01):
         self.noise_std = noise_std
 
@@ -47,3 +44,10 @@ class AddLandmarksNoise:
                 landmarks[key] = add_noise(landmarks[key])
 
         return landmarks
+
+
+AUGMENTATIONS = {"train": [{"augmentation": RotateLandmarks, "p": 0.5}, 
+                           {"augmentation": LandmarksNoise,
+                            "p": 0.5}], 
+                 "val": [], 
+                 "test": []}
