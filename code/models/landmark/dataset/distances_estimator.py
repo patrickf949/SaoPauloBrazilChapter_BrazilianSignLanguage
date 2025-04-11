@@ -81,7 +81,6 @@ class DistancesEstimator:
         mode: str,
         distance_type: str,
     ) -> List[float]:
-        landmarks = landmarks.landmark
         return [
             distance(landmarks[start], landmarks[end], mode, distance_type)
             for start, end in landmark_pairs

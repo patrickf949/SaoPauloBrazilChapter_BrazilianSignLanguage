@@ -83,8 +83,6 @@ class DifferencesEstimator:
         mode: str,
         diff_type: str,
     ) -> List[Union[Tuple[float, float], Tuple[float, float, float]]]:
-        prev_landmarks = prev_landmarks.landmark
-        next_landmarks = next_landmarks.landmark
         return [
             difference(next_landmarks[idx], prev_landmarks[idx], mode, diff_type)
             for idx in landmark_indices

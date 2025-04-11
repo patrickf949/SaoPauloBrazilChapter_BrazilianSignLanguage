@@ -125,6 +125,7 @@ class LandmarkDataset(Dataset):
         all_features = []
         for indx, i in enumerate(selected_indices):
             frame = frames[i]
+            frame = {key: value.landmark for key, value in frame.items()}
 
             for aug in self.augmentations:
                 if np.random.uniform() <= aug["p"]:
@@ -179,6 +180,7 @@ class LandmarkDataset(Dataset):
 
             if "differences" in self.landmark_feature_list and indx > 0:
                 prev_frame = frames[selected_indices[indx - 1]]
+                prev_frame = {key: value.landmark for key, value in prev_frame.items()}
                 features["differences"] = []
                 if frame["pose_landmarks"]:
                     features["differences"] += (
