@@ -1,11 +1,12 @@
-data_dir: /home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/data/processed/v1
+data_dir: /home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/data/processed/v2
 data_path: /home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/data/processed/target_dataset_video_metadata.csv
 
 landmark_order: [angles, distances, differences]
 landmark_feature_list: [angles, distances,differences]
+landmark_types: ["pose", "right_hand", "left_hand"]
 
-frame_interval_fn: uniform_intervals
-interval: 200
+frame_interval_fn: random_timestamps
+interval: 15
 
 distance_type: shifted_dist
 angle_type: func
