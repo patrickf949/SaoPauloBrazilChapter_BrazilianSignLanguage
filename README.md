@@ -68,7 +68,18 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 │   │   └── V-Librasil/  # V-Librasil dataset
 │   │       └── videos/  # Video files (stored on Google Drive)
 │   ├── interim/          # Intermediate processing
+│   │   ├── Debug/       # Debug files for inspecting preprocessing steps
+│   │   │   ├── videos/  # Intermediate video files
+│   │   │   └── landmarks/ # Intermediate landmark files
+│   │   ├── RawMotionMeasurements/ # Raw motion measurements
+│   │   ├── RawPoseLandmarks/      # Raw pose landmarks
+│   │   └── Videos/      # Preprocessed video files
 │   ├── processed/        # Final datasets
+│   │   ├── metadata_v*.csv # Metadata for each preprocessing version
+│   │   ├── videos/      # Preprocessed videos
+│   │   │   └── v*/      # Version-specific processed videos (e.g., v1, v2, v3...)
+│   │   └── landmarks/   # Processed landmark data
+│   │       └── v*/      # Version-specific processed landmarks (e.g., v1, v2, v3...)
 │   ├── external/         # Third party data
 │   └── papers/           # Related research
 ├── code/                 # Source code
@@ -85,8 +96,11 @@ See [STRUCTURE.md](STRUCTURE.md) for complete structure details.
 - Large video files are stored on Google Drive
 - Video directories in the repository structure are placeholders
 - Download videos to your local `videos/` directories as needed
+- Preprocessing pipeline creates versioned outputs (v1, v2, v3...) of processed videos and landmarks
+- Each version has its own metadata and individual file metadata
 
 ### Data Files
 - Small files like CSV files, labels, and metadata are tracked in Git
 - Store processed data (features, embeddings) in `processed/`
 - Document data formats in respective directories
+- Metadata files track preprocessing steps and configurations
