@@ -1,5 +1,8 @@
 import yaml
 from typing import Union, Dict
+import numpy as np
+import torch
+import random
 
 
 def check_mode(mode: str):
@@ -41,3 +44,12 @@ def load_config(config: Union[str, Dict], config_name: str) -> Dict:
         raise ValueError(
             f"Parameter {config_name} must be either a file path or dictionary."
         )
+
+
+def set_seed(seed: int = 42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
