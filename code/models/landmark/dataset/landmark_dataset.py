@@ -12,6 +12,7 @@ from models.landmark.dataset.frame2frame_differences_estimator import (
 from models.landmark.dataset.augmentations import AUGMENTATIONS
 from functools import partial
 import os
+from mediapipe.framework.formats import landmark_pb2
 
 
 def uniform_intervals(start: int, end: int, interval: int):
@@ -121,6 +122,14 @@ class LandmarkDataset(Dataset):
             "Error with landmark_features in dataset config, it is not specified correctly"
         )
 
+    def _get_empty_landmark_list(self, num_landmarks: int = 21):
+        return landmark_pb2.NormalizedLandmarkList(
+            landmark=[
+                landmark_pb2.NormalizedLandmark(x=0.0, y=0.0, z=0.0)
+                for _ in range(num_landmarks)
+            ]
+        )
+
     def __getitem__(self, idx: int):
         idx = self.data.index[idx]
         landmark_path = os.path.join(self.data_dir, self.data.loc[idx, "filename"])
@@ -130,11 +139,17 @@ class LandmarkDataset(Dataset):
         frames = np.load(landmark_path, allow_pickle=True)
         frames = frames[preprocessed_first_index:preprocessed_last_index]
 
-        frames = [
-            frame
-            for frame in frames
-            if all(frame[f"{key}_landmarks"] is not None for key in self.landmark_types)
-        ]
+        for i in range(len(frames)):
+            for key in self.landmark_types:
+                if frames[i][f"{key}_landmarks"] is None:
+                    if "hand" in key:
+                        frames[i][f"{key}_landmarks"] = self._get_empty_landmark_list(
+                            21
+                        )
+                    else:
+                        frames[i][f"{key}_landmarks"] = self._get_empty_landmark_list(
+                            33
+                        )
 
         # Get timestamps and select relevant frame indices
         timestamps = [f["timestamp_ms"] for f in frames]
@@ -156,7 +171,7 @@ class LandmarkDataset(Dataset):
                     frame = aug["augmentation"](frame)
             features = {}
 
-            if idx > 0:
+            if indx > 0:
                 prev_frame = frames[selected_indices[indx - 1]]
                 prev_frame = {
                     f"{key}_landmarks": prev_frame[f"{key}_landmarks"].landmark
@@ -169,7 +184,7 @@ class LandmarkDataset(Dataset):
                         first_key, second_key
                     )
                     if feature_type == "differences":
-                        if idx > 0:
+                        if indx > 0:
                             features[f"{feature_type}/{landmark_type}"] = (
                                 self.estimators[feature_type].compute(
                                     prev_frame[f"{landmark_type}_landmarks"],
@@ -192,8 +207,10 @@ class LandmarkDataset(Dataset):
                                 feature_type
                             ],
                         )
-        feature_vector = np.concatenate(list(features.values()), axis=None)
-        print(feature_vector.shape)
-        all_features.append(torch.tensor(feature_vector, dtype=torch.float))
+            feature_vector = np.concatenate(list(features.values()), axis=None)
 
-        return torch.stack(all_features), label
+            all_features.append(torch.tensor(feature_vector, dtype=torch.float))
+            # print(len(all_features))
+        if len(all_features) < 15:
+            print(selected_indices, landmark_path)
+        return torch.cat(all_features), label
