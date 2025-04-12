@@ -37,6 +37,7 @@ class LandmarksNoise:
                 if hasattr(lm, "z"):
                     lm.z += np.random.normal(0, self.noise_std)
             return lms
+
         for key in ["pose_landmarks", "left_hand_landmarks", "right_hand_landmarks"]:
             if key in landmarks and landmarks[key]:
                 landmarks[key] = add_noise(landmarks[key])

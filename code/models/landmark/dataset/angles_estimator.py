@@ -109,19 +109,21 @@ class AnglesEstimator:
         mode: str,
         angle_type: str,
     ) -> List[float]:
-        return [
-            angle(
-                landmarks[start],
-                landmarks[middle],
-                landmarks[end],
-                mode,
-                angle_type,
-            )
-            for start, middle, end in landmark_triplets.values()
-        ]
+        return np.array(
+            [
+                angle(
+                    landmarks[start],
+                    landmarks[middle],
+                    landmarks[end],
+                    mode,
+                    angle_type,
+                )
+                for start, middle, end in landmark_triplets
+            ]
+        ).flatten()
 
-    def compute_angles(
-        self, landmarks: Iterable, landmark_type: str, mode: str, angle_type: str
+    def compute(
+        self, landmarks: Iterable, landmark_type: str, mode: str, computation_type: str
     ) -> List[float]:
         """
         Compute angles (as features) for either 'pose' or 'hand' landmarks.
@@ -134,23 +136,27 @@ class AnglesEstimator:
             Either 'pose' or 'hand'.
         mode : str
         '2D' or '3D' — defines whether to use 2 or 3 dimensions for distance.
-        angle_type : str
+        computation_type : str
             Angle representation to use.
         Returns:
         -------
         List[float] : List of computed angles.
         """
         check_landmark_type(landmark_type)
-        check_angle_type(angle_type)
+        check_angle_type(computation_type)
         check_mode(mode)
 
         if landmark_type == "pose":
-            return self.__compute_angles(self.pose_angles, landmarks, mode, angle_type)
+            return self.__compute_angles(
+                self.pose_angle_triplets, landmarks, mode, computation_type
+            )
         else:
-            return self.__compute_angles(self.hand_angles, landmarks, mode, angle_type)
+            return self.__compute_angles(
+                self.hand_angle_triplets, landmarks, mode, computation_type
+            )
 
-    def compute_annotated_angles(
-        self, landmarks: Iterable, mode: str, landmark_type: str, angle_type: str
+    def compute_annotated(
+        self, landmarks: Iterable, mode: str, landmark_type: str, computation_type: str
     ) -> Dict[str, float]:
         """
         Compute angles and return a dictionary with named features.
@@ -163,7 +169,7 @@ class AnglesEstimator:
             Either 'pose' or 'hand'.
         mode : str
         '2D' or '3D' — defines whether to use 2 or 3 dimensions for distance.
-        angle_type : str
+        computation_type : str
             Angle representation to use.
 
         Returns:
@@ -171,18 +177,18 @@ class AnglesEstimator:
         Dict[str, float] : Mapping from feature name to computed angle value. For visualization/debug.
         """
         check_landmark_type(landmark_type)
-        check_angle_type(angle_type)
+        check_angle_type(computation_type)
         check_mode(mode)
 
         if landmark_type == "pose":
             angles = self.__compute_angles(
-                self.pose_angles, landmarks, mode, angle_type
+                self.pose_angle_triplets, landmarks, mode, computation_type
             )
-            keys = self.pose_angles.keys()
+            keys = self.pose_angle_names
         else:
             angles = self.__compute_angles(
-                self.hand_angles, landmarks, mode, angle_type
+                self.hand_angle_triplets, landmarks, mode, computation_type
             )
-            keys = self.hand_angles.keys()
+            keys = self.hand_angle_names
 
         return dict(zip(keys, angles))

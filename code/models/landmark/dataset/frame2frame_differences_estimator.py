@@ -5,6 +5,7 @@ from models.landmark.utils import (
     check_landmark_type,
     load_config,
 )
+import numpy as np
 
 
 def difference(
@@ -83,18 +84,20 @@ class DifferencesEstimator:
         mode: str,
         diff_type: str,
     ) -> List[Union[Tuple[float, float], Tuple[float, float, float]]]:
-        return [
-            difference(next_landmarks[idx], prev_landmarks[idx], mode, diff_type)
-            for idx in landmark_indices
-        ]
+        return np.array(
+            [
+                difference(next_landmarks[idx], prev_landmarks[idx], mode, diff_type)
+                for idx in landmark_indices
+            ]
+        ).flatten()
 
-    def compute_differences(
+    def compute(
         self,
         prev_landmarks: Iterable,
         next_landmarks: Iterable,
         landmark_type: str,
         mode: str,
-        diff_type: str = "normalized_diff",
+        computation_type: str = "normalized_diff",
     ) -> List[Union[Tuple[float, float], Tuple[float, float, float]]]:
         """
         Compute raw or normalized difference vectors for specified landmark type.
@@ -109,7 +112,7 @@ class DifferencesEstimator:
         '2D' or '3D' — defines whether to use 2 or 3 dimensions for distance.
         landmark_type : str
             Either 'pose' or 'hand'.
-        diff_type : str
+        computation_type : str
             'diff' or 'normalized_diff'
 
         Returns:
@@ -117,7 +120,7 @@ class DifferencesEstimator:
         List of movement vectors between frames.
         """
         check_landmark_type(landmark_type)
-        check_difference_type(diff_type)
+        check_difference_type(computation_type)
         check_mode(mode)
 
         if landmark_type == "pose":
@@ -126,7 +129,7 @@ class DifferencesEstimator:
                 prev_landmarks,
                 next_landmarks,
                 mode,
-                diff_type,
+                computation_type,
             )
         else:
             return self.__compute_differences(
@@ -134,16 +137,16 @@ class DifferencesEstimator:
                 prev_landmarks,
                 next_landmarks,
                 mode,
-                diff_type,
+                computation_type,
             )
 
-    def compute_annotated_differences(
+    def compute_annotated(
         self,
         prev_landmarks: Iterable,
         next_landmarks: Iterable,
         landmark_type: str,
         mode: str,
-        diff_type: str = "normalized_diff",
+        computation_type: str = "normalized_diff",
     ) -> Dict[str, Union[Tuple[float, float], Tuple[float, float, float]]]:
         """
         Compute named difference vectors for visualization or debugging.
@@ -158,7 +161,7 @@ class DifferencesEstimator:
         '2D' or '3D' — defines whether to use 2 or 3 dimensions for distance.
         landmark_type : str
             Either 'pose' or 'hand'.
-        diff_type : str
+        computation_type : str
             'diff' or 'normalized_diff'
 
         Returns:
@@ -166,7 +169,7 @@ class DifferencesEstimator:
         Dict[str, Tuple] : Mapping from name to movement vector.
         """
         check_landmark_type(landmark_type)
-        check_difference_type(diff_type)
+        check_difference_type(computation_type)
 
         if landmark_type == "pose":
             diffs = self.__compute_differences(
@@ -174,7 +177,7 @@ class DifferencesEstimator:
                 prev_landmarks,
                 next_landmarks,
                 mode,
-                diff_type,
+                computation_type,
             )
             names = self.pose_difference_names
         else:
@@ -183,7 +186,7 @@ class DifferencesEstimator:
                 prev_landmarks,
                 next_landmarks,
                 mode,
-                diff_type,
+                computation_type,
             )
             names = self.hand_difference_names
 
