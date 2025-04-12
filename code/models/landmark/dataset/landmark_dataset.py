@@ -107,6 +107,7 @@ class LandmarkDataset(Dataset):
         )
 
         self.joiner = LandmarkFeatureTorchJoiner(self.landmark_feature_list)
+        self.landmark_types = [f"{name}_landmarks" for name in config["landmark_types"]]
 
     def __len__(self) -> int:
         return self.data.shape[0]
@@ -114,6 +115,11 @@ class LandmarkDataset(Dataset):
     def __getitem__(self, idx: int):
         landmark_path = os.path.join(self.data_dir, self.data.loc[idx, "filename"])
         frames = np.load(landmark_path, allow_pickle=True)
+        
+        # frames = [frame for frame in frames if
+        #           all(frame[key] is not None for key in ["pose_landmarks",
+        #                                                  "right_hand_landmarks", 
+        #                                                  "left_hand_landmarks"])]
 
         # Get timestamps and select relevant frame indices
         timestamps = [f["timestamp_ms"] for f in frames]

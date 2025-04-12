@@ -1,6 +1,7 @@
 from torch.utils.data import DataLoader
 import torch
 from sklearn.metrics import accuracy_score
+from models.landmark.dataset.landmark_dataset import LandmarkDataset
 
 
 def prepare_data(dataset):
@@ -41,7 +42,7 @@ class KNNClassifier:
         return predicted_label
 
 
-def evaluate_knn_train_test(train_dataset, test_dataset, k_values=[1, 3, 7]):
+def evaluate_knn_train_test(train_dataset, test_dataset, k_values=[1, 3]):
     X_train, y_train = prepare_data(train_dataset)
     X_test, y_test = prepare_data(test_dataset)
 
@@ -55,3 +56,11 @@ def evaluate_knn_train_test(train_dataset, test_dataset, k_values=[1, 3, 7]):
         results[k] = acc
 
     return results
+
+
+if __name__ == "__main__":
+    train_dataset = LandmarkDataset("/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml", "train")
+    val_dataset = LandmarkDataset("/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml", "val")
+    test_dataset = LandmarkDataset("/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml", "test")
+    print(evaluate_knn_train_test(train_dataset, test_dataset))
+    print(evaluate_knn_train_test(val_dataset, test_dataset, [1]))
