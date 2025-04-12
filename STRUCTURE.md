@@ -13,7 +13,18 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 │   │   └── V-Librasil/  # V-Librasil dataset
 │   │       └── videos/ # Video files (stored on Google Drive)
 │   ├── interim/             # Intermediate data
+│   │   ├── Debug/         # Debug files for inspecting preprocessing steps
+│   │   │   ├── videos/   # Intermediate video files
+│   │   │   └── landmarks/ # Intermediate landmark files
+│   │   ├── RawMotionMeasurements/ # Raw motion measurements
+│   │   ├── RawPoseLandmarks/      # Raw pose landmarks
+│   │   └── Videos/      # Preprocessed video files
 │   ├── processed/           # Final datasets
+│   │   ├── metadata_v*.csv # Metadata for each preprocessing version
+│   │   ├── videos/      # Preprocessed videos
+│   │   │   └── v*/      # Version-specific processed videos (e.g., v1, v2, v3...)
+│   │   └── landmarks/   # Processed landmark data
+│   │       └── v*/      # Version-specific processed landmarks (e.g., v1, v2, v3...)
 │   ├── external/            # Third party sources
 │   ├── papers/             # Related research papers
 │   └── README.md           # Data documentation
@@ -38,11 +49,14 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 - Large video files are stored on Google Drive, not tracked in Git
 - Video directories in the repository are placeholders
 - Download videos to your local `videos/` directories as needed
+- Preprocessing pipeline creates versioned outputs (v1, v2, v3...) of processed videos and landmarks
+- Each version has its own metadata and individual file metadata
 
 ### Data Files
 - Small files like CSV files, labels, and metadata are tracked in Git
 - Processed data (features, embeddings) stored in `processed/`
 - Document data formats in respective directories
+- Metadata files track preprocessing steps and configurations
 
 ### Python Environment
 - Managed by `uv` package manager
@@ -57,10 +71,19 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
   - Each dataset has a `videos/` subdirectory (videos on Google Drive)
   - CSV files and labels tracked in Git
 - `interim/`: Intermediate processed data
+  - `Debug/`: Files for inspecting preprocessing steps
+  - `RawMotionMeasurements/`: Raw motion detection results
+  - `RawPoseLandmarks/`: Raw pose detection results
+  - `Videos/`: Preprocessed video files
 - `processed/`: Final, model input datasets
+  - Version-specific directories (v1, v2, v3...)
+  - Separate directories for videos and landmarks
+  - Metadata files for each version
+  - Individual metadata files for each processed file
 
-### `notebooks/`
-- Jupyter notebooks for exploration and development
+### `code/`
+- `data/`: Data processing scripts
+- `models/`: Model implementations
 
 ### `tests/`
 - `data/`: Data processing tests
@@ -73,6 +96,7 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
    - Document video file locations and versions
    - Track small data files (CSVs, labels) in Git
    - Keep raw data immutable
+   - Maintain version-specific metadata for processed data
 
 2. Environment Management:
    - Use uv for dependency management
@@ -87,4 +111,5 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 4. Documentation:
    - Document data formats and locations
    - Keep README files updated
-   - Document setup steps for new team members 
+   - Document setup steps for new team members
+   - Track preprocessing configurations in metadata files 
