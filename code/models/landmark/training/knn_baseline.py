@@ -10,12 +10,11 @@ def prepare_data(dataset):
     labels = []
 
     for idx, batch in enumerate(loader):
-        feature = batch.squeeze(0)  # shape: [T, D]
+        feature, label = batch
 
         if feature.ndim == 2:  # multi-frame → flatten
             feature = feature.flatten()
 
-        label = dataset.data.iloc[idx]["label"]
         features.append(feature)
         labels.append(label)
 
@@ -59,8 +58,17 @@ def evaluate_knn_train_test(train_dataset, test_dataset, k_values=[1, 3]):
 
 
 if __name__ == "__main__":
-    train_dataset = LandmarkDataset("/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml", "train")
-    val_dataset = LandmarkDataset("/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml", "val")
-    test_dataset = LandmarkDataset("/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml", "test")
+    train_dataset = LandmarkDataset(
+        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml",
+        "train",
+    )
+    val_dataset = LandmarkDataset(
+        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml",
+        "val",
+    )
+    test_dataset = LandmarkDataset(
+        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml",
+        "test",
+    )
     print(evaluate_knn_train_test(train_dataset, test_dataset))
     print(evaluate_knn_train_test(val_dataset, test_dataset, [1]))

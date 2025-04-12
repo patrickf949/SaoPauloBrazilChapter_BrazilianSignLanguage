@@ -1,8 +1,13 @@
 import pandas as pd
-from typing import Dict
 
 
-def train_test_split(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+def encode_label(df: pd.DataFrame) -> pd.DataFrame:
+    label_mapping = {label: idx for idx, label in enumerate(set(df["label"]))}
+    df["label_encoded"] = df["label"].map(label_mapping)
+    return df
+
+
+def train_test_split(df: pd.DataFrame) -> pd.DataFrame:
     # should already be sorted, but just in case
     df = df.sort_values(["label", "data_source"]).reset_index(drop=True)
 
@@ -14,7 +19,7 @@ def train_test_split(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
 
     # Iterate over each group of labels
     # (not changing anything in the df here, just looping to match the length)
-    for label, group in df.groupby("label"):
+    for label, _ in df.groupby("label"):
         # Shift the letters along by moving the first letter to the end ABCDEF -> BCDAEF
         letters = letters[1:] + letters[:1]
         # Append the split group letters to the list

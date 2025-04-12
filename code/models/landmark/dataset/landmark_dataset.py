@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import torch
 from models.landmark.utils import load_config
-from typing import Dict, List, Union, Callable
+from typing import Dict, List, Union, Callable, Tuple
 from models.landmark.dataset.angles_estimator import AnglesEstimator
 from models.landmark.dataset.distances_estimator import DistancesEstimator
 from models.landmark.dataset.frame2frame_differences_estimator import (
@@ -22,9 +22,14 @@ def random_timestamps(start: int, end: int, interval: int):
     return sorted(np.random.randint(start, end + 1, size=interval).tolist())
 
 
+def uniform_timestamps(start: int, end: int, interval: int) -> List[int]:
+    return list(np.linspace(start, end, num=interval, dtype=int))
+
+
 INTERVAL_FUNCTIONS = {
     "uniform_intervals": uniform_intervals,
     "random_timestamps": random_timestamps,
+    "uniform_timestamps": uniform_timestamps,
 }
 
 
@@ -62,64 +67,74 @@ def select_frame_indices_by_time_interval(
 
 
 class LandmarkFeatureTorchJoiner:
-    def __init__(self, landmark_order: List[str]):
-        self.landmark_order = landmark_order
-
     def forward(self, landmark_features: Dict):
         feature_vector = []
-        for landmark_type in self.landmark_order:
+        for landmark_type in landmark_features.keys():
             feature_vector.extend(landmark_features[landmark_type])
         return torch.tensor(feature_vector, dtype=torch.float)
 
 
 class LandmarkDataset(Dataset):
-    def __init__(self, config: Union[str, Dict],
-                 dataset_split: str):
+    def __init__(self, config: Union[str, Dict], dataset_split: str):
         config = load_config(config, "dataset_config")
         self.data_dir = config["data_dir"]
         self.data = pd.read_csv(config["data_path"])
         self.data = self.data[self.data["dataset_split"] == dataset_split]
         self.augmentations = AUGMENTATIONS[dataset_split]
-        self.landmark_order = config["landmark_order"]
-        self.landmark_feature_list = config["landmark_feature_list"]
+        self.landmark_features = config["landmark_features"]
         self.frame_interval_fn = partial(
             INTERVAL_FUNCTIONS[config["frame_interval_fn"]], interval=config["interval"]
         )
-        self.distance_type = config["distance_type"]
-        self.angle_type = config["angle_type"]
-        self.diff_type = config["diff_type"]
-        
-        self.angle_mode = config["distance_mode"]
-        self.distance_mode = config["distance_mode"]
-        self.diff_mode = config["diff_mode"]
+        self.feature_computation_types = config["feature_computation_types"]
+        self.feature_modes = config["feature_modes"]
 
-        self.angle_estimator = AnglesEstimator(
-            hand_angles=config["hand_angle_triplets"],
-            pose_angles=config["pose_angle_triplets"]
-        )
-        self.distance_estimator = DistancesEstimator(
-            hand_distances=config["hand_distance_pairs"],
-            pose_distances=config["pose_distance_pairs"]
-        )
-        self.diff_estimator = DifferencesEstimator(
-            hand_differences=config["hand_differences"],
-            pose_differences=config["pose_differences"]
-        )
-
-        self.joiner = LandmarkFeatureTorchJoiner(self.landmark_feature_list)
-        self.landmark_types = [f"{name}_landmarks" for name in config["landmark_types"]]
+        self.estimators = {
+            "angles": AnglesEstimator(
+                hand_angles=config["hand_angle_triplets"],
+                pose_angles=config["pose_angle_triplets"],
+            ),
+            "distances": DistancesEstimator(
+                hand_distances=config["hand_distance_pairs"],
+                pose_distances=config["pose_distance_pairs"],
+            ),
+            "differences": DifferencesEstimator(
+                hand_differences=config["hand_differences"],
+                pose_differences=config["pose_differences"],
+            ),
+        }
+        self.landmark_types = config["landmark_types"]
 
     def __len__(self) -> int:
         return self.data.shape[0]
 
+    def _check_landmark_config(
+        self, first_key: str, second_key: str
+    ) -> Tuple[str, str]:
+        """To allow free order of of features inside a feature vectors"""
+
+        if second_key in self.landmark_types:
+            return first_key, second_key
+        if first_key in self.landmark_types:
+            return second_key, first_key
+
+        raise Exception(
+            "Error with landmark_features in dataset config, it is not specified correctly"
+        )
+
     def __getitem__(self, idx: int):
+        idx = self.data.index[idx]
         landmark_path = os.path.join(self.data_dir, self.data.loc[idx, "filename"])
+        label = torch.tensor([self.data.loc[idx, "label_encoded"]], dtype=torch.int64)
+        preprocessed_first_index = self.data.loc[idx, "preprocessed_start_frame"]
+        preprocessed_last_index = self.data.loc[idx, "preprocessed_end_frame"]
         frames = np.load(landmark_path, allow_pickle=True)
-        
-        # frames = [frame for frame in frames if
-        #           all(frame[key] is not None for key in ["pose_landmarks",
-        #                                                  "right_hand_landmarks", 
-        #                                                  "left_hand_landmarks"])]
+        frames = frames[preprocessed_first_index:preprocessed_last_index]
+
+        frames = [
+            frame
+            for frame in frames
+            if all(frame[f"{key}_landmarks"] is not None for key in self.landmark_types)
+        ]
 
         # Get timestamps and select relevant frame indices
         timestamps = [f["timestamp_ms"] for f in frames]
@@ -131,95 +146,54 @@ class LandmarkDataset(Dataset):
         all_features = []
         for indx, i in enumerate(selected_indices):
             frame = frames[i]
-            frame = {key: value.landmark for key, value in frame.items()}
+            frame = {
+                f"{key}_landmarks": frame[f"{key}_landmarks"].landmark
+                for key in self.landmark_types
+            }
 
             for aug in self.augmentations:
                 if np.random.uniform() <= aug["p"]:
                     frame = aug["augmentation"](frame)
             features = {}
 
-            if "angles" in self.landmark_feature_list:
-                features["angles"] = []
-                if frame["pose_landmarks"]:
-                    features["angles"] += self.angle_estimator.compute_angles(
-                        frame["pose_landmarks"], "pose", 
-                        mode=self.angle_mode,
-                        angle_type=self.angle_type
-                    )
-                if frame["left_hand_landmarks"]:
-                    features["angles"] += self.angle_estimator.compute_angles(
-                        frame["left_hand_landmarks"], "hand", 
-                        mode=self.angle_mode,
-                        angle_type=self.angle_type
-                    )
-                if frame["right_hand_landmarks"]:
-                    features["angles"] += self.angle_estimator.compute_angles(
-                        frame["right_hand_landmarks"],
-                        "hand",
-                        mode=self.angle_mode,
-                        angle_type=self.angle_type,
-                    )
-
-            if "distances" in self.landmark_feature_list:
-                features["distances"] = []
-                if frame["pose_landmarks"]:
-                    features["distances"] += self.distance_estimator.compute_distances(
-                        frame["pose_landmarks"],
-                        "pose",
-                        mode=self.distance_mode,
-                        distance_type=self.distance_type,
-                    )
-                if frame["left_hand_landmarks"]:
-                    features["distances"] += self.distance_estimator.compute_distances(
-                        frame["left_hand_landmarks"],
-                        "hand",
-                        mode=self.distance_mode,
-                        distance_type=self.distance_type,
-                    )
-                if frame["right_hand_landmarks"]:
-                    features["distances"] += self.distance_estimator.compute_distances(
-                        frame["right_hand_landmarks"],
-                        "hand",
-                        mode=self.distance_mode,
-                        distance_type=self.distance_type,
-                    )
-
-            if "differences" in self.landmark_feature_list and indx > 0:
+            if idx > 0:
                 prev_frame = frames[selected_indices[indx - 1]]
-                prev_frame = {key: value.landmark for key, value in prev_frame.items()}
-                features["differences"] = []
-                if frame["pose_landmarks"]:
-                    features["differences"] += (
-                        self.diff_estimator.compute_differences(
-                            prev_frame["pose_landmarks"],
-                            frame["pose_landmarks"],
-                            "pose",
-                            mode=self.diff_mode,
-                            diff_type=self.diff_type,
-                        )
-                    )
-                if frame["left_hand_landmarks"]:
-                    features["differences"] += (
-                        self.diff_estimator.compute_differences(
-                            prev_frame["left_hand_landmarks"],
-                            frame["left_hand_landmarks"],
-                            "hand",
-                             mode=self.diff_mode,
-                            diff_type=self.diff_type,
-                        )
-                    )
-                if frame["right_hand_landmarks"]:
-                    features["differences"] += (
-                        self.diff_estimator.compute_differences(
-                            prev_frame["right_hand_landmarks"],
-                            frame["right_hand_landmarks"],
-                            "hand",
-                             mode=self.diff_mode,
-                            diff_type=self.diff_type,
-                        )
-                    )
+                prev_frame = {
+                    f"{key}_landmarks": prev_frame[f"{key}_landmarks"].landmark
+                    for key in self.landmark_types
+                }
 
-        joined = self.joiner.forward(features)
-        all_features.append(joined)
+            for first_key in self.landmark_features:
+                for second_key in self.landmark_features[first_key]:
+                    feature_type, landmark_type = self._check_landmark_config(
+                        first_key, second_key
+                    )
+                    if feature_type == "differences":
+                        if idx > 0:
+                            features[f"{feature_type}/{landmark_type}"] = (
+                                self.estimators[feature_type].compute(
+                                    prev_frame[f"{landmark_type}_landmarks"],
+                                    frame[f"{landmark_type}_landmarks"],
+                                    landmark_type=landmark_type.split("_")[-1],
+                                    mode=self.feature_modes[feature_type],
+                                    computation_type=self.feature_computation_types[
+                                        feature_type
+                                    ],
+                                )
+                            )
+                    else:
+                        features[f"{feature_type}/{landmark_type}"] = self.estimators[
+                            feature_type
+                        ].compute(
+                            frame[f"{landmark_type}_landmarks"],
+                            landmark_type=landmark_type.split("_")[-1],
+                            mode=self.feature_modes[feature_type],
+                            computation_type=self.feature_computation_types[
+                                feature_type
+                            ],
+                        )
+        feature_vector = np.concatenate(list(features.values()), axis=None)
+        print(feature_vector.shape)
+        all_features.append(torch.tensor(feature_vector, dtype=torch.float))
 
-        return torch.stack(all_features)
+        return torch.stack(all_features), label

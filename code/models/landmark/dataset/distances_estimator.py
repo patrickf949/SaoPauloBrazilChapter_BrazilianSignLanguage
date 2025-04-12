@@ -81,17 +81,19 @@ class DistancesEstimator:
         mode: str,
         distance_type: str,
     ) -> List[float]:
-        return [
-            distance(landmarks[start], landmarks[end], mode, distance_type)
-            for start, end in landmark_pairs
-        ]
+        return np.array(
+            [
+                distance(landmarks[start], landmarks[end], mode, distance_type)
+                for start, end in landmark_pairs
+            ]
+        )
 
-    def compute_distances(
+    def compute(
         self,
         landmarks: Iterable,
         landmark_type: str,
         mode: str,
-        distance_type: str = "shifted_dist",
+        computation_type: str = "shifted_dist",
     ) -> List[float]:
         """
         Compute distances between defined landmark pairs.
@@ -104,7 +106,7 @@ class DistancesEstimator:
             '2D' or '3D' — determines how distances are computed.
         landmark_type : str
             Either 'pose' or 'hand'.
-        distance_type : str
+        computation_type : str
             Type of distance: 'dist', 'normalized_dist', or 'shifted_dist'.
 
         Returns:
@@ -112,24 +114,24 @@ class DistancesEstimator:
         List[float] : Computed distance values.
         """
         check_landmark_type(landmark_type)
-        check_distance_type(distance_type)
+        check_distance_type(computation_type)
         check_mode(mode)
 
         if landmark_type == "pose":
             return self.__compute_distances(
-                self.pose_distance_pairs, landmarks, mode, distance_type
+                self.pose_distance_pairs, landmarks, mode, computation_type
             )
         else:
             return self.__compute_distances(
-                self.hand_distance_pairs, landmarks, mode, distance_type
+                self.hand_distance_pairs, landmarks, mode, computation_type
             )
 
-    def compute_annotated_distances(
+    def compute_annotated(
         self,
         landmarks: Iterable,
         landmark_type: str,
         mode: str,
-        distance_type: str = "shifted_dist",
+        computation_type: str = "shifted_dist",
     ) -> Dict[str, float]:
         """
         Compute named distances for use in analysis or visualization.
@@ -142,7 +144,7 @@ class DistancesEstimator:
             '2D' or '3D' — determines how distances are computed.
         landmark_type : str
             Either 'pose' or 'hand'.
-        distance_type : str
+        computation_type : str
             Type of distance to compute.
 
         Returns:
@@ -150,17 +152,17 @@ class DistancesEstimator:
         Dict[str, float] : Mapping of distance name to computed value.
         """
         check_landmark_type(landmark_type)
-        check_distance_type(distance_type)
+        check_distance_type(computation_type)
         check_mode(mode)
 
         if landmark_type == "pose":
             distances = self.__compute_distances(
-                self.pose_distance_pairs, landmarks, mode, distance_type
+                self.pose_distance_pairs, landmarks, mode, computation_type
             )
             names = self.pose_distance_names
         else:
             distances = self.__compute_distances(
-                self.hand_distance_pairs, landmarks, mode, distance_type
+                self.hand_distance_pairs, landmarks, mode, computation_type
             )
             names = self.hand_distance_names
 
