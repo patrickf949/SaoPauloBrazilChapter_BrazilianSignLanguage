@@ -45,49 +45,51 @@ def measure_motion_basic(input_video_path, motion_threshold=30):
     cap.release()
     return motion_measurements
 
-def measure_motion_optical_flow(input_video_path):
-    '''
-    Optical flow is a more advanced technique for tracking motion across frames.
-    It calculates the flow (motion) of objects between two consecutive frames using their pixel movements.
-    '''
-    # Open video file
-    cap = cv2.VideoCapture(input_video_path)
+### Optical flow method was decided to not be used. Keeping it as commented out for reference. ###
 
-    ret, prev_frame = cap.read()
-    if not ret:
-        print("Error reading video.")
-        return
+# def measure_motion_optical_flow(input_video_path):
+#     '''
+#     Optical flow is a more advanced technique for tracking motion across frames.
+#     It calculates the flow (motion) of objects between two consecutive frames using their pixel movements.
+#     '''
+#     # Open video file
+#     cap = cv2.VideoCapture(input_video_path)
 
-    # Convert the first frame to grayscale
-    prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
+#     ret, prev_frame = cap.read()
+#     if not ret:
+#         print("Error reading video.")
+#         return
+
+#     # Convert the first frame to grayscale
+#     prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
     
-    frame_count = 0
-    motion_measurements = []  # Store motion data for each frame
+#     frame_count = 0
+#     motion_measurements = []  # Store motion data for each frame
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+#     while cap.isOpened():
+#         ret, frame = cap.read()
+#         if not ret:
+#             break
         
-        frame_count += 1
-        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+#         frame_count += 1
+#         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # Calculate optical flow (movement) between previous and current frame
-        flow = cv2.calcOpticalFlowFarneback(prev_gray, frame_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+#         # Calculate optical flow (movement) between previous and current frame
+#         flow = cv2.calcOpticalFlowFarneback(prev_gray, frame_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
-        # Calculate the magnitude of motion (speed of movement) in each direction
-        magnitude, angle = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+#         # Calculate the magnitude of motion (speed of movement) in each direction
+#         magnitude, angle = cv2.cartToPolar(flow[..., 0], flow[..., 1])
 
-        # Calculate the total magnitude of motion for the entire frame
-        total_magnitude = np.sum(magnitude)
+#         # Calculate the total magnitude of motion for the entire frame
+#         total_magnitude = np.sum(magnitude)
 
-        motion_measurements.append(total_magnitude)  # Store the total motion magnitude for this frame
+#         motion_measurements.append(total_magnitude)  # Store the total motion magnitude for this frame
 
-        # Update the previous frame for the next iteration
-        prev_gray = frame_gray
+#         # Update the previous frame for the next iteration
+#         prev_gray = frame_gray
 
-    cap.release()
-    return motion_measurements
+#     cap.release()
+#     return motion_measurements
 
 def measure_motion_background_subtraction(input_video_path):
     '''
