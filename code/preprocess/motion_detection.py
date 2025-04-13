@@ -200,6 +200,153 @@ def moving_average(data, fps, window_duration=0.334, verbose=True):
     
     return smoothed.tolist()
 
+
+def find_motion_boundary_simple(motion_data, threshold, direction='forward'):
+    """
+    Find the first frame where motion crosses a threshold.
+    Note: Input motion_data should be pre-normalized if normalization is desired.
+    
+    Args:
+        motion_data: List of motion values
+        threshold: Threshold value to detect (between 0 and 1 for normalized data)
+        direction: 'forward' to find first frame above threshold, 'backward' to find last frame above threshold
+        
+    Returns:
+        int: Frame number where the threshold is crossed, or None if not found
+    """
+    if direction not in ['forward', 'backward']:
+        raise ValueError("direction must be 'forward' or 'backward'")
+    
+    # Convert to numpy array for easier manipulation
+    motion = np.array(motion_data)
+    
+    if direction == 'forward':
+        # Find first frame where motion goes above threshold
+        frames = np.where(motion > threshold)[0]
+        return frames[0] if len(frames) > 0 else None
+    else:
+        # Find last frame where motion goes above threshold
+        frames = np.where(motion[::-1] > threshold)[0]
+        return len(motion) - 1 - frames[0] if len(frames) > 0 else None
+
+def find_motion_boundaries_simple(motion_data, start_threshold, end_threshold=None):
+    """
+    Find both start and end points of a sign based on a simple threshold.
+    Note: Input motion_data should be pre-normalized if normalization is desired.
+    
+    Args:
+        motion_data: List of motion values
+        start_threshold: Threshold value to detect start (between 0 and 1 for normalized data)
+        end_threshold: Threshold value to detect end. If None, uses start_threshold.
+        
+    Returns:
+        tuple: (start_frame, end_frame) where the sign boundaries are detected
+    """
+    # If end_threshold not specified, use start_threshold
+    if end_threshold is None:
+        end_threshold = start_threshold
+    
+    start_frame = find_motion_boundary_simple(
+        motion_data, 
+        start_threshold,
+        direction='forward'
+    )
+    
+    end_frame = find_motion_boundary_simple(
+        motion_data,
+        end_threshold,
+        direction='backward'
+    )
+    
+    return start_frame, end_frame
+
+### More complex method. Currently not used. But keeping it for reference. ###
+
+# def find_motion_boundary_complex(motion_data, fps, direction='forward', threshold=0.1, min_motion_duration=0.3):
+#     """
+#     Find the start or end point of a sign based on motion data analysis.
+#     Note: Input motion_data should be pre-normalized if normalization is desired.
+    
+#     Args:
+#         motion_data: List of motion values
+#         fps: Frames per second of the video
+#         direction: 'forward' to find start point, 'backward' to find end point
+#         threshold: Minimum increase/decrease in motion to consider as sign start/end (default: 0.1)
+#         min_motion_duration: Minimum duration in seconds of significant motion (default: 0.3s)
+        
+#     Returns:
+#         int: Frame number where the sign boundary is detected
+#     """
+#     if direction not in ['forward', 'backward']:
+#         raise ValueError("direction must be 'forward' or 'backward'")
+    
+#     # Convert time-based parameters to frame-based parameters
+#     min_frames = int(min_motion_duration * fps)
+#     min_frames = max(5, min_frames)    # At least 5 frames for minimum motion duration
+    
+#     # Convert to numpy array for easier manipulation
+#     motion = np.array(motion_data)
+    
+#     # Calculate the difference between consecutive values
+#     if direction == 'forward':
+#         diff = np.diff(motion)
+#         frames = range(len(diff))
+#         # For forward direction, look for increases in motion
+#         significant_motion = diff > threshold
+#     else:
+#         diff = np.diff(motion[::-1])[::-1]  # Reverse for backward analysis
+#         frames = range(len(diff)-1, -1, -1)
+#         # For backward direction, look for decreases in motion
+#         significant_motion = diff < -threshold
+    
+#     # Find continuous segments of significant motion
+#     current_segment_length = 0
+#     for i, has_motion in enumerate(significant_motion):
+#         if has_motion:
+#             current_segment_length += 1
+#             if current_segment_length >= min_frames:
+#                 # Return the frame where the significant motion started
+#                 return frames[i - min_frames + 1]
+#         else:
+#             current_segment_length = 0
+    
+#     # If no significant motion segment found, return None
+#     return None
+
+# def find_motion_boundaries_complex(motion_data, fps, threshold=0.1, min_motion_duration=0.3):
+#     """
+#     Find both start and end points of a sign based on motion data analysis.
+#     Note: Input motion_data should be pre-normalized if normalization is desired.
+    
+#     Args:
+#         motion_data: List of motion values
+#         fps: Frames per second of the video
+#         threshold: Minimum increase/decrease in motion to consider as sign start/end (default: 0.1)
+#         min_motion_duration: Minimum duration in seconds of significant motion (default: 0.3s)
+        
+#     Returns:
+#         tuple: (start_frame, end_frame) where the sign boundaries are detected
+#     """
+#     start_frame = find_motion_boundary_complex(
+#         motion_data, 
+#         fps,
+#         direction='forward',
+#         threshold=threshold,
+#         min_motion_duration=min_motion_duration
+#     )
+    
+#     end_frame = find_motion_boundary_complex(
+#         motion_data,
+#         fps,
+#         direction='backward',
+#         threshold=threshold,
+#         min_motion_duration=min_motion_duration
+#     )
+    
+#     return start_frame, end_frame
+
+### Visualization ###
+
 def get_frame(input_video_path, frame_number):
     cap = cv2.VideoCapture(input_video_path)
     cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
@@ -470,148 +617,5 @@ def show_multiple_frames_multiple_plots(path, frame_numbers, motion_data, figsiz
         axs[i].set_title(f'Frame {frame_number}', fontweight='bold')
     plt.suptitle('Video Frames')
     plt.show()
-
-def find_motion_boundary_simple(motion_data, threshold, direction='forward'):
-    """
-    Find the first frame where motion crosses a threshold.
-    Note: Input motion_data should be pre-normalized if normalization is desired.
-    
-    Args:
-        motion_data: List of motion values
-        threshold: Threshold value to detect (between 0 and 1 for normalized data)
-        direction: 'forward' to find first frame above threshold, 'backward' to find last frame above threshold
-        
-    Returns:
-        int: Frame number where the threshold is crossed, or None if not found
-    """
-    if direction not in ['forward', 'backward']:
-        raise ValueError("direction must be 'forward' or 'backward'")
-    
-    # Convert to numpy array for easier manipulation
-    motion = np.array(motion_data)
-    
-    if direction == 'forward':
-        # Find first frame where motion goes above threshold
-        frames = np.where(motion > threshold)[0]
-        return frames[0] if len(frames) > 0 else None
-    else:
-        # Find last frame where motion goes above threshold
-        frames = np.where(motion[::-1] > threshold)[0]
-        return len(motion) - 1 - frames[0] if len(frames) > 0 else None
-
-
-def find_motion_boundaries_simple(motion_data, start_threshold, end_threshold=None):
-    """
-    Find both start and end points of a sign based on a simple threshold.
-    Note: Input motion_data should be pre-normalized if normalization is desired.
-    
-    Args:
-        motion_data: List of motion values
-        start_threshold: Threshold value to detect start (between 0 and 1 for normalized data)
-        end_threshold: Threshold value to detect end. If None, uses start_threshold.
-        
-    Returns:
-        tuple: (start_frame, end_frame) where the sign boundaries are detected
-    """
-    # If end_threshold not specified, use start_threshold
-    if end_threshold is None:
-        end_threshold = start_threshold
-    
-    start_frame = find_motion_boundary_simple(
-        motion_data, 
-        start_threshold,
-        direction='forward'
-    )
-    
-    end_frame = find_motion_boundary_simple(
-        motion_data,
-        end_threshold,
-        direction='backward'
-    )
-    
-    return start_frame, end_frame
-
-def find_motion_boundary_complex(motion_data, fps, direction='forward', threshold=0.1, min_motion_duration=0.3):
-    """
-    Find the start or end point of a sign based on motion data analysis.
-    Note: Input motion_data should be pre-normalized if normalization is desired.
-    
-    Args:
-        motion_data: List of motion values
-        fps: Frames per second of the video
-        direction: 'forward' to find start point, 'backward' to find end point
-        threshold: Minimum increase/decrease in motion to consider as sign start/end (default: 0.1)
-        min_motion_duration: Minimum duration in seconds of significant motion (default: 0.3s)
-        
-    Returns:
-        int: Frame number where the sign boundary is detected
-    """
-    if direction not in ['forward', 'backward']:
-        raise ValueError("direction must be 'forward' or 'backward'")
-    
-    # Convert time-based parameters to frame-based parameters
-    min_frames = int(min_motion_duration * fps)
-    min_frames = max(5, min_frames)    # At least 5 frames for minimum motion duration
-    
-    # Convert to numpy array for easier manipulation
-    motion = np.array(motion_data)
-    
-    # Calculate the difference between consecutive values
-    if direction == 'forward':
-        diff = np.diff(motion)
-        frames = range(len(diff))
-        # For forward direction, look for increases in motion
-        significant_motion = diff > threshold
-    else:
-        diff = np.diff(motion[::-1])[::-1]  # Reverse for backward analysis
-        frames = range(len(diff)-1, -1, -1)
-        # For backward direction, look for decreases in motion
-        significant_motion = diff < -threshold
-    
-    # Find continuous segments of significant motion
-    current_segment_length = 0
-    for i, has_motion in enumerate(significant_motion):
-        if has_motion:
-            current_segment_length += 1
-            if current_segment_length >= min_frames:
-                # Return the frame where the significant motion started
-                return frames[i - min_frames + 1]
-        else:
-            current_segment_length = 0
-    
-    # If no significant motion segment found, return None
-    return None
-
-def find_motion_boundaries_complex(motion_data, fps, threshold=0.1, min_motion_duration=0.3):
-    """
-    Find both start and end points of a sign based on motion data analysis.
-    Note: Input motion_data should be pre-normalized if normalization is desired.
-    
-    Args:
-        motion_data: List of motion values
-        fps: Frames per second of the video
-        threshold: Minimum increase/decrease in motion to consider as sign start/end (default: 0.1)
-        min_motion_duration: Minimum duration in seconds of significant motion (default: 0.3s)
-        
-    Returns:
-        tuple: (start_frame, end_frame) where the sign boundaries are detected
-    """
-    start_frame = find_motion_boundary_complex(
-        motion_data, 
-        fps,
-        direction='forward',
-        threshold=threshold,
-        min_motion_duration=min_motion_duration
-    )
-    
-    end_frame = find_motion_boundary_complex(
-        motion_data,
-        fps,
-        direction='backward',
-        threshold=threshold,
-        min_motion_duration=min_motion_duration
-    )
-    
-    return start_frame, end_frame
 
             
