@@ -155,7 +155,7 @@ class MediaPipeHolistic:
                                "pupils",
                                "cheeks",
                                "ears",
-                               ] = "nose_tip") -> Dict[str, float]:
+                               ] = "mean_point") -> Dict[str, float]:
         """
         Calculate the horizontal offset for each specified reference point.
         
@@ -230,7 +230,7 @@ class MediaPipeHolistic:
                            face_ref: Literal[
                                "nose_tip",
                                "mean_point",
-                               ] = "nose_tip") -> Dict[str, float]:
+                               ] = "mean_point") -> Dict[str, float]:
         """
         Calculate the vertical offset for each specified reference point.
         
