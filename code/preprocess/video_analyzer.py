@@ -227,6 +227,7 @@ class VideoAnalyzer:
             "pose_smooth_landmarks": True,
             "pose_min_detection_confidence": 0.5,
             "pose_min_tracking_confidence": 0.5,
+            "pose_face_ref": "mean_point",  # Reference point for face offset calculation
             
             # Processing parameters
             "reuse_results": True
@@ -597,12 +598,14 @@ class VideoAnalyzer:
         mp_holistic = mph.MediaPipeHolistic()
         # Get horizontal offsets
         horizontal_offsets = mp_holistic.get_video_horizontal_offsets(
-            self.pose_data["landmarks_raw"]
+            self.pose_data["landmarks_raw"],
+            face_ref=self.params.get("pose_face_ref", "mean_point")
         )
         
         # Get vertical offsets
         vertical_offsets = mp_holistic.get_video_vertical_offsets(
-            self.pose_data["landmarks_raw"]
+            self.pose_data["landmarks_raw"],
+            face_ref=self.params.get("pose_face_ref", "mean_point")
         )
         
         # Get landmark measurements
