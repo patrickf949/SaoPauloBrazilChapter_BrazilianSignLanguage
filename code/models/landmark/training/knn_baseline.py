@@ -15,6 +15,7 @@ def prepare_data(dataset):
     for batch in loader:
         feature, label = batch
         feature = feature.squeeze(0)
+        print("feature", feature.shape)
         features.append(feature)
         labels.append(label)
 
@@ -53,20 +54,3 @@ def evaluate_knn_train_test(train_dataset, test_dataset, k_values=[1, 3, 5, 7]):
         results[k] = acc
 
     return results
-
-
-if __name__ == "__main__":
-    train_dataset = LandmarkDataset(
-        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml",
-        "train",
-    )
-    val_dataset = LandmarkDataset(
-        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml",
-        "val",
-    )
-    test_dataset = LandmarkDataset(
-        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml",
-        "test",
-    )
-    print(evaluate_knn_train_test(train_dataset, test_dataset))
-    print(evaluate_knn_train_test(val_dataset, test_dataset, [1]))

@@ -122,11 +122,14 @@ class LandmarkDataset(Dataset):
             "Error with landmark_features in dataset config, it is not specified correctly"
         )
 
-    def _get_empty_landmark_list(self, num_landmarks: int = 21):
+    def _get_empty_landmark_list(self, landmark_type: str):
+        landmark_numbers = {"right_hand": 21,
+                            "left_hand": 21,
+                            "pose": 33}
         return landmark_pb2.NormalizedLandmarkList(
             landmark=[
                 landmark_pb2.NormalizedLandmark(x=0.0, y=0.0, z=0.0)
-                for _ in range(num_landmarks)
+                for _ in range(landmark_numbers[landmark_type])
             ]
         )
 
@@ -142,15 +145,10 @@ class LandmarkDataset(Dataset):
         for i in range(len(frames)):
             for key in self.landmark_types:
                 if frames[i][f"{key}_landmarks"] is None:
-                    if "hand" in key:
-                        frames[i][f"{key}_landmarks"] = self._get_empty_landmark_list(
-                            21
+                    frames[i][f"{key}_landmarks"] = self._get_empty_landmark_list(
+                        key        
                         )
-                    else:
-                        frames[i][f"{key}_landmarks"] = self._get_empty_landmark_list(
-                            33
-                        )
-
+                    
         # Get timestamps and select relevant frame indices
         timestamps = [f["timestamp_ms"] for f in frames]
         selected_indices = select_frame_indices_by_time_interval(
@@ -177,6 +175,11 @@ class LandmarkDataset(Dataset):
                     f"{key}_landmarks": prev_frame[f"{key}_landmarks"].landmark
                     for key in self.landmark_types
                 }
+            else:
+                prev_frame = {
+                    f"{key}_landmarks": self._get_empty_landmark_list(key).landmark
+                    for key in self.landmark_types
+                }
 
             for first_key in self.landmark_features:
                 for second_key in self.landmark_features[first_key]:
@@ -184,8 +187,7 @@ class LandmarkDataset(Dataset):
                         first_key, second_key
                     )
                     if feature_type == "differences":
-                        if indx > 0:
-                            features[f"{feature_type}/{landmark_type}"] = (
+                        features[f"{feature_type}/{landmark_type}"] = (
                                 self.estimators[feature_type].compute(
                                     prev_frame[f"{landmark_type}_landmarks"],
                                     frame[f"{landmark_type}_landmarks"],
@@ -213,4 +215,4 @@ class LandmarkDataset(Dataset):
             # print(len(all_features))
         if len(all_features) < 15:
             print(selected_indices, landmark_path)
-        return torch.cat(all_features), label
+        return torch.stack(all_features), label

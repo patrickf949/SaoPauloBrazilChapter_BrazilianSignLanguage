@@ -5,8 +5,10 @@ from torch import nn
 from sklearn.metrics import accuracy_score
 from models.landmark.utils import load_config
 from typing import Union, Dict
-
-
+from torch.utils.data import DataLoader
+from models.landmark.dataset.landmark_dataset import LandmarkDataset
+from models.landmark.training.rnn_classifiers import RNNClassifier, LSTMClassifier
+from models.landmark.training.transformers import TransformerClassifier
 def train(
     model,
     train_loader: torch.utils.data.DataLoader,
@@ -17,9 +19,9 @@ def train(
     device = config["device"]
     num_epochs = config["num_epochs"]
 
-    model = model.to(config["device"])
+    model = model.to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"])
+    optimizer = torch.optim.Adam(model.parameters(), lr=float(config["lr"]))
 
     best_loss = float("inf")
     patience_counter = 0
@@ -33,15 +35,20 @@ def train(
         total_loss = 0
 
         for idx, batch in enumerate(train_loader):
-            x = batch.squeeze(0).to(device)  # [T, D] or [B, T, D]
-            if x.ndim == 2:
-                x = x.unsqueeze(0)
+            features, labels = batch
+            # print(features.shape)
+            # x = batch.squeeze(0).to(device)  # [T, D] or [B, T, D]
+            # if x.ndim == 2:
+            #     x = x.unsqueeze(0)
 
-            label = train_loader.dataset.data.iloc[idx]["label"]
-            y = torch.tensor([label], dtype=torch.long).to(device)
-
+            # label = train_loader.dataset.data.iloc[idx]["label"]
+            y = labels.squeeze().to(device)
+            features = features.to(device)
+            
             optimizer.zero_grad()
-            logits = model(x)
+            logits = model(features)
+            print(logits.shape)
+            print(features.shape)
             loss = criterion(logits, y)
             loss.backward()
             optimizer.step()
@@ -55,13 +62,17 @@ def train(
         val_loss = 0
         with torch.no_grad():
             for idx, batch in enumerate(test_loader):
-                x = batch.squeeze(0).to(device)
-                if x.ndim == 2:
-                    x = x.unsqueeze(0)
-                label = test_loader.dataset.data.iloc[idx]["label"]
-                y = torch.tensor([label], dtype=torch.long).to(device)
+                features, labels = batch
+                # x = batch.squeeze(0).to(device)
+                # if x.ndim == 2:
+                #     x = x.unsqueeze(0)
 
-                logits = model(x)
+                y = labels.squeeze(0).to(device)
+                features = features.to(device)
+                
+                logits = model(features)
+                print(logits.shape)
+                print(y.shape, y)
                 loss = criterion(logits, y)
                 val_loss += loss.item()
 
@@ -117,15 +128,20 @@ def evaluate(model, val_loader: torch.utils.data.DataLoader, device: str = "cuda
 
     with torch.no_grad():
         for idx, batch in enumerate(val_loader):
-            x = batch.squeeze(0).to(device)
-            if x.ndim == 2:
-                x = x.unsqueeze(0)
-            label = val_loader.dataset.data.iloc[idx]["label"]
-            output = model(x)
+            features, labels = batch
+                # x = batch.squeeze(0).to(device)
+                # if x.ndim == 2:
+                #     x = x.unsqueeze(0)
+
+            y = labels.squeeze(0)
+            features = features.to(device)
+            output = model(features)
             pred = torch.argmax(output, dim=1).item()
 
-            y_true.append(label)
+            y_true.append(y)
             y_pred.append(pred)
 
     acc = accuracy_score(y_true, y_pred)
     print(f"Test Accuracy: {acc:.4f}")
+    return acc
+
