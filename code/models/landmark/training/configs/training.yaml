@@ -1,6 +1,6 @@
 lr: 1e-4
-num_epochs: 100
-patience: 5
+num_epochs: 200
+patience: 50
 
 device: "cuda"
 
