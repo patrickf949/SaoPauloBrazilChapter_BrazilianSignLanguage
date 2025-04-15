@@ -123,9 +123,7 @@ class LandmarkDataset(Dataset):
         )
 
     def _get_empty_landmark_list(self, landmark_type: str):
-        landmark_numbers = {"right_hand": 21,
-                            "left_hand": 21,
-                            "pose": 33}
+        landmark_numbers = {"right_hand": 21, "left_hand": 21, "pose": 33}
         return landmark_pb2.NormalizedLandmarkList(
             landmark=[
                 landmark_pb2.NormalizedLandmark(x=0.0, y=0.0, z=0.0)
@@ -145,10 +143,8 @@ class LandmarkDataset(Dataset):
         for i in range(len(frames)):
             for key in self.landmark_types:
                 if frames[i][f"{key}_landmarks"] is None:
-                    frames[i][f"{key}_landmarks"] = self._get_empty_landmark_list(
-                        key        
-                        )
-                    
+                    frames[i][f"{key}_landmarks"] = self._get_empty_landmark_list(key)
+
         # Get timestamps and select relevant frame indices
         timestamps = [f["timestamp_ms"] for f in frames]
         selected_indices = select_frame_indices_by_time_interval(
@@ -187,17 +183,17 @@ class LandmarkDataset(Dataset):
                         first_key, second_key
                     )
                     if feature_type == "differences":
-                        features[f"{feature_type}/{landmark_type}"] = (
-                                self.estimators[feature_type].compute(
-                                    prev_frame[f"{landmark_type}_landmarks"],
-                                    frame[f"{landmark_type}_landmarks"],
-                                    landmark_type=landmark_type.split("_")[-1],
-                                    mode=self.feature_modes[feature_type],
-                                    computation_type=self.feature_computation_types[
-                                        feature_type
-                                    ],
-                                )
-                            )
+                        features[f"{feature_type}/{landmark_type}"] = self.estimators[
+                            feature_type
+                        ].compute(
+                            prev_frame[f"{landmark_type}_landmarks"],
+                            frame[f"{landmark_type}_landmarks"],
+                            landmark_type=landmark_type.split("_")[-1],
+                            mode=self.feature_modes[feature_type],
+                            computation_type=self.feature_computation_types[
+                                feature_type
+                            ],
+                        )
                     else:
                         features[f"{feature_type}/{landmark_type}"] = self.estimators[
                             feature_type

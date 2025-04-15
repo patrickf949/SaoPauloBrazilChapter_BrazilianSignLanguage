@@ -5,10 +5,8 @@ from torch import nn
 from sklearn.metrics import accuracy_score
 from models.landmark.utils import load_config
 from typing import Union, Dict
-from torch.utils.data import DataLoader
-from models.landmark.dataset.landmark_dataset import LandmarkDataset
-from models.landmark.training.rnn_classifiers import RNNClassifier, LSTMClassifier
-from models.landmark.training.transformers import TransformerClassifier
+
+
 def train(
     model,
     train_loader: torch.utils.data.DataLoader,
@@ -44,7 +42,7 @@ def train(
             # label = train_loader.dataset.data.iloc[idx]["label"]
             y = labels.squeeze().to(device)
             features = features.to(device)
-            
+
             optimizer.zero_grad()
             logits = model(features)
             print(logits.shape)
@@ -69,7 +67,7 @@ def train(
 
                 y = labels.squeeze(0).to(device)
                 features = features.to(device)
-                
+
                 logits = model(features)
                 print(logits.shape)
                 print(y.shape, y)
@@ -129,9 +127,9 @@ def evaluate(model, val_loader: torch.utils.data.DataLoader, device: str = "cuda
     with torch.no_grad():
         for idx, batch in enumerate(val_loader):
             features, labels = batch
-                # x = batch.squeeze(0).to(device)
-                # if x.ndim == 2:
-                #     x = x.unsqueeze(0)
+            # x = batch.squeeze(0).to(device)
+            # if x.ndim == 2:
+            #     x = x.unsqueeze(0)
 
             y = labels.squeeze(0)
             features = features.to(device)
@@ -144,4 +142,3 @@ def evaluate(model, val_loader: torch.utils.data.DataLoader, device: str = "cuda
     acc = accuracy_score(y_true, y_pred)
     print(f"Test Accuracy: {acc:.4f}")
     return acc
-

@@ -1,7 +1,6 @@
 from torch.utils.data import DataLoader
 import torch
 from sklearn.metrics import accuracy_score
-from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.utils import set_seed
 
 set_seed()
