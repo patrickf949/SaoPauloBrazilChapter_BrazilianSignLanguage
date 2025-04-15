@@ -14,7 +14,8 @@ def prepare_data(dataset):
     for batch in loader:
         feature, label = batch
         feature = feature.squeeze(0)
-        print("feature", feature.shape)
+        if feature.ndim == 2:  # [T, D]
+            feature = feature.flatten()
         features.append(feature)
         labels.append(label)
 

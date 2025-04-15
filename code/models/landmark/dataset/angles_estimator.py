@@ -23,7 +23,7 @@ def angle(
     mode : str, optional (default='3D')
         Coordinate mode: '2D' uses only x and y, '3D' uses x, y, z.
 
-    anlge_type : str, optional (default='func')
+    angle_type : str, optional (default='func')
         Output format of the angle. Supported options:
         - 'rad'            : Returns the angle in radians [0, π].
         - 'grad'           : Returns the angle in degrees [0, 180].
@@ -90,7 +90,7 @@ class AnglesEstimator:
          ----------
         hand_angles : str or dict
              Path to YAML file or dictionary with hand landmark triplets.
-         pose_angles : str or dict
+        pose_angles : str or dict
              Path to YAML file or dictionary with pose landmark triplets.
         """
         self.hand_angles = load_config(hand_angles, "hand_angles")

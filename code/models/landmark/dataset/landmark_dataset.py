@@ -208,7 +208,5 @@ class LandmarkDataset(Dataset):
             feature_vector = np.concatenate(list(features.values()), axis=None)
 
             all_features.append(torch.tensor(feature_vector, dtype=torch.float))
-            # print(len(all_features))
-        if len(all_features) < 15:
-            print(selected_indices, landmark_path)
+
         return torch.stack(all_features), label

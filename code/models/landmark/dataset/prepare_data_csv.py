@@ -34,7 +34,7 @@ def train_test_split(df: pd.DataFrame) -> pd.DataFrame:
         "A": "train",
         "B": "train",
         "C": "train",
-        "D": "trian",
+        "D": "train",
         "E": "val",
         "F": "test",
     }
