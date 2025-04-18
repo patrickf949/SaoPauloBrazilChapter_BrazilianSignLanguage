@@ -1,4 +1,6 @@
-class ExperimentFeature:
+from models.landmark.dataset.base_estimator import BaseEstimator
+
+class ExperimentFeatureEstimator(BaseEstimator):
     """
     Compute any additional feature like:
         - hand in front of face (0/1 binary)
@@ -7,3 +9,4 @@ class ExperimentFeature:
     """
 
     def __init__(self): ...
+    

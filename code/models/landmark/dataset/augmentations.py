@@ -47,8 +47,8 @@ class LandmarksNoise:
 
 AUGMENTATIONS = {
     "train": [
-        {"augmentation": RotateLandmarks(), "p": 0.0},
-        {"augmentation": LandmarksNoise(), "p": 0.0},
+        {"augmentation": RotateLandmarks(), "p": 0.5},
+        {"augmentation": LandmarksNoise(), "p": 0.5},
     ],
     "val": [],
     "test": [],

@@ -69,8 +69,6 @@ def train(
                 features = features.to(device)
 
                 logits = model(features)
-                print(logits.shape)
-                print(y.shape, y)
                 loss = criterion(logits, y)
                 val_loss += loss.item()
 
@@ -119,26 +117,36 @@ def train(
     return acc, best_epoch, log_data
 
 
-def evaluate(model, val_loader: torch.utils.data.DataLoader, device: str = "cuda"):
+def evaluate(model, val_loader: torch.utils.data.DataLoader, device: str = "cuda", top_k: int = 5):
     model.eval()
     y_true = []
-    y_pred = []
+    y_pred_top1 = []
+    correct_topk = 0
+    total = 0
 
     with torch.no_grad():
         for idx, batch in enumerate(val_loader):
             features, labels = batch
-            # x = batch.squeeze(0).to(device)
-            # if x.ndim == 2:
-            #     x = x.unsqueeze(0)
-
-            y = labels.squeeze(0)
+            y = labels.squeeze(0).to(device)
             features = features.to(device)
+
             output = model(features)
-            pred = torch.argmax(output, dim=1).item()
 
-            y_true.append(y)
-            y_pred.append(pred)
+            # Top-1 prediction
+            top1 = torch.argmax(output, dim=1)
+            y_pred_top1.append(top1.item())
+            y_true.append(y.item())
 
-    acc = accuracy_score(y_true, y_pred)
-    print(f"Test Accuracy: {acc:.4f}")
-    return acc
+            # Top-k prediction
+            topk = torch.topk(output, k=top_k, dim=1).indices
+            correct_topk += sum([y.item() in topk[i] for i in range(topk.size(0))])
+            total += output.size(0)
+
+    acc_top1 = accuracy_score(y_true, y_pred_top1)
+    print(f"Top-1 Accuracy: {acc_top1:.4f}")
+    acc_topk = correct_topk / total if total > 0 else 0
+
+   
+    print(f"Top-{top_k} Accuracy: {acc_topk:.4f}")
+
+    return acc_top1, acc_topk
