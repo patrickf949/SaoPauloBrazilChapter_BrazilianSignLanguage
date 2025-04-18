@@ -3,9 +3,9 @@ from models.landmark.utils import (
     check_mode,
     check_difference_type,
     check_landmark_type,
-    load_config,
 )
 import numpy as np
+from models.landmark.dataset.base_estimator import BaseEstimator
 
 
 def difference(
@@ -48,7 +48,7 @@ def difference(
             return dx, dy
 
 
-class DifferencesEstimator:
+class DifferencesEstimator(BaseEstimator):
     """
     Estimates frame-to-frame movement vectors (differences) for pose and hand landmarks.
     """
@@ -66,15 +66,7 @@ class DifferencesEstimator:
         pose_differences : str or dict
             Path to YAML file or dictionary with pose landmark indices.
         """
-
-        self.hand_differences = load_config(hand_differences, "hand_differences")
-        self.pose_differences = load_config(pose_differences, "pose_differences")
-
-        self.hand_difference_names = list(self.hand_differences.keys())
-        self.hand_difference_indices = list(self.hand_differences.values())
-
-        self.pose_difference_names = list(self.pose_differences.keys())
-        self.pose_difference_indices = list(self.pose_differences.values())
+        super().__init__(hand_differences, pose_differences, config_type="differences")
 
     def __compute_differences(
         self,
@@ -83,13 +75,14 @@ class DifferencesEstimator:
         next_landmarks: Iterable,
         mode: str,
         diff_type: str,
-    ) -> List[Union[Tuple[float, float], Tuple[float, float, float]]]:
-        return np.array(
-            [
-                difference(next_landmarks[idx], prev_landmarks[idx], mode, diff_type)
-                for idx in landmark_indices
-            ]
-        ).flatten()
+    ) -> List[Tuple[float]]:
+        return [
+            difference(next_landmarks[idx], prev_landmarks[idx], mode, diff_type)
+            for idx in landmark_indices
+        ]
+
+    def __convert_to_numpy(self, features: List[Tuple[float]]) -> np.ndarray:
+        return np.array(features).flatten()
 
     def compute(
         self,
@@ -98,7 +91,7 @@ class DifferencesEstimator:
         landmark_type: str,
         mode: str,
         computation_type: str = "normalized_diff",
-    ) -> List[Union[Tuple[float, float], Tuple[float, float, float]]]:
+    ) -> np.ndarray:
         """
         Compute raw or normalized difference vectors for specified landmark type.
 
@@ -123,22 +116,18 @@ class DifferencesEstimator:
         check_difference_type(computation_type)
         check_mode(mode)
 
-        if landmark_type == "pose":
-            return self.__compute_differences(
-                self.pose_difference_indices,
+        difference_indices = (
+            self.pose_values if landmark_type == "pose" else self.hand_values
+        )
+        return self.__convert_to_numpy(
+            self.__compute_differences(
+                difference_indices,
                 prev_landmarks,
                 next_landmarks,
                 mode,
                 computation_type,
             )
-        else:
-            return self.__compute_differences(
-                self.hand_difference_indices,
-                prev_landmarks,
-                next_landmarks,
-                mode,
-                computation_type,
-            )
+        )
 
     def compute_annotated(
         self,
@@ -147,7 +136,7 @@ class DifferencesEstimator:
         landmark_type: str,
         mode: str,
         computation_type: str = "normalized_diff",
-    ) -> Dict[str, Union[Tuple[float, float], Tuple[float, float, float]]]:
+    ) -> Dict[str, Tuple[float]]:
         """
         Compute named difference vectors for visualization or debugging.
 
@@ -170,24 +159,15 @@ class DifferencesEstimator:
         """
         check_landmark_type(landmark_type)
         check_difference_type(computation_type)
+        check_mode(mode)
 
-        if landmark_type == "pose":
-            diffs = self.__compute_differences(
-                self.pose_difference_indices,
-                prev_landmarks,
-                next_landmarks,
-                mode,
-                computation_type,
-            )
-            names = self.pose_difference_names
-        else:
-            diffs = self.__compute_differences(
-                self.hand_difference_indices,
-                prev_landmarks,
-                next_landmarks,
-                mode,
-                computation_type,
-            )
-            names = self.hand_difference_names
-
-        return dict(zip(names, diffs))
+        difference_indices = (
+            self.pose_values if landmark_type == "pose" else self.hand_values
+        )
+        difference_names = (
+            self.pose_names if landmark_type == "pose" else self.hand_names
+        )
+        diffs = self.__compute_differences(
+            difference_indices, prev_landmarks, next_landmarks, mode, computation_type
+        )
+        return dict(zip(difference_names, diffs))
