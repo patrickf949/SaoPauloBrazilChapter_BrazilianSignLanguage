@@ -1,10 +1,6 @@
 import numpy as np
 from typing import Union, Dict, List, Tuple, Iterable
-from models.landmark.utils import (
-    check_mode,
-    check_landmark_type,
-    check_distance_type
-)
+from models.landmark.utils import check_mode, check_landmark_type, check_distance_type
 from models.landmark.dataset.base_estimator import BaseEstimator
 
 
@@ -73,10 +69,9 @@ class DistancesEstimator(BaseEstimator):
         distance_type: str,
     ) -> List[float]:
         return [
-                distance(landmarks[start], landmarks[end], mode, distance_type)
-                for start, end in landmark_pairs
-            ]
-    
+            distance(landmarks[start], landmarks[end], mode, distance_type)
+            for start, end in landmark_pairs
+        ]
 
     def compute(
         self,
@@ -107,8 +102,12 @@ class DistancesEstimator(BaseEstimator):
         check_distance_type(computation_type)
         check_mode(mode)
 
-        distance_pairs = self.pose_values if landmark_type == "pose" else self.hand_values
-        return np.array(self.__compute_distances(distance_pairs, landmarks, mode, computation_type))
+        distance_pairs = (
+            self.pose_values if landmark_type == "pose" else self.hand_values
+        )
+        return np.array(
+            self.__compute_distances(distance_pairs, landmarks, mode, computation_type)
+        )
 
     def compute_annotated(
         self,
@@ -139,7 +138,11 @@ class DistancesEstimator(BaseEstimator):
         check_distance_type(computation_type)
         check_mode(mode)
 
-        distance_pairs = self.pose_values if landmark_type == "pose" else self.hand_values
+        distance_pairs = (
+            self.pose_values if landmark_type == "pose" else self.hand_values
+        )
         distance_names = self.pose_names if landmark_type == "pose" else self.hand_names
-        distances = self.__compute_distances(distance_pairs, landmarks, mode, computation_type)
+        distances = self.__compute_distances(
+            distance_pairs, landmarks, mode, computation_type
+        )
         return dict(zip(distance_names, distances))

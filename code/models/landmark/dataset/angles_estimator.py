@@ -1,10 +1,6 @@
 import numpy as np
 from typing import Union, Dict, List, Tuple, Iterable
-from models.landmark.utils import (
-    check_mode,
-    check_landmark_type,
-    check_angle_type
-)
+from models.landmark.utils import check_mode, check_landmark_type, check_angle_type
 from models.landmark.dataset.base_estimator import BaseEstimator
 
 
@@ -95,19 +91,19 @@ class AnglesEstimator(BaseEstimator):
         angle_type: str,
     ) -> List[float]:
         return [
-                angle(
-                    landmarks[start],
-                    landmarks[middle],
-                    landmarks[end],
-                    mode,
-                    angle_type,
-                )
-                for start, middle, end in landmark_triplets
-            ]
+            angle(
+                landmarks[start],
+                landmarks[middle],
+                landmarks[end],
+                mode,
+                angle_type,
+            )
+            for start, middle, end in landmark_triplets
+        ]
 
     def __convert_to_numpy(self, features: List[float]) -> np.ndarray:
         return np.array(features).flatten()
-    
+
     def compute(
         self, landmarks: Iterable, landmark_type: str, mode: str, computation_type: str
     ) -> np.ndarray:
@@ -132,8 +128,12 @@ class AnglesEstimator(BaseEstimator):
         check_angle_type(computation_type)
         check_mode(mode)
 
-        angle_triplets = self.pose_values if landmark_type == "pose" else self.hand_values
-        return self.__convert_to_numpy(self.__compute_angles(angle_triplets, landmarks, mode, computation_type))
+        angle_triplets = (
+            self.pose_values if landmark_type == "pose" else self.hand_values
+        )
+        return self.__convert_to_numpy(
+            self.__compute_angles(angle_triplets, landmarks, mode, computation_type)
+        )
 
     def compute_annotated(
         self, landmarks: Iterable, mode: str, landmark_type: str, computation_type: str
@@ -160,7 +160,11 @@ class AnglesEstimator(BaseEstimator):
         check_angle_type(computation_type)
         check_mode(mode)
 
-        angle_triplets = self.pose_values if landmark_type == "pose" else self.hand_values
+        angle_triplets = (
+            self.pose_values if landmark_type == "pose" else self.hand_values
+        )
         angle_names = self.pose_names if landmark_type == "pose" else self.hand_names
-        angles = self.__compute_angles(angle_triplets, landmarks, mode, computation_type)
+        angles = self.__compute_angles(
+            angle_triplets, landmarks, mode, computation_type
+        )
         return dict(zip(angle_names, angles))
