@@ -10,6 +10,7 @@ from models.landmark.training.train import evaluate
 from models.landmark.training.transformers import TransformerClassifier
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
 
+
 def train_rotating_folds(
     model,
     dataset: LandmarkDataset,
@@ -41,8 +42,12 @@ def train_rotating_folds(
         print(f"\n--- Epoch {epoch + 1}/{num_epochs} | Fold {fold + 1}/{k_folds} ---")
 
         train_ids, val_ids = fold_indices[fold]
-        train_loader = DataLoader(Subset(dataset, train_ids), batch_size=batch_size, shuffle=True)
-        val_loader = DataLoader(Subset(dataset, val_ids), batch_size=batch_size, shuffle=False)
+        train_loader = DataLoader(
+            Subset(dataset, train_ids), batch_size=batch_size, shuffle=True
+        )
+        val_loader = DataLoader(
+            Subset(dataset, val_ids), batch_size=batch_size, shuffle=False
+        )
 
         # ----- training step -----
         model.train()
@@ -76,16 +81,16 @@ def train_rotating_folds(
 
         avg_val_loss = val_loss / len(val_loader)
 
-        print(
-            f"Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}"
-        )
+        print(f"Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}")
 
-        log_data.append({
-            "epoch": epoch + 1,
-            "fold": fold + 1,
-            "train_loss": avg_train_loss,
-            "val_loss": avg_val_loss
-        })
+        log_data.append(
+            {
+                "epoch": epoch + 1,
+                "fold": fold + 1,
+                "train_loss": avg_train_loss,
+                "val_loss": avg_val_loss,
+            }
+        )
 
         # ----- early stopping -----
         if avg_val_loss < best_loss:
@@ -114,17 +119,29 @@ def train_rotating_folds(
         log_path = config["log_path"]
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
         with open(log_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=["epoch", "fold", "train_loss", "val_loss"])
+            writer = csv.DictWriter(
+                f, fieldnames=["epoch", "fold", "train_loss", "val_loss"]
+            )
             writer.writeheader()
             writer.writerows(log_data)
         print(f"Training log saved to: {log_path}")
 
     return acc, best_epoch, log_data
 
+
 if __name__ == "__main__":
-    train_dataset = LandmarkDataset("/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml", "train")
-    test_dataset = LandmarkDataset("/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml", "test")
+    train_dataset = LandmarkDataset(
+        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml",
+        "train",
+    )
+    test_dataset = LandmarkDataset(
+        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml",
+        "test",
+    )
     model = TransformerClassifier(input_size=212, num_classes=25)
     train_rotating_folds(
-        model, train_dataset, test_dataset, "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/training/configs/training.yaml"
+        model,
+        train_dataset,
+        test_dataset,
+        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/training/configs/training.yaml",
     )

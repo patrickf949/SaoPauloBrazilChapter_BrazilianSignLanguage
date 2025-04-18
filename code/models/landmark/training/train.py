@@ -117,7 +117,9 @@ def train(
     return acc, best_epoch, log_data
 
 
-def evaluate(model, val_loader: torch.utils.data.DataLoader, device: str = "cuda", top_k: int = 5):
+def evaluate(
+    model, val_loader: torch.utils.data.DataLoader, device: str = "cuda", top_k: int = 5
+):
     model.eval()
     y_true = []
     y_pred_top1 = []
@@ -146,7 +148,6 @@ def evaluate(model, val_loader: torch.utils.data.DataLoader, device: str = "cuda
     print(f"Top-1 Accuracy: {acc_top1:.4f}")
     acc_topk = correct_topk / total if total > 0 else 0
 
-   
     print(f"Top-{top_k} Accuracy: {acc_topk:.4f}")
 
     return acc_top1, acc_topk

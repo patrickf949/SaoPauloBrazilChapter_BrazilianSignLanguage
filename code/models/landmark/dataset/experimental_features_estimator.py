@@ -1,5 +1,6 @@
 from models.landmark.dataset.base_estimator import BaseEstimator
 
+
 class ExperimentFeatureEstimator(BaseEstimator):
     """
     Compute any additional feature like:
@@ -9,4 +10,3 @@ class ExperimentFeatureEstimator(BaseEstimator):
     """
 
     def __init__(self): ...
-    
