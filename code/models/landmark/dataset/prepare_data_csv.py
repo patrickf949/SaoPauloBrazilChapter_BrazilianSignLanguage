@@ -35,10 +35,11 @@ def train_test_split(df: pd.DataFrame) -> pd.DataFrame:
         "B": "train",
         "C": "train",
         "D": "train",
-        "E": "val",
+        "E": "train",
         "F": "test",
     }
 
     # Map the split groups to the dataset splits
     df["dataset_split"] = df["dataset_split_group"].map(dataset_split_dict)
     return df.drop(columns=["dataset_split_group"])
+

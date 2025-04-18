@@ -3,9 +3,9 @@ from typing import Union, Dict, List, Tuple, Iterable
 from models.landmark.utils import (
     check_mode,
     check_landmark_type,
-    check_distance_type,
-    load_config,
+    check_distance_type
 )
+from models.landmark.dataset.base_estimator import BaseEstimator
 
 
 def distance(p1, p2, mode: str = "3D", distance_type: str = "shifted_dist") -> float:
@@ -44,7 +44,7 @@ def distance(p1, p2, mode: str = "3D", distance_type: str = "shifted_dist") -> f
         return (dist / max_dist) * 2 - 1  # scale to [-1, 1]
 
 
-class DistancesEstimator:
+class DistancesEstimator(BaseEstimator):
     """
     Estimates distances between pairs of landmarks, with support for normalized and shifted distance types.
     """
@@ -63,16 +63,7 @@ class DistancesEstimator:
             Path to YAML file or dictionary with pose landmark index pairs.
 
         """
-
-        self.hand_distances = load_config(hand_distances, "hand_distances")
-        self.pose_distances = load_config(pose_distances, "pose_distances")
-
-        # Cache landmark index pairs and their names
-        self.pose_distance_pairs = list(self.pose_distances.values())
-        self.pose_distance_names = list(self.pose_distances.keys())
-
-        self.hand_distance_pairs = list(self.hand_distances.values())
-        self.hand_distance_names = list(self.hand_distances.keys())
+        super().__init__(hand_distances, pose_distances, config_type="distances")
 
     def __compute_distances(
         self,
@@ -81,12 +72,11 @@ class DistancesEstimator:
         mode: str,
         distance_type: str,
     ) -> List[float]:
-        return np.array(
-            [
+        return [
                 distance(landmarks[start], landmarks[end], mode, distance_type)
                 for start, end in landmark_pairs
             ]
-        )
+    
 
     def compute(
         self,
@@ -94,7 +84,7 @@ class DistancesEstimator:
         landmark_type: str,
         mode: str,
         computation_type: str = "shifted_dist",
-    ) -> List[float]:
+    ) -> np.ndarray:
         """
         Compute distances between defined landmark pairs.
 
@@ -117,14 +107,8 @@ class DistancesEstimator:
         check_distance_type(computation_type)
         check_mode(mode)
 
-        if landmark_type == "pose":
-            return self.__compute_distances(
-                self.pose_distance_pairs, landmarks, mode, computation_type
-            )
-        else:
-            return self.__compute_distances(
-                self.hand_distance_pairs, landmarks, mode, computation_type
-            )
+        distance_pairs = self.pose_values if landmark_type == "pose" else self.hand_values
+        return np.array(self.__compute_distances(distance_pairs, landmarks, mode, computation_type))
 
     def compute_annotated(
         self,
@@ -155,15 +139,7 @@ class DistancesEstimator:
         check_distance_type(computation_type)
         check_mode(mode)
 
-        if landmark_type == "pose":
-            distances = self.__compute_distances(
-                self.pose_distance_pairs, landmarks, mode, computation_type
-            )
-            names = self.pose_distance_names
-        else:
-            distances = self.__compute_distances(
-                self.hand_distance_pairs, landmarks, mode, computation_type
-            )
-            names = self.hand_distance_names
-
-        return dict(zip(names, distances))
+        distance_pairs = self.pose_values if landmark_type == "pose" else self.hand_values
+        distance_names = self.pose_names if landmark_type == "pose" else self.hand_names
+        distances = self.__compute_distances(distance_pairs, landmarks, mode, computation_type)
+        return dict(zip(distance_names, distances))
