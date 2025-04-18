@@ -1,11 +1,7 @@
 import numpy as np
 from typing import Union, Dict, List, Tuple, Iterable
-from models.landmark.utils import (
-    check_mode,
-    check_landmark_type,
-    check_angle_type,
-    load_config,
-)
+from models.landmark.utils import check_mode, check_landmark_type, check_angle_type
+from models.landmark.dataset.base_estimator import BaseEstimator
 
 
 def angle(
@@ -79,52 +75,38 @@ def angle(
         return np.sin(angle_rad), np.cos(angle_rad)
 
 
-class AnglesEstimator:
+class AnglesEstimator(BaseEstimator):
     """
     Estimates angles between triplets of landmarks.
     """
 
     def __init__(self, hand_angles: Union[str, Dict], pose_angles: Union[str, Dict]):
-        """
-         Parameters:
-         ----------
-        hand_angles : str or dict
-             Path to YAML file or dictionary with hand landmark triplets.
-        pose_angles : str or dict
-             Path to YAML file or dictionary with pose landmark triplets.
-        """
-        self.hand_angles = load_config(hand_angles, "hand_angles")
-        self.pose_angles = load_config(pose_angles, "pose_angles")
-
-        # cached to speed up computing
-        self.pose_angle_triplets = list(self.pose_angles.values())
-        self.pose_angle_names = list(self.pose_angles.keys())
-        self.hand_angle_triplets = list(self.hand_angles.values())
-        self.hand_angle_names = list(self.hand_angles.keys())
+        super().__init__(hand_angles, pose_angles, config_type="angles")
 
     def __compute_angles(
         self,
-        landmark_triplets: Dict[str, Tuple[int]],
+        landmark_triplets: List[Tuple[int]],
         landmarks: Iterable,
         mode: str,
         angle_type: str,
     ) -> List[float]:
-        return np.array(
-            [
-                angle(
-                    landmarks[start],
-                    landmarks[middle],
-                    landmarks[end],
-                    mode,
-                    angle_type,
-                )
-                for start, middle, end in landmark_triplets
-            ]
-        ).flatten()
+        return [
+            angle(
+                landmarks[start],
+                landmarks[middle],
+                landmarks[end],
+                mode,
+                angle_type,
+            )
+            for start, middle, end in landmark_triplets
+        ]
+
+    def __convert_to_numpy(self, features: List[float]) -> np.ndarray:
+        return np.array(features).flatten()
 
     def compute(
         self, landmarks: Iterable, landmark_type: str, mode: str, computation_type: str
-    ) -> List[float]:
+    ) -> np.ndarray:
         """
         Compute angles (as features) for either 'pose' or 'hand' landmarks.
 
@@ -146,14 +128,12 @@ class AnglesEstimator:
         check_angle_type(computation_type)
         check_mode(mode)
 
-        if landmark_type == "pose":
-            return self.__compute_angles(
-                self.pose_angle_triplets, landmarks, mode, computation_type
-            )
-        else:
-            return self.__compute_angles(
-                self.hand_angle_triplets, landmarks, mode, computation_type
-            )
+        angle_triplets = (
+            self.pose_values if landmark_type == "pose" else self.hand_values
+        )
+        return self.__convert_to_numpy(
+            self.__compute_angles(angle_triplets, landmarks, mode, computation_type)
+        )
 
     def compute_annotated(
         self, landmarks: Iterable, mode: str, landmark_type: str, computation_type: str
@@ -180,15 +160,11 @@ class AnglesEstimator:
         check_angle_type(computation_type)
         check_mode(mode)
 
-        if landmark_type == "pose":
-            angles = self.__compute_angles(
-                self.pose_angle_triplets, landmarks, mode, computation_type
-            )
-            keys = self.pose_angle_names
-        else:
-            angles = self.__compute_angles(
-                self.hand_angle_triplets, landmarks, mode, computation_type
-            )
-            keys = self.hand_angle_names
-
-        return dict(zip(keys, angles))
+        angle_triplets = (
+            self.pose_values if landmark_type == "pose" else self.hand_values
+        )
+        angle_names = self.pose_names if landmark_type == "pose" else self.hand_names
+        angles = self.__compute_angles(
+            angle_triplets, landmarks, mode, computation_type
+        )
+        return dict(zip(angle_names, angles))

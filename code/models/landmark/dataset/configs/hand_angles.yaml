@@ -13,3 +13,8 @@ ring_tip: [14, 15, 16]
 
 pinky_bend: [17, 18, 19]
 pinky_tip: [18, 19, 20]
+
+thumb_index_spread_angle: [4, 0, 8]
+index_ring_spread_angle: [8, 0, 16]
+middle_finger_angle: [0, 9, 12]
+pinky_finger_angle: [0, 17, 20]
