@@ -9,7 +9,7 @@ landmark_features:
 landmark_types: [pose, right_hand, left_hand]
 
 frame_interval_fn: uniform_timestamps
-interval: 15
+interval: 17
 
 feature_computation_types: 
   distances: shifted_dist
