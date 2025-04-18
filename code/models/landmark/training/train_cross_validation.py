@@ -111,8 +111,8 @@ def train_rotating_folds(
 
     # Final evaluation (optional - could be on last fold or an extra hold-out set)
     test_loader = DataLoader(test_dataset, batch_size=1)
-    acc = evaluate(model, test_loader, device)
-    print(f"\nBest Epoch: {best_epoch} | Final Val Accuracy: {acc:.4f}")
+    top1_acc, topk_acc = evaluate(model, test_loader, device)
+    print(f"\nBest Epoch: {best_epoch} | Final Val Accuracy (Top-1): {top1_acc:.4f} | Top-K Accuracy: {topk_acc:.4f}")
 
     # ----- optional logging to file -----
     if "log_path" in config:
