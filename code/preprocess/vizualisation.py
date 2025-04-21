@@ -8,6 +8,7 @@ import json
 import seaborn as sns
 import mediapipe as mp
 from typing import Dict, List, Optional, Tuple
+import copy
 
 def get_frame(frame_index, video_path):
     cap = cv2.VideoCapture(video_path)
@@ -166,16 +167,148 @@ mp_drawing_styles = mp.solutions.drawing_styles
 
 def draw_landmarks_on_frame(image: np.ndarray, results: Dict) -> np.ndarray:
     """
-    Draw landmarks and connections on the image.
+    Draw landmarks and connections on the image, adding dark grey padding if landmarks exceed [0,1] range.
+    Padding is capped at 3 times the original image size in any direction.
+    MediaPipe's visibility attribute will naturally handle hiding of landmarks.
+    A light border is drawn around the original frame area.
     
     Args:
         image: Input image in BGR format
         results: Dictionary containing detection results
     
     Returns:
-        Image with landmarks drawn
+        Image with landmarks drawn, potentially with padding if landmarks exceed normal bounds
     """
-    # Create a copy of the image to draw on
+    # Find the maximum extent of landmarks in each direction
+    min_x, max_x, min_y, max_y = float('inf'), float('-inf'), float('inf'), float('-inf')
+    
+    def update_bounds(landmarks):
+        nonlocal min_x, max_x, min_y, max_y
+        if landmarks:
+            for landmark in landmarks.landmark:
+                # Skip landmarks with very low visibility
+                if hasattr(landmark, 'visibility') and landmark.visibility < 0.75:
+                    continue
+                min_x = max(-2, min(min_x, landmark.x))  # Cap at -2 (allows for 3x padding on left)
+                max_x = min(3, max(max_x, landmark.x))   # Cap at 3
+                min_y = max(-2, min(min_y, landmark.y))  # Cap at -2 (allows for 3x padding on top)
+                max_y = min(3, max(max_y, landmark.y))   # Cap at 3
+    
+    # Check all landmark types
+    for key in ['face_landmarks', 'pose_landmarks', 'left_hand_landmarks', 'right_hand_landmarks']:
+        if key in results and results[key]:
+            update_bounds(results[key])
+    
+    # If no valid landmarks were found, reset bounds to default
+    if min_x == float('inf'):
+        min_x, max_x, min_y, max_y = 0, 1, 0, 1
+    
+    # Calculate required padding
+    pad_left = max(0, int(-min_x * image.shape[1]))
+    pad_right = max(0, int((max_x - 1) * image.shape[1]))
+    pad_top = max(0, int(-min_y * image.shape[0]))
+    pad_bottom = max(0, int((max_y - 1) * image.shape[0]))
+    
+    # Add padding if needed
+    if pad_left or pad_right or pad_top or pad_bottom:
+        # Create dark grey padding (RGB: 64,64,64)
+        padded_image = np.full((
+            image.shape[0] + pad_top + pad_bottom,
+            image.shape[1] + pad_left + pad_right,
+            3
+        ), 64, dtype=np.uint8)
+        
+        # Copy original image into padded area
+        padded_image[pad_top:pad_top+image.shape[0], 
+                    pad_left:pad_left+image.shape[1]] = image
+        
+        # Draw a light grey border (RGB: 192,192,192) around the original frame
+        border_color = (192, 192, 192)
+        border_thickness = 2
+        cv2.rectangle(
+            padded_image,
+            (pad_left, pad_top),
+            (pad_left + image.shape[1], pad_top + image.shape[0]),
+            border_color,
+            border_thickness
+        )
+        
+        # Adjust landmark coordinates to account for padding
+        scale_x = padded_image.shape[1] / image.shape[1]
+        scale_y = padded_image.shape[0] / image.shape[0]
+        offset_x = pad_left / padded_image.shape[1]
+        offset_y = pad_top / padded_image.shape[0]
+        
+        def adjust_landmarks(landmarks):
+            if landmarks:
+                adjusted = copy.deepcopy(landmarks)
+                for landmark in adjusted.landmark:
+                    # Scale and shift the coordinates to the new image size
+                    landmark.x = (landmark.x / scale_x) + offset_x
+                    landmark.y = (landmark.y / scale_y) + offset_y
+                return adjusted
+            return None
+        
+        # Create adjusted results
+        adjusted_results = {}
+        for key in results:
+            if key in ['face_landmarks', 'pose_landmarks', 'left_hand_landmarks', 'right_hand_landmarks']:
+                adjusted_results[key] = adjust_landmarks(results[key])
+            else:
+                adjusted_results[key] = results[key]
+        
+        # Draw landmarks on padded image
+        annotated_image = padded_image.copy()
+        
+        # Draw face landmarks
+        if adjusted_results['face_landmarks']:
+            mp_drawing.draw_landmarks(
+                image=annotated_image,
+                landmark_list=adjusted_results['face_landmarks'],
+                connections=mp_holistic.FACEMESH_TESSELATION,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style()
+            )
+            mp_drawing.draw_landmarks(
+                image=annotated_image,
+                landmark_list=adjusted_results['face_landmarks'],
+                connections=mp_holistic.FACEMESH_CONTOURS,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_contours_style()
+            )
+        
+        # Draw pose landmarks
+        if adjusted_results['pose_landmarks']:
+            mp_drawing.draw_landmarks(
+                image=annotated_image,
+                landmark_list=adjusted_results['pose_landmarks'],
+                connections=mp_holistic.POSE_CONNECTIONS,
+                landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style()
+            )
+        
+        # Draw left hand landmarks
+        if adjusted_results['left_hand_landmarks']:
+            mp_drawing.draw_landmarks(
+                image=annotated_image,
+                landmark_list=adjusted_results['left_hand_landmarks'],
+                connections=mp_holistic.HAND_CONNECTIONS,
+                landmark_drawing_spec=mp_drawing_styles.get_default_hand_landmarks_style(),
+                connection_drawing_spec=mp_drawing_styles.get_default_hand_connections_style()
+            )
+        
+        # Draw right hand landmarks
+        if adjusted_results['right_hand_landmarks']:
+            mp_drawing.draw_landmarks(
+                image=annotated_image,
+                landmark_list=adjusted_results['right_hand_landmarks'],
+                connections=mp_holistic.HAND_CONNECTIONS,
+                landmark_drawing_spec=mp_drawing_styles.get_default_hand_landmarks_style(),
+                connection_drawing_spec=mp_drawing_styles.get_default_hand_connections_style()
+            )
+        
+        return annotated_image
+    
+    # If no padding needed, proceed with original image
     annotated_image = image.copy()
     
     # Draw face landmarks
@@ -187,7 +320,6 @@ def draw_landmarks_on_frame(image: np.ndarray, results: Dict) -> np.ndarray:
             landmark_drawing_spec=None,
             connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style()
         )
-        # Draw face contours
         mp_drawing.draw_landmarks(
             image=annotated_image,
             landmark_list=results['face_landmarks'],
