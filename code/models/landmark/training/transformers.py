@@ -50,9 +50,23 @@ class TransformerClassifier(nn.Module):
 
         self.cls_head = nn.Linear(d_model, num_classes)
 
-    def forward(self, x):  # x: [B, T, D]
+    def embedding(self, x):
         x = self.embedding(x)  # [B, T, d_model]
         x = self.pos_encoder(x)  # Add positional encoding
-        x = self.transformer_encoder(x)  # [B, T, d_model]
+        
+        x = self.transformer_encoder(x)
         x = x.mean(dim=1)  # Global average pooling over time
+        return x
+
+    def forward(self, x, attention_mask=None):  # x: [B, T, D]
+        x = self.embedding(x)  # [B, T, d_model]
+        x = self.pos_encoder(x)  # Add positional encoding
+       
+        if attention_mask is not None:
+            src_key_padding_mask = ~attention_mask.bool()
+            x = self.transformer_encoder(x, src_key_padding_mask=src_key_padding_mask)  # [B, T, d_model]
+
+        x = self.transformer_encoder(x)
+        x = x.mean(dim=1)  # Global average pooling over time
+        print(x.shape)
         return self.cls_head(x)  # [B, num_classes]
