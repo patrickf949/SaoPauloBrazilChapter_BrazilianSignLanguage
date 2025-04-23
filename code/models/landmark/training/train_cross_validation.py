@@ -9,7 +9,7 @@ from models.landmark.utils import load_config
 from models.landmark.training.train import evaluate
 from models.landmark.training.transformers import TransformerClassifier
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
-
+from models.landmark.dataset.dataloader_functions import collate_fn_pad
 
 def train_rotating_folds(
     model,
@@ -43,22 +43,23 @@ def train_rotating_folds(
 
         train_ids, val_ids = fold_indices[fold]
         train_loader = DataLoader(
-            Subset(dataset, train_ids), batch_size=batch_size, shuffle=True
+            Subset(dataset, train_ids), batch_size=batch_size, shuffle=True, collate_fn=collate_fn_pad
         )
         val_loader = DataLoader(
-            Subset(dataset, val_ids), batch_size=batch_size, shuffle=False
+            Subset(dataset, val_ids), batch_size=batch_size, shuffle=False, collate_fn=collate_fn_pad
         )
 
         # ----- training step -----
         model.train()
         total_loss = 0
 
-        for features, labels in train_loader:
+        for features, labels, attention_mask in train_loader:
             y = labels.squeeze().to(device)
             features = features.to(device)
+            attention_mask = attention_mask.to(device)
 
             optimizer.zero_grad()
-            logits = model(features)
+            logits = model(features, attention_mask=attention_mask)
             loss = criterion(logits, y)
             loss.backward()
             optimizer.step()
@@ -71,11 +72,11 @@ def train_rotating_folds(
         model.eval()
         val_loss = 0
         with torch.no_grad():
-            for features, labels in val_loader:
+            for features, labels, attention_mask in val_loader:
                 y = labels.squeeze().to(device)
                 features = features.to(device)
-
-                logits = model(features)
+                attention_mask = attention_mask.to(device)
+                logits = model(features, attention_mask=attention_mask)
                 loss = criterion(logits, y)
                 val_loss += loss.item()
 
@@ -126,7 +127,7 @@ def train_rotating_folds(
             writer.writerows(log_data)
         print(f"Training log saved to: {log_path}")
 
-    return acc, best_epoch, log_data
+    return top1_acc, topk_acc, best_epoch, log_data
 
 
 if __name__ == "__main__":
