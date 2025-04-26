@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple, Any, Union
 import pandas as pd
 import shutil
 import copy
-from video_analyzer import validate_landmarks_format, reduce_landmarks, analyze_none_landmarks
+from video_analyzer import validate_landmarks_format, hide_lower_body_landmarks, analyze_none_landmarks
 
 class Preprocessor:
     """
@@ -60,12 +60,11 @@ class Preprocessor:
         self.duration_sec = metadata_row["duration_sec"]
         
         # Set up directory paths
-        self.raw_dir = os.path.join(path_to_root, "data", "raw", "combined")
         self.interim_dir = os.path.join(path_to_root, "data", "interim")
         self.preprocessed_dir = os.path.join(path_to_root, "data", "preprocessed")
         
         # Raw video path
-        self.raw_videos_dir = os.path.join(self.raw_dir, "videos")
+        self.raw_videos_dir = os.path.join(self.interim_dir, "RawCleanVideos")
         
         # Interim paths
         self.interim_debug_dir = os.path.join(self.interim_dir, "Debug")
@@ -168,6 +167,136 @@ class Preprocessor:
     # Landmark Processing Methods
     # ==========================================
     
+    def _interpolate_hand_landmarks(self, landmarks: np.ndarray) -> Tuple[np.ndarray, Dict]:
+        """
+        Interpolate hand landmarks when there are individual None frames between valid frames.
+        Only interpolates single-frame gaps (i.e., one None frame with valid frames before and after).
+        Does not interpolate longer sequences of None frames.
+        
+        Args:
+            landmarks: Array of landmarks to process
+            
+        Returns:
+            Tuple containing:
+            - Array of landmarks with interpolated hand landmarks where possible
+            - Dictionary containing interpolation metadata
+        """
+        interpolation_info = {
+            'left_hand_landmarks': {
+                'total_interpolated_frames': 0,
+                'interpolated_frame_indices': []  # List of all interpolated frame indices
+            },
+            'right_hand_landmarks': {
+                'total_interpolated_frames': 0,
+                'interpolated_frame_indices': []
+            }
+        }
+        
+        # Get None analysis once before processing any hands
+        none_analysis = analyze_none_landmarks(landmarks)
+        
+        if self.verbose:
+            # Analyze before interpolation
+            print("None analysis before interpolation:")
+            print(f"Left hand None frames: {none_analysis['left_hand_landmarks']['valid_range_none_details']}")
+            print(f"Right hand None frames: {none_analysis['right_hand_landmarks']['valid_range_none_details']}")
+        
+        # Process each hand type
+        for hand_type in ['left_hand_landmarks', 'right_hand_landmarks']:
+            none_frames = sorted(none_analysis[hand_type]['valid_range_none_details'])
+            
+            if self.verbose:
+                print(f"\nProcessing {hand_type}")
+                print(f"Found None frames: {none_frames}")
+            
+            # First, identify frames that need interpolation
+            frames_to_interpolate = []
+            for frame_idx in none_frames:
+                # Check if this is an isolated None frame by examining actual frame content
+                if frame_idx > 0 and frame_idx < len(landmarks) - 1:
+                    before_frame = landmarks[frame_idx - 1]
+                    after_frame = landmarks[frame_idx + 1]
+                    
+                    # Check if both neighboring frames exist and have valid hand landmarks
+                    has_valid_before = (before_frame is not None and 
+                                      hand_type in before_frame and 
+                                      before_frame[hand_type] is not None)
+                    
+                    has_valid_after = (after_frame is not None and 
+                                     hand_type in after_frame and 
+                                     after_frame[hand_type] is not None)
+                    
+                    if has_valid_before and has_valid_after:
+                        frames_to_interpolate.append(frame_idx)
+            
+            if self.verbose:
+                print(f"Found {len(frames_to_interpolate)} frames to interpolate: {frames_to_interpolate}")
+            
+            # Then, perform interpolation for identified frames
+            for frame_idx in frames_to_interpolate:
+                before_frame = landmarks[frame_idx - 1]
+                after_frame = landmarks[frame_idx + 1]
+                
+                if self.verbose:
+                    print(f"Interpolating frame {frame_idx} using frames {frame_idx-1} and {frame_idx+1}")
+                
+                # Create a new frame by deep copying the before frame
+                new_frame = self._deep_copy_landmarks_frame(before_frame)
+                
+                # Get landmarks from before and after frames
+                before_landmarks = before_frame[hand_type].landmark
+                after_landmarks = after_frame[hand_type].landmark
+                
+                # Create new hand landmarks if they don't exist
+                if hand_type not in new_frame or new_frame[hand_type] is None:
+                    new_frame[hand_type] = copy.deepcopy(before_frame[hand_type])
+                
+                # Debug output for first landmark point before interpolation
+                if self.verbose:
+                    print(f"\nDebug - First landmark point before interpolation:")
+                    print(f"Before frame: x={before_landmarks[0].x:.4f}, y={before_landmarks[0].y:.4f}, z={before_landmarks[0].z:.4f}")
+                    print(f"After frame:  x={after_landmarks[0].x:.4f}, y={after_landmarks[0].y:.4f}, z={after_landmarks[0].z:.4f}")
+                
+                # Interpolate with t=0.5 for the middle frame
+                for j in range(len(before_landmarks)):
+                    # Linear interpolation for x, y, z coordinates
+                    x = (before_landmarks[j].x + after_landmarks[j].x) / 2
+                    y = (before_landmarks[j].y + after_landmarks[j].y) / 2
+                    z = (before_landmarks[j].z + after_landmarks[j].z) / 2
+                    
+                    new_frame[hand_type].landmark[j].x = x
+                    new_frame[hand_type].landmark[j].y = y
+                    new_frame[hand_type].landmark[j].z = z
+                    
+                    # Debug output for first landmark point after interpolation
+                    if j == 0 and self.verbose:
+                        print(f"Interpolated:  x={x:.4f}, y={y:.4f}, z={z:.4f}")
+                
+                # Store the interpolated frame
+                landmarks[frame_idx] = new_frame
+                
+                # Track this successful interpolation
+                interpolation_info[hand_type]['total_interpolated_frames'] += 1
+                interpolation_info[hand_type]['interpolated_frame_indices'].append(frame_idx)
+        
+        if self.verbose:
+            # Analyze after interpolation
+            after_analysis = analyze_none_landmarks(landmarks)
+            print("\nNone analysis after interpolation:")
+            print(f"Left hand None frames: {after_analysis['left_hand_landmarks']['valid_range_none_details']}")
+            print(f"Right hand None frames: {after_analysis['right_hand_landmarks']['valid_range_none_details']}")
+            print(f"Reduced left hand None frames by: {len(none_analysis['left_hand_landmarks']['valid_range_none_details']) - len(after_analysis['left_hand_landmarks']['valid_range_none_details'])}")
+            print(f"Reduced right hand None frames by: {len(none_analysis['right_hand_landmarks']['valid_range_none_details']) - len(after_analysis['right_hand_landmarks']['valid_range_none_details'])}")
+            
+            # Print interpolation summary
+            for hand_type in ['left_hand_landmarks', 'right_hand_landmarks']:
+                print(f"\n{hand_type} interpolation summary:")
+                print(f"Total frames interpolated: {interpolation_info[hand_type]['total_interpolated_frames']}")
+                if interpolation_info[hand_type]['interpolated_frame_indices']:
+                    print(f"Frames interpolated: {interpolation_info[hand_type]['interpolated_frame_indices']}")
+            
+        return landmarks, interpolation_info
+
     def preprocess_landmarks(self) -> str:
         """
         Apply preprocessing steps to landmarks and save result.
@@ -200,10 +329,10 @@ class Preprocessor:
             
         # Load landmarks
         landmarks = np.load(landmarks_path, allow_pickle=True)
-        landmarks = reduce_landmarks(landmarks)
-        validation_result = validate_landmarks_format(landmarks)
-        if not validation_result[0]:
-            raise ValueError(f"Invalid landmarks format in raw data: {validation_result[1]}")
+        # landmarks = hide_lower_body_landmarks(landmarks)
+        # validation_result = validate_landmarks_format(landmarks)
+        # if not validation_result[0]:
+        #     raise ValueError(f"Invalid landmarks format in raw data: {validation_result[1]}")
 
         if self.verbose:
             print(f"Loaded landmarks with shape: {landmarks.shape}")
@@ -238,19 +367,7 @@ class Preprocessor:
         self.aligned_landmark_extremes = self._get_landmark_extremes_for_series(aligned_landmarks, skip_stationary_frames)
         self.aligned_scale_factors_and_offsets = self._get_scale_factors_and_offsets(self.aligned_reference_points)
 
-        # # 7. Clamp landmarks to [0,1] range
-        # clamped_landmarks, removed_landmarks_info = self._clamp_landmarks_for_series(aligned_landmarks)
-        # del aligned_landmarks
-        # if self.save_intermediate:
-        #     self._save_intermediate_landmarks(clamped_landmarks, "clamped")
-        # validation_result = validate_landmarks_format(clamped_landmarks)
-        # if not validation_result[0]:
-        #     raise ValueError(f"Invalid landmarks format after clamping: {validation_result[1]}")
-        # clamped_none_analysis = analyze_none_landmarks(clamped_landmarks)
-        
-        # 8. Trim landmarks
-        # trimmed_landmarks = self._trim_landmarks(clamped_landmarks)
-        # del clamped_landmarks
+        # 7. Trim landmarks
         trimmed_landmarks = self._trim_landmarks(aligned_landmarks)
         if self.save_intermediate:
             self._save_intermediate_landmarks(trimmed_landmarks, "trimmed")
@@ -259,14 +376,19 @@ class Preprocessor:
         self.trimmed_landmark_extremes = self._get_landmark_extremes_for_series(trimmed_landmarks, skip_stationary_frames)
         self.trimmed_none_analysis = analyze_none_landmarks(trimmed_landmarks)
 
+        # 8. Interpolate hand landmarks
+        interpolated_landmarks, self.interpolation_info = self._interpolate_hand_landmarks(trimmed_landmarks)
+        if self.save_intermediate:
+            self._save_intermediate_landmarks(interpolated_landmarks, "interpolated")
+        self.interpolated_none_analysis = analyze_none_landmarks(interpolated_landmarks)
         
         # 9. Save preprocessed landmarks & metadata
-        # self.removed_landmarks = removed_landmarks_info
-        # self.clamped_none_analysis = clamped_none_analysis
-        output_path = self._save_preprocessed_landmarks(trimmed_landmarks)
+        output_path = self._save_preprocessed_landmarks(interpolated_landmarks)
         
         # Clear processed landmarks from memory
+        del interpolated_landmarks
         del trimmed_landmarks
+        del aligned_landmarks
         
         return output_path
     
@@ -327,12 +449,13 @@ class Preprocessor:
         
         return new_frame
     
-    def _get_landmark_extremes_for_frame(self, frame_landmarks: Dict) -> Dict[str, Dict[str, Optional[float]]]:
+    def _get_landmark_extremes_for_frame(self, frame_landmarks: Dict, skip_lower_body: bool = True) -> Dict[str, Dict[str, Optional[float]]]:
         """
         Track extreme coordinates (min/max x, min y) for each landmark type.
         
         Args:
             frame_landmarks: Dictionary containing landmark data for a single frame
+            skip_lower_body: If True, ignore lower body landmarks (indices 23-32) in pose_landmarks
             
         Returns:
             Dictionary containing extreme coordinates for each landmark type and overall
@@ -348,13 +471,20 @@ class Preprocessor:
         # Helper function to update extremes for a landmark group
         def update_category_extremes(category: str, landmarks) -> None:
             if landmarks is not None:
-                x_coords = [lm.x for lm in landmarks.landmark]
-                y_coords = [lm.y for lm in landmarks.landmark]
+                # For pose landmarks, optionally skip lower body
+                if category == 'pose' and skip_lower_body:
+                    x_coords = [lm.x for i, lm in enumerate(landmarks.landmark) if i < 23]
+                    y_coords = [lm.y for i, lm in enumerate(landmarks.landmark) if i < 23]
+                else:
+                    x_coords = [lm.x for lm in landmarks.landmark]
+                    y_coords = [lm.y for lm in landmarks.landmark]
+                    
                 if x_coords and y_coords:  # Check if lists are not empty
                     extremes[category]['left_x'] = min(x_coords)
                     extremes[category]['right_x'] = max(x_coords)
                     extremes[category]['top_y'] = min(y_coords)
                     extremes[category]['bottom_y'] = max(y_coords)
+                
         # Get extremes for each landmark type
         landmark_types = {
             'pose': 'pose_landmarks',
@@ -368,10 +498,15 @@ class Preprocessor:
         
         # Calculate overall extremes
         all_x, all_y = [], []
-        for key in landmark_types.values():
+        for category, key in landmark_types.items():
             if frame_landmarks.get(key) is not None:
-                all_x.extend(lm.x for lm in frame_landmarks[key].landmark)
-                all_y.extend(lm.y for lm in frame_landmarks[key].landmark)
+                # For pose landmarks, optionally skip lower body
+                if category == 'pose' and skip_lower_body:
+                    all_x.extend(lm.x for i, lm in enumerate(frame_landmarks[key].landmark) if i < 23)
+                    all_y.extend(lm.y for i, lm in enumerate(frame_landmarks[key].landmark) if i < 23)
+                else:
+                    all_x.extend(lm.x for lm in frame_landmarks[key].landmark)
+                    all_y.extend(lm.y for lm in frame_landmarks[key].landmark)
         
         if all_x and all_y:
             extremes['overall']['left_x'] = min(all_x)
@@ -380,7 +515,7 @@ class Preprocessor:
             extremes['overall']['bottom_y'] = max(all_y)
         return extremes
 
-    def _get_landmark_extremes_for_series(self, landmarks: np.ndarray, skip_stationary_frames: bool = False) -> Dict[str, Dict[str, Optional[float]]]:
+    def _get_landmark_extremes_for_series(self, landmarks: np.ndarray, skip_stationary_frames: bool = False, skip_lower_body: bool = True) -> Dict[str, Dict[str, Optional[float]]]:
         """
         Track extreme coordinates (min/max x, min y) for each landmark type across all frames.
         
@@ -413,7 +548,7 @@ class Preprocessor:
             if skip_stationary_frames and self.params["start_frame"] <= frame_idx <= self.params["end_frame"]:
                 continue
             frame_landmarks = landmarks[frame_idx]
-            frame_extremes = self._get_landmark_extremes_for_frame(frame_landmarks)
+            frame_extremes = self._get_landmark_extremes_for_frame(frame_landmarks, skip_lower_body)
             for category in extremes_list.keys():
                 for key in extremes_list[category].keys():
                     extremes_list[category][key].append(frame_extremes[category][key])
@@ -634,7 +769,7 @@ class Preprocessor:
         face_x_scale = face_width_aim / reference_points['face_width']
         shoulders_x_scale = shoulders_width_aim / reference_points['shoulders_width']
         x_scale = max(face_x_scale, shoulders_x_scale)
-        y_scale = face_midpoint_to_shoulders_height_aim / reference_points['face_midpoint_to_shoulders_height']    
+        y_scale = face_midpoint_to_shoulders_height_aim / reference_points['face_midpoint_to_shoulders_height']
         
         scale_factors_and_offsets = {
             'horizontal_offset': round(horizontal_offset, 3),
@@ -756,7 +891,7 @@ class Preprocessor:
         if self.verbose:
             print(f">> Saved preprocessed landmarks to {output_path}")
             
-        # Update the master metadata CSV
+        # Update the landmarks metadata CSV
         self._update_landmarks_metadata_csv()
         
         # If save_intermediate is True, also save to debug directory
@@ -840,8 +975,12 @@ class Preprocessor:
                 "scale_factors_and_offsets": self.trimmed_scale_factors_and_offsets,
                 "landmark_extremes": self.trimmed_landmark_extremes,
                 "none_analysis": self.trimmed_none_analysis
+            },
+            "interpolated": {
+                "none_analysis": self.interpolated_none_analysis,
+                "interpolation_info": self.interpolation_info
             }
-            }
+        }
         
         
         # Convert to JSON serializable types
@@ -860,9 +999,84 @@ class Preprocessor:
     
     def _update_landmarks_metadata_csv(self) -> None:
         """
-        This method is now deprecated as metadata is handled by _update_video_metadata_csv.
+        Update the landmarks metadata CSV file.
+        Handles schema changes by ensuring new columns are added to existing data.
         """
-        pass
+        csv_path = os.path.join(self.preprocessed_dir, f"landmarks_metadata_{self.preprocess_version}.csv")
+        
+        # Calculate processed values
+        processed_frame_count = self.params["end_frame"] - self.params["start_frame"] + 1
+        processed_duration_sec = processed_frame_count / self.fps
+        
+        # Create a new row for this video's landmarks
+        row = {
+            "filename": self.filename,
+            "label": self.metadata.get("label", ""),
+            "data_source": self.metadata.get("data_source", ""),
+            "original_fps": self.fps,
+            "original_frame_count": self.frame_count,
+            "original_duration_sec": self.duration_sec,
+            "start_frame": self.params["start_frame"],
+            "end_frame": self.params["end_frame"],
+            "processed_frame_count": processed_frame_count,
+            "processed_duration_sec": processed_duration_sec,
+            "preprocess_version": self.preprocess_version,
+            # Add key landmark statistics
+            "face_width": self.raw_reference_points.get('face_width'),
+            "shoulders_width": self.raw_reference_points.get('shoulders_width'),
+            "face_midpoint_to_shoulders_height": self.raw_reference_points.get('face_midpoint_to_shoulders_height'),
+            # Add interpolation statistics
+            "left_hand_interpolated_frames": self.interpolation_info['left_hand_landmarks']['total_interpolated_frames'],
+            "right_hand_interpolated_frames": self.interpolation_info['right_hand_landmarks']['total_interpolated_frames'],
+            # Add None analysis statistics
+            "original_left_hand_none_frames": len(self.raw_none_analysis['left_hand_landmarks']['valid_range_none_details']),
+            "original_right_hand_none_frames": len(self.raw_none_analysis['right_hand_landmarks']['valid_range_none_details']),
+            "final_left_hand_none_frames": len(self.interpolated_none_analysis['left_hand_landmarks']['valid_range_none_details']),
+            "final_right_hand_none_frames": len(self.interpolated_none_analysis['right_hand_landmarks']['valid_range_none_details'])
+        }
+        
+        # Convert row to DataFrame
+        new_df = pd.DataFrame([row])
+        
+        # Track if we're creating a new file
+        is_new_file = not os.path.exists(csv_path)
+        
+        # If file exists, load it and check for schema changes
+        old_cols = set()
+        if not is_new_file:
+            df = pd.read_csv(csv_path)
+            old_cols = set(df.columns)
+            
+            # Check if this file is already in the CSV
+            if self.filename in df["filename"].values:
+                # Get the index of the existing row
+                idx = df.index[df["filename"] == self.filename].tolist()[0]
+                
+                # Update existing columns and add new ones
+                for col in new_df.columns:
+                    df.loc[idx, col] = new_df.iloc[0][col]
+            else:
+                # Append the new row, pandas will automatically align columns
+                df = pd.concat([df, new_df], ignore_index=True)
+        else:
+            # If file doesn't exist, use the new DataFrame
+            df = new_df
+        
+        # Check for column changes before saving
+        if not is_new_file:
+            new_cols = set(new_df.columns)
+            added_cols = new_cols - old_cols
+            if added_cols and self.verbose:
+                print(f">> Adding new columns to landmarks metadata: {added_cols}")
+        
+        # Save the CSV
+        df.to_csv(csv_path, index=False)
+        
+        if self.verbose:
+            if is_new_file:
+                print(f">> Created new landmarks metadata CSV at {csv_path}")
+            else:
+                print(f">> Updated landmarks metadata CSV at {csv_path}")
 
     def _debug_landmarks_format(self, landmarks1, landmarks2, frame_idx=0, label1="Original", label2="Modified"):
         """
@@ -1243,7 +1457,7 @@ class Preprocessor:
         if self.verbose:
             print(f">> Saved preprocessed video to {output_path} using {used_codec} codec")
             
-        # Update the master metadata CSV
+        # Update the video metadata CSV
         self._update_video_metadata_csv()
         
         # If save_intermediate is True, also save to debug directory
@@ -1340,9 +1554,10 @@ class Preprocessor:
     
     def _update_video_metadata_csv(self) -> None:
         """
-        Update the master CSV file with this video's metadata.
+        Update the video metadata CSV file.
+        Handles schema changes by ensuring new columns are added to existing data.
         """
-        csv_path = os.path.join(self.preprocessed_dir, f"preprocessed_metadata_{self.preprocess_version}.csv")
+        csv_path = os.path.join(self.preprocessed_dir, f"video_metadata_{self.preprocess_version}.csv")
         
         # Calculate processed values
         processed_frame_count = self.params["end_frame"] - self.params["start_frame"] + 1
@@ -1358,39 +1573,63 @@ class Preprocessor:
             "original_height": self.height,
             "original_frame_count": self.frame_count,
             "original_duration_sec": self.duration_sec,
-            "original_start_frame": self.params["start_frame"],
-            "original_end_frame": self.params["end_frame"],
+            "start_frame": self.params["start_frame"],
+            "end_frame": self.params["end_frame"],
             "processed_frame_count": processed_frame_count,
             "processed_duration_sec": processed_duration_sec,
-            "x_scale": self.raw_scale_factors_and_offsets["x_scale"],
-            "y_scale": self.raw_scale_factors_and_offsets["y_scale"],
-            "x_offset": self.raw_scale_factors_and_offsets["horizontal_offset"],
-            "y_offset": self.raw_scale_factors_and_offsets["vertical_offset"],
-            "preprocess_version": self.preprocess_version
+            "preprocess_version": self.preprocess_version,
+            # Add scaling and alignment info
+            "horizontal_offset": self.raw_scale_factors_and_offsets['horizontal_offset'],
+            "vertical_offset": self.raw_scale_factors_and_offsets['vertical_offset'],
+            "x_scale": self.raw_scale_factors_and_offsets['x_scale'],
+            "y_scale": self.raw_scale_factors_and_offsets['y_scale'],
+            # Reference the landmarks metadata
+            "landmarks_metadata_file": f"{self.filename.split('.')[0]}.json",
+            "landmarks_preprocess_version": self.preprocess_version
         }
         
-        # Check if the CSV exists
-        if os.path.exists(csv_path):
-            # Load existing data
+        # Convert row to DataFrame
+        new_df = pd.DataFrame([row])
+        
+        # Track if we're creating a new file
+        is_new_file = not os.path.exists(csv_path)
+        
+        # If file exists, load it and check for schema changes
+        old_cols = set()
+        if not is_new_file:
             df = pd.read_csv(csv_path)
+            old_cols = set(df.columns)
             
             # Check if this file is already in the CSV
             if self.filename in df["filename"].values:
-                # Update the row
+                # Get the index of the existing row
                 idx = df.index[df["filename"] == self.filename].tolist()[0]
-                df.loc[idx] = pd.Series(row)
+                
+                # Update existing columns and add new ones
+                for col in new_df.columns:
+                    df.loc[idx, col] = new_df.iloc[0][col]
             else:
-                # Append the row
-                df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
+                # Append the new row, pandas will automatically align columns
+                df = pd.concat([df, new_df], ignore_index=True)
         else:
-            # Create a new DataFrame
-            df = pd.DataFrame([row])
-            
+            # If file doesn't exist, use the new DataFrame
+            df = new_df
+        
+        # Check for column changes before saving
+        if not is_new_file:
+            new_cols = set(new_df.columns)
+            added_cols = new_cols - old_cols
+            if added_cols and self.verbose:
+                print(f">> Adding new columns to video metadata: {added_cols}")
+        
         # Save the CSV
         df.to_csv(csv_path, index=False)
         
         if self.verbose:
-            print(f">> Updated preprocessing metadata CSV at {csv_path}")
+            if is_new_file:
+                print(f">> Created new video metadata CSV at {csv_path}")
+            else:
+                print(f">> Updated video metadata CSV at {csv_path}")
 
     def _save_interim_video(self, frames: List[np.ndarray], step_name: str) -> str:
         """
@@ -1428,52 +1667,6 @@ class Preprocessor:
     
     def _update_metadata_csv(self) -> None:
         """
-        Update the master CSV file with this video's metadata.
+        This method is deprecated. Use _update_landmarks_metadata_csv() or _update_video_metadata_csv() instead.
         """
-        csv_path = os.path.join(self.preprocessed_dir, f"preprocessed_metadata_{self.preprocess_version}.csv")
-        
-        # Create a new row for this video
-        row = {
-            "filename": self.filename,
-            "label": self.metadata.get("label", ""),
-            "data_source": self.metadata.get("data_source", ""),
-            "original_fps": self.fps,
-            "original_width": self.width,
-            "original_height": self.height,
-            "original_frame_count": self.frame_count,
-            "original_duration_sec": self.duration_sec,
-            "original_start_frame": self.params["start_frame"],
-            "original_end_frame": self.params["end_frame"],
-            "preprocessed_frame_count": int(self.params["target_duration"] * self.fps),
-            "preprocessed_duration_sec": self.params["target_duration"],
-            "preprocessed_start_frame": self.preprocessed_start_frame,
-            "preprocessed_end_frame": self.preprocessed_end_frame,
-            "horizontal_offset": self.params["horizontal_offset"],
-            "vertical_offset": self.params["vertical_offset"],
-            "x_scale_factor": self.params["x_scale_factor"],
-            "y_scale_factor": self.params["y_scale_factor"],
-            "preprocess_version": self.preprocess_version
-        }
-        
-        # Check if the CSV exists
-        if os.path.exists(csv_path):
-            # Load existing data
-            df = pd.read_csv(csv_path)
-            
-            # Check if this file is already in the CSV
-            if self.filename in df["filename"].values:
-                # Update the row
-                idx = df.index[df["filename"] == self.filename].tolist()[0]
-                df.loc[idx] = pd.Series(row)
-            else:
-                # Append the row
-                df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
-        else:
-            # Create a new DataFrame
-            df = pd.DataFrame([row])
-            
-        # Save the CSV
-        df.to_csv(csv_path, index=False)
-        
-        if self.verbose:
-            print(f">> Updated preprocessing metadata CSV at {csv_path}")
+        pass
