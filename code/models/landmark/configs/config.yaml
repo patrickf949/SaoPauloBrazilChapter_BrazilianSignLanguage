@@ -1,0 +1,14 @@
+defaults:
+  - optimizer: adam
+  - scheduler: cyclic
+  - model: transformer
+  - dataset: dataset
+  - training: training
+  - features: 
+    - angles
+    - differences
+    - distances
+
+general: 
+  log_path: 
+  save_dir: 

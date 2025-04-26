@@ -53,7 +53,7 @@ class TransformerClassifier(nn.Module):
     def embedding(self, x):
         x = self.embedding(x)  # [B, T, d_model]
         x = self.pos_encoder(x)  # Add positional encoding
-        
+
         x = self.transformer_encoder(x)
         x = x.mean(dim=1)  # Global average pooling over time
         return x
@@ -61,10 +61,12 @@ class TransformerClassifier(nn.Module):
     def forward(self, x, attention_mask=None):  # x: [B, T, D]
         x = self.embedding(x)  # [B, T, d_model]
         x = self.pos_encoder(x)  # Add positional encoding
-       
+
         if attention_mask is not None:
             src_key_padding_mask = ~attention_mask.bool()
-            x = self.transformer_encoder(x, src_key_padding_mask=src_key_padding_mask)  # [B, T, d_model]
+            x = self.transformer_encoder(
+                x, src_key_padding_mask=src_key_padding_mask
+            )  # [B, T, d_model]
 
         x = self.transformer_encoder(x)
         x = x.mean(dim=1)  # Global average pooling over time

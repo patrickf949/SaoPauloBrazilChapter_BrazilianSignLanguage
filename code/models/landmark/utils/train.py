@@ -5,21 +5,20 @@ from torch.utils.data import Subset, DataLoader
 from models.landmark.training.transformers import TransformerClassifier
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_fn_pad
-
+from typing import Dict
 from sklearn.metrics import accuracy_score
 
 
-
 def train_epoch_fold(
-        epoch: int,
-        k_folds: int, 
-        dataset: LandmarkDataset, 
-        batch_size: int, 
-        device: str, 
-        optimizer: torch.optim.Optimizer, 
-        criterion
+    epoch: int,
+    k_folds: int,
+    datasets: Dict,
+    batch_size: int,
+    device: str,
+    optimizer: torch.optim.Optimizer,
+    criterion,
 ):
-  
+    dataset = datasets["train_dataset"]
     kfold = KFold(n_splits=k_folds, shuffle=True, random_state=42)
     fold_indices = list(kfold.split(dataset))
 
@@ -28,10 +27,16 @@ def train_epoch_fold(
 
     train_ids, val_ids = fold_indices[fold]
     train_loader = DataLoader(
-        Subset(dataset, train_ids), batch_size=batch_size, shuffle=True, collate_fn=collate_fn_pad
+        Subset(dataset, train_ids),
+        batch_size=batch_size,
+        shuffle=True,
+        collate_fn=collate_fn_pad,
     )
     val_loader = DataLoader(
-        Subset(dataset, val_ids), batch_size=batch_size, shuffle=False, collate_fn=collate_fn_pad
+        Subset(dataset, val_ids),
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_fn_pad,
     )
 
     # ----- training step -----
@@ -66,18 +71,21 @@ def train_epoch_fold(
             val_loss += loss.item()
 
     avg_val_loss = val_loss / len(val_loader)
-    
+
     return avg_train_loss, avg_val_loss
 
-def train_epoch(model: nn.Module,
-                device: str, 
-                train_loader: torch.utils.data.DataLoader, 
-                val_loader: torch.utils.data.DataLoader, 
-                criterion, 
-                optimizer: torch.optim.Optimizer, 
-                scheduler: torch.optim.lr_scheduler.LRScheduler, 
-                ):
-    
+
+def train_epoch(
+    model: nn.Module,
+    device: str,
+    datasets: Dict,
+    criterion,
+    optimizer: torch.optim.Optimizer,
+    scheduler: torch.optim.lr_scheduler.LRScheduler,
+):
+    train_loader = datasets["train_dataset"]
+    val_loader = datasets["val_dataset"]
+
     model.train()
     total_loss = 0
 
@@ -88,7 +96,7 @@ def train_epoch(model: nn.Module,
 
         optimizer.zero_grad()
         logits = model(features)
-        
+
         loss = criterion(logits, y)
         loss.backward()
         optimizer.step()
@@ -113,11 +121,13 @@ def train_epoch(model: nn.Module,
     avg_val_loss = val_loss / len(val_loader)
 
     return avg_train_loss, avg_val_loss
-    
 
 
 def evaluate(
-    model, test_loader: torch.utils.data.DataLoader, device: str = "cuda", top_k: int = 5
+    model,
+    test_loader: torch.utils.data.DataLoader,
+    device: str = "cuda",
+    top_k: int = 5,
 ):
     model.eval()
     y_true = []

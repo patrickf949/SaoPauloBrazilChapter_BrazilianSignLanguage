@@ -11,7 +11,7 @@ class RNNClassifier(nn.Module):
             batch_first=True,
         )
         self.fc = nn.Linear(hidden_size, num_classes)
-    
+
     def embedding(self, x):
         _, hidden = self.rnn(x)  # hidden: [num_layers, B, hidden_size]
         return hidden
