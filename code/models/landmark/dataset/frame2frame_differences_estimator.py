@@ -7,6 +7,7 @@ from models.landmark.utils.utils import (
 import numpy as np
 from models.landmark.dataset.base_estimator import BaseEstimator
 
+from omegaconf import DictConfig
 
 def difference(
     p1, p2, mode: str = "3D", diff_type: str = "diff"
@@ -55,8 +56,8 @@ class DifferencesEstimator(BaseEstimator):
 
     def __init__(
         self,
-        hand_differences: Union[str, Dict],
-        pose_differences: Union[str, Dict],
+        hand_differences: Union[str, Dict, DictConfig],
+        pose_differences: Union[str, Dict, DictConfig],
     ):
         """
         Parameters:

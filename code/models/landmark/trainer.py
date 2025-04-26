@@ -1,101 +1,61 @@
-from models.landmark.utils import load_config, load_obj
-from typing import Union, Dict
+from models.landmark.utils.utils import  load_obj
 import os
 from torch import nn
 from torch.utils.data import DataLoader
 import csv
-from models.landmark.training.train_functions import (
-    evaluate,
+from models.landmark.utils.train import (
     train_epoch,
     train_epoch_fold,
 )
+from models.landmark.utils.evaluate import evaluate
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_fn_pad
+from omegaconf import DictConfig, open_dict
+import hydra
 
+def get_dataset(config: DictConfig):
+    collate_fn = collate_fn_pad if "intervals" in config.dataset.frame_interval_fn else None
+    batch_size = config.training.batch_size
+    with open_dict(config):
+        config.dataset["hand_angle_triplets"] = config.features.hand_angles
+        config.dataset["pose_angle_triplets"] = config.features.pose_angles
+        config.dataset["hand_distance_pairs"] = config.features.hand_distances
+        config.dataset["pose_distance_pairs"] = config.features.pose_distances
+        config.dataset["hand_differences"] = config.features.hand_differences
+        config.dataset["pose_differences"] = config.features.pose_differences
 
-def get_dataset(
-    config_base_dir: str, dataset_config: str, training_type: str, batch_size: int
-):
-    dataset_base_dir = (
-        f"{os.path.dirname(os.path.dirname(config_base_dir))}/dataset/configs/"
-    )
-    dataset_config = load_config(f"{dataset_base_dir}/{dataset_config}.yaml")
+    def create_dataloader(split: str, shuffle: bool):
+        return DataLoader(
+            LandmarkDataset(config.dataset, split),
+            shuffle=shuffle,
+            batch_size=batch_size,
+            collate_fn=collate_fn,
+        )
 
-    for estimator in dataset_config["estimators"]:
-        for parameter, feature_path in dataset_config["estimators"][estimator][
-            "parameters"
-        ].items():
-            dataset_config["estimators"][estimator]["parameters"][parameter] = (
-                f"{dataset_base_dir}/{feature_path}.yaml"
-            )
-
-    dataset_config["data_dir"] = [
-        f"{os.path.dirname(os.path.dirname(config_base_dir))}/{dataset_config['data_dir']}"
-    ]
-
-    dataset_config["data_path"] = [
-        f"{os.path.dirname(os.path.dirname(config_base_dir))}/{dataset_config['data_path']}"
-    ]
-    collate_fn = (
-        collate_fn_pad if "intervals" in dataset_config["frame_interval_fn"] else None
-    )
-    if training_type == "cross_validation":
-        datasets = {"train_dataset": LandmarkDataset(dataset_config, "train")}
+    if config.training.type == "cross_validation":
+        datasets = {"train_dataset": LandmarkDataset(config.dataset, "train")}
     else:
-        if collate_fn is not None:
-            datasets = {
-                "train_dataset": DataLoader(
-                    LandmarkDataset(dataset_config, "train"),
-                    shuffle=True,
-                    collate_fn=collate_fn,
-                    batch_size=batch_size,
-                ),
-                "val_dataset": DataLoader(
-                    LandmarkDataset(dataset_config, "val"),
-                    shuffle=False,
-                    collate_fn=collate_fn,
-                    batch_size=batch_size,
-                ),
-            }
-        else:
-            datasets = {
-                "train_dataset": DataLoader(
-                    LandmarkDataset(dataset_config, "train"),
-                    shuffle=True,
-                    batch_size=batch_size,
-                ),
-                "val_dataset": DataLoader(
-                    LandmarkDataset(dataset_config, "val"),
-                    shuffle=False,
-                    batch_size=batch_size,
-                ),
-            }
+        datasets = {
+            "train_dataset": create_dataloader("train", shuffle=True),
+            "val_dataset": create_dataloader("val", shuffle=False),
+        }
 
     return datasets
 
-
-def train(config: Union[str, Dict]):
-    config_base_dir = os.path.dirname(config)
-    config = load_config(config, "training_config")
-    num_epochs = config["num_epochs"]
-    batch_size = config["batch_size"]
-    patience = config["patience"]
-    device = config["device"]
-    log_path = config["log_path"]
-
-    model_config = load_config(f"{config_base_dir}/model/{config['model']}.yaml")
-    model = load_obj(model_config["class_name"])(**model_config["parameters"])
-    optimizer_config = load_config(
-        f"{config_base_dir}/optimizer/{config['optimizer']}.yaml"
+@hydra.main(version_base=None, config_path="./configs", config_name="config")
+def train(config: DictConfig):
+    device = config.training.device
+    num_epochs = config.training.num_epochs
+    
+    model = load_obj(config.model.class_name)(**config.model.params)
+    model.to(device)
+   
+    optimizer = load_obj(config.optimizer.class_name)(
+        model.parameters(), **config.optimizer.params
     )
-    optimizer = load_obj(optimizer_config["class_name"])(
-        model.parameters(), **optimizer_config["parameters"]
-    )
-    scheduler_config = load_config(
-        f"{config_base_dir}/scheduler/{config['scheduler']}.yaml"
-    )
-    scheduler = load_obj(scheduler_config["class_name"])(
-        optimizer, **scheduler_config["parameters"]
+    
+    scheduler = load_obj(config.scheduler.class_name)(
+        optimizer, **config.scheduler.params
     )
 
     criterion = nn.CrossEntropyLoss()
@@ -107,15 +67,26 @@ def train(config: Union[str, Dict]):
 
     log_data = []
 
-    datasets = load_dataset(config_base_dir, config["dataset"], config["training_type"])
+    datasets = get_dataset(config)
 
     for epoch in range(num_epochs):
-        if config["training_type"] == "cross_validation":
-            train_epoch_fold(
+        if config.training.type == "cross_validation":
+            avg_train_loss, avg_val_loss = train_epoch_fold(
                 epoch,
+                config.training.k_folds,
+                model,
+                datasets,
+                config.training.batch_size,
+                device,
+                optimizer,
+                criterion
+
             )
         else:
-            train_epoch()
+            avg_train_loss, avg_val_loss = train_epoch(model,
+                                                       device,
+                                                       datasets,
+                      optimizer,                                 criterion)
 
         print(
             f"Epoch {epoch + 1}/{num_epochs} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}"
@@ -136,8 +107,8 @@ def train(config: Union[str, Dict]):
             patience_counter = 0
         else:
             patience_counter += 1
-            print(f"Patience: {patience_counter}/{config['patience']}")
-            if patience_counter >= config["patience"]:
+            print(f"Patience: {patience_counter}/{config.training.patience}")
+            if patience_counter >= config.training.patience:
                 print("Early stopping triggered.")
                 break
 
@@ -162,4 +133,7 @@ def train(config: Union[str, Dict]):
             writer.writerows(log_data)
         print(f"Training log saved to: {log_path}")
 
-    return acc, best_epoch, log_data
+    return top1_acc, topk_acc, best_epoch, log_data
+
+if __name__ == "__main__":
+    train()

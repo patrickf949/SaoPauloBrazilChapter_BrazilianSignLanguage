@@ -4,7 +4,7 @@ import math
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, max_len=500):
+    def __init__(self, d_model, max_len:int=500):
         super().__init__()
         pe = torch.zeros(max_len, d_model)  # [T, D]
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)  # [T, 1]
@@ -25,13 +25,13 @@ class PositionalEncoding(nn.Module):
 class TransformerClassifier(nn.Module):
     def __init__(
         self,
-        input_size,
-        num_classes,
-        d_model=128,
-        nhead=8,
-        num_layers=2,
-        dim_feedforward=256,
-        dropout=0.1,
+        input_size:int,
+        num_classes:int,
+        d_model:int=128,
+        nhead:int=8,
+        num_layers:int=2,
+        dim_feedforward:int=256,
+        dropout:float=0.1,
     ):
         super().__init__()
         self.embedding = nn.Linear(input_size, d_model)
@@ -50,7 +50,7 @@ class TransformerClassifier(nn.Module):
 
         self.cls_head = nn.Linear(d_model, num_classes)
 
-    def embedding(self, x):
+    def embed(self, x):
         x = self.embedding(x)  # [B, T, d_model]
         x = self.pos_encoder(x)  # Add positional encoding
 

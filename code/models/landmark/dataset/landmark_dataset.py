@@ -13,7 +13,7 @@ from models.landmark.dataset.augmentations import AUGMENTATIONS
 from functools import partial
 import os
 from mediapipe.framework.formats import landmark_pb2
-
+from omegaconf import DictConfig
 
 def uniform_intervals(start: int, end: int, interval: int):
     return list(range(start, end + 1, interval))
@@ -76,7 +76,7 @@ class LandmarkFeatureTorchJoiner:
 
 
 class LandmarkDataset(Dataset):
-    def __init__(self, config: Union[str, Dict], dataset_split: str):
+    def __init__(self, config: Union[str, Dict, DictConfig], dataset_split: str):
         config = load_config(config, "dataset_config")
         self.data_dir = config["data_dir"]
         self.data = pd.read_csv(config["data_path"])
@@ -88,7 +88,7 @@ class LandmarkDataset(Dataset):
         )
         self.feature_computation_types = config["feature_computation_types"]
         self.feature_modes = config["feature_modes"]
-
+        
         self.estimators = {
             "angles": AnglesEstimator(
                 hand_angles=config["hand_angle_triplets"],

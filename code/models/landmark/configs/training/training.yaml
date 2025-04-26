@@ -6,4 +6,4 @@ lr: 1e-4
 device: cuda
 
 type: cross_validation
-k_fold: 5
+k_folds: 5
