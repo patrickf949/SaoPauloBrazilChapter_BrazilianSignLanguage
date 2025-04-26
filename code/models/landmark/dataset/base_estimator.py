@@ -1,7 +1,7 @@
 from typing import Union, Dict, List, Iterable
 from abc import ABC, abstractmethod
 from models.landmark.utils.utils import load_config, check_landmark_type, check_mode
-
+from omegaconf import DictConfig
 import numpy as np
 
 
@@ -13,8 +13,8 @@ class BaseEstimator(ABC):
 
     def __init__(
         self,
-        hand_config: Union[str, Dict],
-        pose_config: Union[str, Dict],
+        hand_config: Union[str, Dict, DictConfig],
+        pose_config: Union[str, Dict, DictConfig],
         config_type: str,
     ):
         self.hand_config = load_config(hand_config, f"hand_{config_type}")

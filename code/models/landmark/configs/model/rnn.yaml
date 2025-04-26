@@ -1,1 +1,6 @@
-class_name: 
+class_name: models.rnn_classifiers.LSTMClassifier
+params:
+  input_size: 212
+  hidden_size: 256
+  num_layers: 2
+  num_classes: 25

@@ -6,6 +6,7 @@ from models.landmark.utils.utils import (
     check_distance_type,
 )
 from models.landmark.dataset.base_estimator import BaseEstimator
+from omegaconf import DictConfig
 
 
 def distance(p1, p2, mode: str = "3D", distance_type: str = "shifted_dist") -> float:
@@ -51,8 +52,8 @@ class DistancesEstimator(BaseEstimator):
 
     def __init__(
         self,
-        hand_distances: Union[str, Dict],
-        pose_distances: Union[str, Dict],
+        hand_distances: Union[str, Dict, DictConfig],
+        pose_distances: Union[str, Dict, DictConfig],
     ):
         """
         Parameters:

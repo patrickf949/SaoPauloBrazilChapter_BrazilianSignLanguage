@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import random
 import importlib
+from omegaconf import DictConfig
 
 
 def check_mode(mode: str):
@@ -35,11 +36,11 @@ def check_difference_type(diff_type: str):
         raise ValueError("Parameter 'diff_type' must be 'diff' or 'normalized_diff'")
 
 
-def load_config(config: Union[str, Dict], config_name: str) -> Dict:
+def load_config(config: Union[str, Dict, DictConfig], config_name: str) -> Dict:
     if isinstance(config, str):
         with open(config, "r") as f:
             return yaml.safe_load(f)
-    elif isinstance(config, dict):
+    elif isinstance(config, dict) or isinstance(config, DictConfig):
         return config
     else:
         raise ValueError(

@@ -6,7 +6,7 @@ from models.landmark.utils.utils import (
     check_angle_type,
 )
 from models.landmark.dataset.base_estimator import BaseEstimator
-
+from omegaconf import DictConfig
 
 def angle(
     a, b, c, mode: str = "3D", angle_type: str = "func"
@@ -84,7 +84,7 @@ class AnglesEstimator(BaseEstimator):
     Estimates angles between triplets of landmarks.
     """
 
-    def __init__(self, hand_angles: Union[str, Dict], pose_angles: Union[str, Dict]):
+    def __init__(self, hand_angles: Union[str, Dict, DictConfig], pose_angles: Union[str, Dict, DictConfig]):
         super().__init__(hand_angles, pose_angles, config_type="angles")
 
     def __compute_angles(
