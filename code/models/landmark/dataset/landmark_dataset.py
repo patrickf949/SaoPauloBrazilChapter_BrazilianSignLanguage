@@ -2,7 +2,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 import numpy as np
 import torch
-from models.landmark.utils import load_config
+from models.landmark.utils.utils import load_config
 from typing import Dict, List, Union, Callable, Tuple
 from models.landmark.dataset.angles_estimator import AnglesEstimator
 from models.landmark.dataset.distances_estimator import DistancesEstimator

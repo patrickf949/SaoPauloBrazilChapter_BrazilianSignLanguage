@@ -1,6 +1,6 @@
 from typing import Union, Dict, List, Iterable
 from abc import ABC, abstractmethod
-from models.landmark.utils import load_config, check_landmark_type, check_mode
+from models.landmark.utils.utils import load_config, check_landmark_type, check_mode
 
 import numpy as np
 

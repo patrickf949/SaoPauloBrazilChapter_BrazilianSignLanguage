@@ -1,6 +1,10 @@
 import numpy as np
 from typing import Union, Dict, List, Tuple, Iterable
-from models.landmark.utils import check_mode, check_landmark_type, check_angle_type
+from models.landmark.utils.utils import (
+    check_mode,
+    check_landmark_type,
+    check_angle_type,
+)
 from models.landmark.dataset.base_estimator import BaseEstimator
 
 
