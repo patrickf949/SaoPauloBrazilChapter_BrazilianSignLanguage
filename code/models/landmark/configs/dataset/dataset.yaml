@@ -1,5 +1,5 @@
 data_dir: data/processed/v2
-data_path: data/preprocessed/preprocessed_metadata_v2_training.csv
+data_path: data/preprocessed/landmarks_metadata_v3_training.csv
 
 landmark_features: 
   angles: [pose, right_hand, left_hand]

@@ -1,4 +1,4 @@
-from models.landmark.utils.utils import  load_obj
+from models.landmark.utils.utils import load_obj
 import os
 from torch import nn
 from torch.utils.data import DataLoader
@@ -13,8 +13,11 @@ from models.landmark.dataset.dataloader_functions import collate_fn_pad
 from omegaconf import DictConfig, open_dict
 import hydra
 
+
 def get_dataset(config: DictConfig):
-    collate_fn = collate_fn_pad if "intervals" in config.dataset.frame_interval_fn else None
+    collate_fn = (
+        collate_fn_pad if "intervals" in config.dataset.frame_interval_fn else None
+    )
     batch_size = config.training.batch_size
     with open_dict(config):
         config.dataset["hand_angle_triplets"] = config.features.hand_angles
@@ -33,29 +36,32 @@ def get_dataset(config: DictConfig):
         )
 
     if config.training.type == "cross_validation":
-        datasets = {"train_dataset": LandmarkDataset(config.dataset, "train"), 
-                    "test_dataset": LandmarkDataset(config.dataset, "test")}
+        datasets = {
+            "train_dataset": LandmarkDataset(config.dataset, "train"),
+            "test_dataset": LandmarkDataset(config.dataset, "test"),
+        }
     else:
         datasets = {
             "train_dataset": create_dataloader("train", shuffle=True),
             "val_dataset": create_dataloader("val", shuffle=False),
-            "test_dataset":create_dataloader("test", shuffle=False)
+            "test_dataset": create_dataloader("test", shuffle=False),
         }
 
     return datasets
+
 
 @hydra.main(version_base=None, config_path="./configs", config_name="config")
 def train(config: DictConfig):
     device = config.training.device
     num_epochs = config.training.num_epochs
-    
+
     model = load_obj(config.model.class_name)(**config.model.params)
     model.to(device)
-   
+
     optimizer = load_obj(config.optimizer.class_name)(
         model.parameters(), **config.optimizer.params
     )
-    
+
     scheduler = load_obj(config.scheduler.class_name)(
         optimizer, **config.scheduler.params
     )
@@ -81,14 +87,12 @@ def train(config: DictConfig):
                 config.training.batch_size,
                 device,
                 optimizer,
-                criterion
-
+                criterion,
             )
         else:
-            avg_train_loss, avg_val_loss = train_epoch(model,
-                                                       device,
-                                                       datasets,
-                      optimizer,                                 criterion)
+            avg_train_loss, avg_val_loss = train_epoch(
+                model, device, datasets, optimizer, criterion
+            )
 
         print(
             f"Epoch {epoch + 1}/{num_epochs} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}"
@@ -136,6 +140,7 @@ def train(config: DictConfig):
         print(f"Training log saved to: {log_path}")
 
     return top1_acc, topk_acc, best_epoch, log_data
+
 
 if __name__ == "__main__":
     train()

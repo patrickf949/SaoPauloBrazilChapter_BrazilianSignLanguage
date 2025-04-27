@@ -1,4 +1,4 @@
-num_epochs: 200
+num_epochs: 100
 batch_size: 32
 patience: 50
 lr: 1e-4

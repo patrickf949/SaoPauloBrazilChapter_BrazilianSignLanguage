@@ -23,6 +23,6 @@ class TestEstimators(unittest.TestCase):
         )
         assert (
             self.config.training.type == "cross_validation"
-            and isinstance(self.config.training.k_fold, int)
+            and isinstance(self.config.training.k_folds, int)
             or self.config.trainining.type != "cross_validation"
         )

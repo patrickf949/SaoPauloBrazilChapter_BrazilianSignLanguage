@@ -9,6 +9,7 @@ from models.landmark.dataset.base_estimator import BaseEstimator
 
 from omegaconf import DictConfig
 
+
 def difference(
     p1, p2, mode: str = "3D", diff_type: str = "diff"
 ) -> Union[Tuple[float, float], Tuple[float, float, float]]:

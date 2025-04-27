@@ -2,11 +2,9 @@ import torch
 from torch import nn
 from sklearn.model_selection import KFold
 from torch.utils.data import Subset, DataLoader
-from models.landmark.models.transformers import TransformerClassifier
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_fn_pad
 from typing import Dict
-
 
 
 def train_epoch_fold(
@@ -121,4 +119,3 @@ def train_epoch(
     avg_val_loss = val_loss / len(val_loader)
 
     return avg_train_loss, avg_val_loss
-

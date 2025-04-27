@@ -31,9 +31,6 @@ Dependencies:
 - Python standard library: unittest, types
 - Third-party: numpy, coverage (optional)
 
-Author:
--------
-[Your Name]
 """
 
 import unittest
