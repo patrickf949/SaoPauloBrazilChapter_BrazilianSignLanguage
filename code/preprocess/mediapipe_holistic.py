@@ -1,9 +1,9 @@
+from typing import Dict, List, Literal, Optional
+
 import cv2
 import mediapipe as mp
 import numpy as np
-from typing import Dict, List, Optional, Tuple
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+
 
 class MediaPipeHolistic:
     def __init__(self,
@@ -148,7 +148,14 @@ class MediaPipeHolistic:
     def get_frame_horizontal_offset(self, results: Dict, 
                            use_shoulders: bool = True,
                            use_face: bool = True,
-                           use_hips: bool = False) -> Dict[str, float]:
+                           use_hips: bool = False,
+                           face_ref: Literal[
+                               "nose_tip", 
+                               "mean_point",
+                               "pupils",
+                               "cheeks",
+                               "ears",
+                               ] = "mean_point") -> Dict[str, float]:
         """
         Calculate the horizontal offset for each specified reference point.
         
@@ -157,6 +164,12 @@ class MediaPipeHolistic:
             use_shoulders: Whether to calculate shoulder midpoint offset
             use_face: Whether to calculate face center offset
             use_hips: Whether to calculate hip midpoint offset
+            face_ref: Reference point for face offset calculation. Options are "nose_tip", "mean_point", "pupils", "cheeck_bones". Default is "nose_tip".
+                    - "nose_tip": Use the nose tip landmark for face offset.
+                    - "mean_point": Use the mean of the top of head and chin landmarks for face offset.
+                    - "pupils": Use the mean of the left and right eye landmarks for face offset.
+                    - "cheeks": Use the mean of the left and right cheek landmarks for face offset.
+                    - "ears": Use the mean of the left and right ear landmarks for face offset.
         
         Returns:
             Dictionary containing horizontal offsets (0.0 to 1.0, where 0.5 is center) for each enabled reference point:
@@ -180,8 +193,28 @@ class MediaPipeHolistic:
         
         if use_face and results['face_landmarks']:
             face_landmarks = results['face_landmarks'].landmark
-            nose_tip = face_landmarks[5]  # Nose tip
-            offsets['face'] = nose_tip.x
+            match face_ref:
+                case "nose_tip":
+                    nose_tip = face_landmarks[5]  # Nose tip
+                    offsets['face'] = nose_tip.x
+                case "mean_point":
+                    top_head = face_landmarks[10]  # Top of head
+                    chin = face_landmarks[152]  # Chin
+                    offsets['face'] = (top_head.x + chin.x) / 2
+                case "pupils":
+                    left_pupil = face_landmarks[133]  # Left eye
+                    right_pupil = face_landmarks[362]  # Right eye
+                    offsets['face'] = (left_pupil.x + right_pupil.x) / 2
+                case "cheeks":
+                    left_cheek = face_landmarks[234]
+                    right_cheek = face_landmarks[454]
+                    offsets['face'] = (left_cheek.x + right_cheek.x) / 2
+                case "ears":
+                    left_ear = face_landmarks[234]
+                    right_ear = face_landmarks[454]
+                    offsets['face'] = (left_ear.x + right_ear.x) / 2
+                case _:
+                    raise ValueError("Invalid face_ref value. Choose from 'nose_tip', 'mean_point', 'pupils', 'cheeck_.")
         
         if use_hips:
             left_hip = pose_landmarks[23]
@@ -193,7 +226,11 @@ class MediaPipeHolistic:
     def get_frame_vertical_offset(self, results: Dict, 
                            use_shoulders: bool = True,
                            use_face: bool = True,
-                           use_hips: bool = False) -> Dict[str, float]:
+                           use_hips: bool = False,
+                           face_ref: Literal[
+                               "nose_tip",
+                               "mean_point",
+                               ] = "mean_point") -> Dict[str, float]:
         """
         Calculate the vertical offset for each specified reference point.
         
@@ -202,6 +239,9 @@ class MediaPipeHolistic:
             use_shoulders: Whether to calculate shoulder midpoint offset
             use_face: Whether to calculate face center offset
             use_hips: Whether to calculate hip midpoint offset
+            face_ref: Reference point for face offset calculation. Options are "nose_tip" or "mean_point". Default is "nose_tip".
+                    - "nose_tip": Use the nose tip landmark for face offset.  
+                    - "mean_point": Use the mean of the top of head and chin landmarks for face offset.
         
         Returns:
             Dictionary containing vertical offsets (0.0 to 1.0, where 0.5 is center) for each enabled reference point:
@@ -225,8 +265,16 @@ class MediaPipeHolistic:
         
         if use_face and results['face_landmarks']:
             face_landmarks = results['face_landmarks'].landmark
-            nose_tip = face_landmarks[5]  # Nose tip
-            offsets['face'] = nose_tip.y
+            match face_ref:
+                case "nose_tip":
+                    nose_tip = face_landmarks[5]  # Nose tip
+                    offsets['face'] = nose_tip.y
+                case "mean_point":
+                    top_head = face_landmarks[10]  # Top of head
+                    chin = face_landmarks[152]  # Chin
+                    offsets['face'] = (top_head.y + chin.y) / 2
+                case _:
+                    raise ValueError("Invalid face_ref value. Choose from 'nose_tip', 'mean_point'.")
         
         if use_hips:
             left_hip = pose_landmarks[23]
@@ -254,6 +302,9 @@ class MediaPipeHolistic:
             - top_head_to_shoulders: Vertical distance from top of head to shoulder midpoint
             - nose_to_shoulders: Vertical distance from nose tip to shoulder midpoint
             - chin_to_shoulders: Vertical distance from chin to shoulder midpoint
+            - max_left_x: The x-coordinate of the furthest left landmark (for cropping)
+            - max_right_x: The x-coordinate of the furthest right landmark (for cropping)
+            - max_top_y: The y-coordinate of the highest landmark (for cropping)
         """
         measurements = {}
         
@@ -329,6 +380,38 @@ class MediaPipeHolistic:
             measurements['nose_to_shoulders'] = abs(nose_tip.y - shoulder_mid[1])
             measurements['chin_to_shoulders'] = abs(chin.y - shoulder_mid[1])
         
+        # ====== BOUNDING RANGE DETECTION FOR CROPPING ======
+        # This section finds the extreme points of the body to ensure
+        # proper cropping for sign language videos
+        
+        # Initialize with the first landmark's coordinates
+        init_landmark = pose_landmarks[0]  # Nose landmark
+        max_left_x = init_landmark.x
+        max_right_x = init_landmark.x
+        max_top_y = init_landmark.y
+        
+        # Examine all pose landmarks to find the extremes
+        for landmark in pose_landmarks:
+            # Find furthest left point (smallest x-coordinate)
+            # This ensures left-hand gestures aren't cropped out
+            if landmark.x < max_left_x:
+                max_left_x = landmark.x
+            
+            # Find furthest right point (largest x-coordinate)
+            # This ensures right-hand gestures aren't cropped out
+            if landmark.x > max_right_x:
+                max_right_x = landmark.x
+            
+            # Find highest point (smallest y-coordinate, since y increases downward)
+            # This ensures overhead gestures aren't cropped out
+            if landmark.y < max_top_y:
+                max_top_y = landmark.y
+        
+        # Add the bounding range values to the measurements dictionary
+        measurements['max_left_x'] = max_left_x
+        measurements['max_right_x'] = max_right_x
+        measurements['max_top_y'] = max_top_y
+        
         return measurements
 
     def apply_frame_analysis_to_video(self, results_list: List[Dict], frame_processing_function, **kwargs) -> Dict[str, Dict[str, float]]:
@@ -377,7 +460,7 @@ class MediaPipeHolistic:
         
         return stats
 
-    def get_video_horizontal_offsets(self, results_list: List[Dict], use_shoulders: bool = True, use_face: bool = True, use_hips: bool = False) -> Dict[str, Dict[str, float]]:
+    def get_video_horizontal_offsets(self, results_list: List[Dict], use_shoulders: bool = True, use_face: bool = True, use_hips: bool = False, face_ref:Literal["nose_tip","mean_point","pupils","cheeks","ears"] = "nose_tip") -> Dict[str, Dict[str, float]]:
         """
         Calculate statistics for horizontal offsets across multiple frames.
         """
@@ -386,10 +469,11 @@ class MediaPipeHolistic:
             self.get_frame_horizontal_offset,
             use_shoulders=use_shoulders,
             use_face=use_face,
-            use_hips=use_hips
+            use_hips=use_hips,
+            face_ref=face_ref
         )
 
-    def get_video_vertical_offsets(self, results_list: List[Dict], use_shoulders: bool = True, use_face: bool = True, use_hips: bool = False) -> Dict[str, Dict[str, float]]:
+    def get_video_vertical_offsets(self, results_list: List[Dict], use_shoulders: bool = True, use_face: bool = True, use_hips: bool = False, face_ref:Literal["nose_tip", "mean_point"]="nose_tip") -> Dict[str, Dict[str, float]]:
         """
         Calculate statistics for vertical offsets across multiple frames.
         """
@@ -398,7 +482,8 @@ class MediaPipeHolistic:
             self.get_frame_vertical_offset,
             use_shoulders=use_shoulders,
             use_face=use_face,
-            use_hips=use_hips
+            use_hips=use_hips,
+            face_ref=face_ref
         )
 
     def get_video_landmark_measurements(self, results_list: List[Dict]) -> Dict[str, Dict[str, float]]:
@@ -409,3 +494,66 @@ class MediaPipeHolistic:
             results_list,
             self.get_frame_landmark_measurements
         )
+    
+    def shift_landmarks_horizontally(self, results: Dict, offset: float) -> Dict:
+         """
+         Shift all landmarks horizontally by a given offset.
+         
+         Args:
+             results: Dictionary containing detection results
+             offset: Horizontal offset to apply (in normalized coordinates, 0.0 to 1.0)
+                    Positive values shift right, negative values shift left
+         
+         Returns:
+             Dictionary containing shifted landmark coordinates
+         """
+         shifted_results = results.copy()
+         
+         # Helper function to shift a single landmark
+         def shift_landmark(lm):
+             # Add offset to x coordinate, clamping between 0 and 1
+             new_x = max(0.0, min(1.0, lm.x + offset))
+             return type(lm)(x=new_x, y=lm.y, z=lm.z)
+         
+         # Shift pose landmarks
+         if results['pose_landmarks']:
+             shifted_landmarks = []
+             for lm in results['pose_landmarks'].landmark:
+                 shifted_landmarks.append(shift_landmark(lm))
+             shifted_results['pose_landmarks'] = type(results['pose_landmarks'])(landmark=shifted_landmarks)
+         
+         # Shift face landmarks
+         if results['face_landmarks']:
+             shifted_landmarks = []
+             for lm in results['face_landmarks'].landmark:
+                 shifted_landmarks.append(shift_landmark(lm))
+             shifted_results['face_landmarks'] = type(results['face_landmarks'])(landmark=shifted_landmarks)
+         
+         # Shift hand landmarks
+         if results['left_hand_landmarks']:
+             shifted_landmarks = []
+             for lm in results['left_hand_landmarks'].landmark:
+                 shifted_landmarks.append(shift_landmark(lm))
+             shifted_results['left_hand_landmarks'] = type(results['left_hand_landmarks'])(landmark=shifted_landmarks)
+         
+         if results['right_hand_landmarks']:
+             shifted_landmarks = []
+             for lm in results['right_hand_landmarks'].landmark:
+                 shifted_landmarks.append(shift_landmark(lm))
+             shifted_results['right_hand_landmarks'] = type(results['right_hand_landmarks'])(landmark=shifted_landmarks)
+         
+         return shifted_results
+ 
+    def shift_landmarks_series_horizontally(self, results_list: List[Dict], offset: float) -> List[Dict]:
+         """
+         Shift all landmarks in a series of results horizontally by a given offset.
+         
+         Args:
+             results_list: List of dictionaries containing detection results for each frame
+             offset: Horizontal offset to apply (in normalized coordinates, 0.0 to 1.0)
+                    Positive values shift right, negative values shift left
+         
+         Returns:
+             List of dictionaries containing shifted landmark coordinates
+         """
+         return [self.shift_landmarks_horizontally(results, offset) for results in results_list]
