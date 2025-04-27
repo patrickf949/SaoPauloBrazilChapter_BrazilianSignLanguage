@@ -33,11 +33,13 @@ def get_dataset(config: DictConfig):
         )
 
     if config.training.type == "cross_validation":
-        datasets = {"train_dataset": LandmarkDataset(config.dataset, "train")}
+        datasets = {"train_dataset": LandmarkDataset(config.dataset, "train"), 
+                    "test_dataset": LandmarkDataset(config.dataset, "test")}
     else:
         datasets = {
             "train_dataset": create_dataloader("train", shuffle=True),
             "val_dataset": create_dataloader("val", shuffle=False),
+            "test_dataset":create_dataloader("test", shuffle=False)
         }
 
     return datasets
