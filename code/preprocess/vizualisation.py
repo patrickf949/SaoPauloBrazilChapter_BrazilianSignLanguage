@@ -359,6 +359,50 @@ def draw_landmarks_on_frame(image: np.ndarray, results: Dict) -> np.ndarray:
     
     return annotated_image
 
+def draw_landmarks_on_frame_no_padding(image: np.ndarray, results: Dict) -> np.ndarray:
+    """
+    Draw landmarks and connections on the image without padding.
+    Assumes all landmarks exist in the results dictionary.
+    """
+    annotated_image = image.copy()
+    
+    mp_drawing.draw_landmarks(
+        image=annotated_image,
+        landmark_list=results['face_landmarks'],
+        connections=mp_holistic.FACEMESH_TESSELATION,
+        landmark_drawing_spec=None,
+        connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style()
+    )
+    mp_drawing.draw_landmarks(
+        image=annotated_image,
+        landmark_list=results['face_landmarks'],
+        connections=mp_holistic.FACEMESH_CONTOURS,
+        landmark_drawing_spec=None,
+        connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_contours_style()
+    )
+    mp_drawing.draw_landmarks(
+        image=annotated_image,
+        landmark_list=results['pose_landmarks'],
+        connections=mp_holistic.POSE_CONNECTIONS,
+        landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style()
+    )
+    mp_drawing.draw_landmarks(
+        image=annotated_image,
+        landmark_list=results['left_hand_landmarks'],
+        connections=mp_holistic.HAND_CONNECTIONS,
+        landmark_drawing_spec=mp_drawing_styles.get_default_hand_landmarks_style(),
+        connection_drawing_spec=mp_drawing_styles.get_default_hand_connections_style()
+    )
+    mp_drawing.draw_landmarks(
+        image=annotated_image,
+        landmark_list=results['right_hand_landmarks'],
+        connections=mp_holistic.HAND_CONNECTIONS,
+        landmark_drawing_spec=mp_drawing_styles.get_default_hand_landmarks_style(),
+        connection_drawing_spec=mp_drawing_styles.get_default_hand_connections_style()
+    )
+    
+    return annotated_image
+
 def draw_landmarks_on_video(video_path: str,
                           results_list: List[Dict],
                           output_path: str) -> None:
@@ -410,6 +454,48 @@ def draw_landmarks_on_video(video_path: str,
         cap.release()
         out.release()
     print(f"Landmarks drawn video saved to {output_path}")
+
+def draw_landmarks_on_video_with_frame(results_list: List[Dict],
+                                     output_path: str,
+                                     base_frame: Optional[np.ndarray] = None,
+                                     fps: float = 30.0) -> List[np.ndarray]:
+    """
+    Create a video by drawing landmarks on frames, either using a custom base frame or black frames.
+    
+    Args:
+        results_list: List of MediaPipe results dictionaries containing landmarks
+        output_path: Path where the output video will be saved
+        base_frame: Optional base frame to use (if None, black frames will be used)
+        fps: Frames per second for the output video (default: 30.0)
+        
+    Returns:
+        List of annotated frames as numpy arrays
+    """    
+    # If base_frame is not provided, create a black frame
+    if base_frame is None:
+        base_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+    
+    # Generate all frames
+    annotated_frames = []
+    for results in results_list:
+        frame = base_frame.copy()
+        annotated_frames.append(draw_landmarks_on_frame_no_padding(frame, results))
+    
+    # Ensure output path ends with .mp4
+    if not output_path.lower().endswith('.mp4'):
+        output_path = output_path + '.mp4'
+    
+    # Create video with MPEG-4 codec
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_path, fourcc, fps, base_frame.shape[1::-1])
+    
+    try:
+        for frame in annotated_frames:
+            out.write(frame)
+    finally:
+        out.release()
+    
+    return annotated_frames
 
 def draw_landmarks_3d(results: Dict, figsize: Tuple[int, int] = (10, 10),
                      elev: float = 0, azim: float = 0,
