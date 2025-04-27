@@ -5,6 +5,7 @@ import numpy as np
 import cv2
 from typing import Dict, List, Optional, Tuple, Any, Union
 import datetime
+import copy
 
 import motion_detection as md
 
@@ -103,6 +104,223 @@ def get_processing_params(analysis_info):
 
     return params_dict
 
+def validate_landmarks_format(landmarks_data: np.ndarray) -> Tuple[bool, List[str]]:
+    """
+    Validate the basic format of landmarks data.
+    
+    Args:
+        landmarks_data: numpy array of landmark frames, where each frame contains
+                       face_landmarks, pose_landmarks, and hand landmarks
+        
+    Returns:
+        Tuple of (is_valid, error_messages)
+        
+    Note:
+        - Coordinate validation is skipped for pose landmarks since they can validly be outside [0,1] range.
+        - Face and hand landmarks must be in [0,1] range.
+        - Lower body pose landmarks (indices 23-32) should have visibility=0.1.
+    """
+    landmarks_and_lengths = {
+        'face_landmarks': 478,
+        'pose_landmarks': 33,  # full body (0-32)
+        'left_hand_landmarks': 21,
+        'right_hand_landmarks': 21
+    }
+    errors = []
+    
+    for i, frame_landmarks in enumerate(landmarks_data):
+        if frame_landmarks is None:
+            continue
+            
+        # Check each landmark type
+        for key, expected_length in landmarks_and_lengths.items():
+            if key not in frame_landmarks:
+                errors.append(f"Missing {key} in landmark data frame {i}")
+                continue
+                
+            landmarks = frame_landmarks[key]
+            if landmarks is not None:
+                # Check length
+                actual_length = len(landmarks.landmark) if hasattr(landmarks, 'landmark') else 0
+                if actual_length != expected_length:
+                    errors.append(f"Invalid length for {key} in frame {i}: expected {expected_length}, got {actual_length}")
+                
+                # Check coordinate values for face and hand landmarks
+                if hasattr(landmarks, 'landmark') and key != 'pose_landmarks':
+                    for j, landmark in enumerate(landmarks.landmark):
+                        if landmark is not None:
+                            if not (0 <= landmark.x <= 1 and 0 <= landmark.y <= 1):
+                                errors.append(f"Invalid coordinates in frame {i}, {key} landmark {j}: x={landmark.x}, y={landmark.y}")
+                
+                # Special check for pose landmarks
+                elif key == 'pose_landmarks' and hasattr(landmarks, 'landmark'):
+                    for j, landmark in enumerate(landmarks.landmark):
+                        if landmark is not None:
+                            # For lower body landmarks (23-32), visibility should be 0.1
+                            if 23 <= j <= 32:
+                                if abs(landmark.visibility - 0.1) > 1e-6:  # Using small epsilon for float comparison
+                                    errors.append(f"Lower body pose landmark {j} in frame {i} should have visibility=0.1, got visibility={landmark.visibility}")
+                               
+    return len(errors) == 0, errors
+
+def hide_lower_body_landmarks(landmarks_data: np.ndarray) -> np.ndarray:
+    """
+    Process landmarks data while preserving MediaPipe format.
+    Note: According to MediaPipe format, if landmarks are present, all landmarks must be included.
+    For lower body landmarks (indices 23-32), we set their visibility to 0.1 to effectively hide them
+    while maintaining the required format.
+    
+    Args:
+        landmarks_data: np.ndarray containing all landmarks data
+        
+    Returns:
+        np.ndarray with processed landmarks data
+    """
+    reduced_landmarks_data = []
+    
+    # Process each frame's landmarks
+    for frame_landmarks in landmarks_data:
+        if frame_landmarks is None:
+            reduced_landmarks_data.append(None)
+            continue
+            
+        # Create a new frame with only the desired landmark types
+        new_frame = {}
+        for key in ['face_landmarks', 'left_hand_landmarks', 'right_hand_landmarks', 'pose_landmarks']:
+            # Keep None entries as is
+            if frame_landmarks[key] is None:
+                new_frame[key] = None
+                continue
+                
+            # Get the landmarks for this type and create a deep copy
+            landmarks_obj = frame_landmarks[key]
+            new_frame[key] = copy.deepcopy(landmarks_obj)
+            
+            # For pose landmarks, set lower body landmarks' visibility to 0.1
+            if key == 'pose_landmarks' and new_frame[key] is not None:
+                for i in range(23, 33):  # Lower body landmark indices
+                    new_frame[key].landmark[i].visibility = 0.1
+        
+        reduced_landmarks_data.append(new_frame)
+
+    # Convert to numpy array
+    reduced_landmarks_data = np.array(reduced_landmarks_data, dtype=object)
+    return reduced_landmarks_data
+
+def _init_landmark_stats() -> Dict:
+    """Initialize the statistics dictionary for a single landmark type."""
+    return {
+        'total_frames': 0,
+        'none_frames': 0,
+        'frame_percentage': 0.0,
+        'continuous': True,
+        'first_valid': None,
+        'last_valid': None,
+        'valid_range_total_frames': 0,
+        'valid_range_none_frames': 0,
+        'valid_range_frame_percentage': 0.0,
+        'valid_range_none_details': []  # List of frame indices that are None in valid range
+    }
+
+def analyze_none_landmarks(landmarks_data: np.ndarray) -> Dict:
+    """
+    Analyze None values in landmarks data according to MediaPipe format.
+    
+    Args:
+        landmarks_data: numpy array of landmark frames
+        
+    Returns:
+        Dictionary with statistics about None values, including:
+        - Overall statistics about frames with None values
+        - For each landmark type (face, pose, left_hand, right_hand):
+          * Total frames where the group is None
+          * Percentage of frames where the group is None
+          * Continuity analysis
+          * Frame indices where the group is None within valid range
+    """
+    # Initialize stats dictionary
+    stats = {
+        'overall': {
+            'total_frames': len(landmarks_data),
+            'total_landmark_frames': len(landmarks_data) * 4,  # 4 landmark groups per frame
+            'none_landmark_frames': 0,  # Total None landmarks across all groups
+            'landmark_frame_percentage': 0.0  # Percentage of None landmarks
+        }
+    }
+    
+    # Expected landmark groups
+    landmark_groups = {
+        'face_landmarks': 468,
+        'pose_landmarks': 23,  # upper body only (0-22)
+        'left_hand_landmarks': 21,
+        'right_hand_landmarks': 21
+    }
+    
+    # Initialize stats for each landmark group
+    for key in landmark_groups:
+        stats[key] = _init_landmark_stats()
+        stats[key]['total_frames'] = len(landmarks_data)
+    
+    # Initialize tracking arrays for presence
+    presence_by_type = {key: np.zeros(len(landmarks_data), dtype=bool) for key in landmark_groups}
+    
+    # Process each frame
+    for frame_idx, frame_landmarks in enumerate(landmarks_data):
+        if frame_landmarks is None:
+            # If entire frame is None, all landmark groups are None
+            stats['overall']['none_landmark_frames'] += 4  # All 4 groups are None
+            for key in landmark_groups:
+                stats[key]['none_frames'] += 1
+            continue
+            
+        # Process each landmark group
+        for key in landmark_groups:
+            if key not in frame_landmarks:
+                stats[key]['none_frames'] += 1
+                stats['overall']['none_landmark_frames'] += 1
+                continue
+                
+            group = frame_landmarks[key]
+            if group is None:
+                stats[key]['none_frames'] += 1
+                stats['overall']['none_landmark_frames'] += 1
+            else:
+                presence_by_type[key][frame_idx] = True
+    
+    # Calculate valid range statistics for each group
+    for key in landmark_groups:
+        presence = presence_by_type[key]
+        if np.any(presence):
+            valid_frames = np.where(presence)[0]
+            first_valid = valid_frames[0]
+            last_valid = valid_frames[-1]
+            
+            valid_range_length = last_valid - first_valid + 1
+            
+            # Update stats
+            stats[key].update({
+                'continuous': np.all(presence[first_valid:last_valid + 1]),
+                'first_valid': int(first_valid),
+                'last_valid': int(last_valid),
+                'valid_range_total_frames': valid_range_length,
+                'valid_range_none_frames': valid_range_length - np.sum(presence[first_valid:last_valid + 1]),
+                'valid_range_frame_percentage': (1 - np.mean(presence[first_valid:last_valid + 1])) * 100,
+                'valid_range_none_details': [
+                    int(idx) for idx in range(first_valid, last_valid + 1) 
+                    if not presence[idx]
+                ]
+            })
+        
+        # Calculate overall percentage
+        stats[key]['frame_percentage'] = (stats[key]['none_frames'] / stats[key]['total_frames']) * 100
+    
+    # Calculate overall landmark frame percentage
+    stats['overall']['landmark_frame_percentage'] = (
+        stats['overall']['none_landmark_frames'] / stats['overall']['total_landmark_frames']
+    ) * 100
+    
+    return stats
+
 class VideoAnalyzer:
     """
     VideoAnalyzer class for processing and analyzing videos with motion detection and pose estimation.
@@ -147,7 +365,6 @@ class VideoAnalyzer:
         self.interim_dir = os.path.join(self.path_to_root, "data", "interim")
         self.motion_detection_dir = os.path.join(self.interim_dir, "RawMotionMeasurements")
         self.pose_estimation_dir = os.path.join(self.interim_dir, "RawPoseLandmarks")
-        self.videos_dir = os.path.join(self.interim_dir, "Videos")
         self.results_dir = os.path.join(
             self.interim_dir, 
             "Analysis", 
@@ -161,7 +378,6 @@ class VideoAnalyzer:
             os.path.join(self.motion_detection_dir, self.motion_detection_version),
             os.path.join(self.pose_estimation_dir),
             os.path.join(self.pose_estimation_dir, self.pose_detection_version), 
-            os.path.join(self.videos_dir),
             os.path.join(self.results_dir),
         ]:
             if not os.path.exists(directory):
@@ -215,11 +431,23 @@ class VideoAnalyzer:
         # Define default parameters
         default_params = {
             # Motion detection parameters
+            "motion_detection_method": ["landmarks"],
             "motion_avg_weights": {"basic": 0.3, "bg_sub": 0.7},
-            "moving_avg_window_duration": 0.2,  # in seconds
-            "motion_threshold_method": "simple",
-            "motion_start_threshold": 0.3,
+            "moving_avg_window_duration": 0.334,  # in seconds
+            
+            # Motion analysis parameters
+            "motion_analysis_method": "simple",  # 'simple' or 'peaks'
+            "motion_start_threshold": 0.2,
             "motion_end_threshold": 0.2,
+            
+            # # Peak detection parameters (used if motion_analysis_method='peaks')
+            # "min_motion_peak_height": 0.35,
+            # "min_motion_peak_width_seconds": 0.2,
+            # "slope_window_size": 5,
+            # "min_slope_peak_height": 0.1,
+            # "min_slope_peak_width_seconds": 0.2,
+            # "start_buffer_seconds": 0.15,
+            # "end_buffer_seconds": 0.15,
             
             # Pose estimation parameters
             "pose_static_image_mode": False,
@@ -227,16 +455,12 @@ class VideoAnalyzer:
             "pose_smooth_landmarks": True,
             "pose_min_detection_confidence": 0.5,
             "pose_min_tracking_confidence": 0.5,
+            "pose_face_ref": "mean_point",  # Reference point for face offset calculation
             
             # Processing parameters
             "reuse_results": True
         }
         
-        # Apply any other parameters logic here
-        # e.g. data source specific adjustments
-        # if metadata.get("data_source") == "vl":
-        #     default_params["motion_start_threshold"] = 0.5
-
         # Track parameter sources for verbose output
         from_params = {}
         from_metadata = {}
@@ -288,52 +512,52 @@ class VideoAnalyzer:
         filename = self.filename
         
         # Look in combined folder
-        video_path = os.path.join(path_to_root, "data", "raw", "combined", "videos", filename)
+        video_path = os.path.join(path_to_root, "data", "interim", "RawCleanVideos", filename)
         if os.path.exists(video_path):
             return video_path
         
         raise FileNotFoundError(f"Video file not found at {video_path}")
     
-    def load_previous_results(self, result_type: str, timestamp: Optional[str] = None, verbose: bool = True) -> Dict:
+    def load_previous_results(self, result_type: str, verbose: bool = True) -> Dict:
         """
         Load previously saved results if they exist.
         
         Args:
             result_type: Type of results to load ('motion' or 'pose')
-            timestamp: Specific timestamp to load (if None, loads the most recent)
             verbose: Whether to print status messages
             
         Returns:
             Dictionary containing loaded results or empty dict if none found
         """
-        if result_type == "motion":
-            base_path = os.path.join(self.motion_detection_dir, self.motion_detection_version)
-        elif result_type == "pose":
-            base_path = os.path.join(self.pose_estimation_dir, self.pose_detection_version)
-        else:
-            raise ValueError(f"Unknown result type: {result_type}")
+        motion_path = os.path.join(self.motion_detection_dir, self.motion_detection_version)
+        pose_path = os.path.join(self.pose_estimation_dir, self.pose_detection_version)
         
         # Load results
         results = {}
         
         if result_type == "motion":
             # Load motion data
-            basic_path = os.path.join(base_path, f"{self.filename.split('.')[0]}_basic.npy")
-            bg_sub_path = os.path.join(base_path, f"{self.filename.split('.')[0]}_bg_sub.npy")
+            motion_basic_path = os.path.join(motion_path, f"{self.filename.split('.')[0]}_basic.npy")
+            motion_bg_sub_path = os.path.join(motion_path, f"{self.filename.split('.')[0]}_bg_sub.npy")
+            motion_landmark_path = os.path.join(motion_path, f"{self.filename.split('.')[0]}_landmark.npy")
             
-            if os.path.exists(basic_path) and os.path.exists(bg_sub_path):
-                results["basic_raw"] = np.load(basic_path)
-                results["bg_sub_raw"] = np.load(bg_sub_path)
-                if verbose:
-                    print(f"Loaded motion detection results from {self.motion_detection_version}")
-            else:
-                if verbose:
-                    print(f"No motion detection results found for {self.filename} in {self.motion_detection_version}")
+            if os.path.exists(motion_basic_path):
+                results["basic_motion_raw"] = np.load(motion_basic_path)
+            elif verbose:
+                print(f"Loaded motion basic data from {motion_basic_path}")
+            if os.path.exists(motion_bg_sub_path):
+                results["bg_sub_motion_raw"] = np.load(motion_bg_sub_path)
+            elif verbose:
+                print(f"Loaded motion bg sub data from {motion_bg_sub_path}")
+            if os.path.exists(motion_landmark_path):
+                results["landmarks_motion_raw"] = np.load(motion_landmark_path)
+            elif verbose:
+                print(f"Loaded motion landmark data from {motion_landmark_path}")
             
         elif result_type == "pose":
             # Load pose data
-            params_path = os.path.join(base_path, "mediapipe_params.json")
-            landmarks_path = os.path.join(base_path, f"{self.filename.split('.')[0]}.npy")
+            params_path = os.path.join(pose_path, "mediapipe_params.json")
+            landmarks_path = os.path.join(pose_path, f"{self.filename.split('.')[0]}.npy")
             
             if os.path.exists(params_path) and os.path.exists(landmarks_path):
                 with open(params_path, "r") as f:
@@ -347,165 +571,6 @@ class VideoAnalyzer:
                     print(f"No pose estimation results found for {self.filename} in {self.pose_detection_version}")
         
         return results
-    
-    def motion_detect(self, weights: Optional[Dict[str, float]] = None, 
-                     window_duration: Optional[float] = None,
-                     load: Optional[bool] = None) -> Dict:
-        """
-        Perform motion detection on the video and calculate derived metrics.
-        
-        Args:
-            weights: Dictionary of weights for different motion detection methods
-            window_duration: Duration in seconds for moving average window
-            load: Whether to load previous results if available
-            
-        Returns:
-            Dictionary containing motion detection results
-        """
-        # Use provided parameters or fall back to class parameters
-        weights = weights or self.params.get("motion_avg_weights")
-        window_duration = window_duration or self.params.get("moving_avg_window_duration")
-        load = load if load is not None else self.params.get("reuse_results")
-        
-        # Try to load previous results if requested
-        if load:
-            previous_results = self.load_previous_results("motion", verbose=self.verbose)
-            if previous_results:
-                self.motion_data = previous_results
-                
-                # Calculate derived metrics
-                self._process_motion_data(weights, window_duration)
-                return self.motion_data
-        
-        # If no previous results or not loading, run motion detection
-        video_path = self.get_raw_video_path()
-        if self.verbose:
-            print(f"Running motion detection on {video_path}")
-        
-        # Run motion detection algorithms
-        basic_motion = md.measure_motion_basic(video_path)
-        bg_sub_motion = md.measure_motion_background_subtraction(video_path)
-        
-        # Store raw results
-        self.motion_data = {
-            "basic_raw": np.array(basic_motion),
-            "bg_sub_raw": np.array(bg_sub_motion),
-        }
-        
-        # Calculate derived metrics
-        self._process_motion_data(weights, window_duration)
-        
-        # Save results
-        self._save_raw_motion_results()
-        
-        return self.motion_data
-    
-    def _process_motion_data(self, weights: Dict[str, float], window_duration: float, verbose: bool = True) -> None:
-        """
-        Process raw motion data to calculate normalized and moving-average smoothed metrics.
-        
-        Args:
-            weights: Dictionary of weights for different motion detection methods
-            window_duration: Duration in seconds for moving average window
-        """
-        # Normalize data
-        motion_series = [self.motion_data["basic_raw"], self.motion_data["bg_sub_raw"]]
-        normalized_series = md.normalize_lists_of_data(motion_series)
-        
-        # Store normalized data
-        self.motion_data["basic_normalized"] = normalized_series[0]
-        self.motion_data["bg_sub_normalized"] = normalized_series[1]
-        
-        # Calculate weighted average from normalized data
-        weight_values = [weights["basic"], weights["bg_sub"]]
-        weighted_avg = md.weighted_average_motion(normalized_series, weight_values)
-        self.motion_data["weighted_avg"] = weighted_avg
-        
-        # Apply moving average
-        smoothed_motion = md.moving_average(weighted_avg, self.fps, window_duration, verbose=verbose)
-        self.motion_data["smoothed"] = smoothed_motion
-    
-    def _save_raw_motion_results(self, verbose: bool = True) -> None:
-        """Save only the raw motion detection results to disk. They can be reused later with different processing parameters."""
-        # Create directory for results
-        result_dir = os.path.join(
-            self.motion_detection_dir,
-            self.motion_detection_version
-        )
-        os.makedirs(result_dir, exist_ok=True)
-        
-        # Save raw motion data
-        np.save(os.path.join(result_dir, f"{self.filename.split('.')[0]}_basic.npy"), self.motion_data["basic_raw"])
-        np.save(os.path.join(result_dir, f"{self.filename.split('.')[0]}_bg_sub.npy"), self.motion_data["bg_sub_raw"])
-        
-        if verbose:
-            print(f"Saved motion detection results to {result_dir}")
-    
-    def motion_analyze(self, 
-                      motion_data: Optional[np.ndarray] = None,
-                      start_threshold: Optional[float] = None,
-                      end_threshold: Optional[float] = None,
-                      method: Optional[str] = None) -> Dict:
-        """
-        Analyze motion data to find start and end frames of meaningful motion.
-        
-        Args:
-            motion_data: Motion data array to analyze (defaults to self.motion_data["smoothed"])
-            start_threshold: Threshold for detecting start of motion
-            end_threshold: Threshold for detecting end of motion
-            method: Method for motion boundary detection ('simple' or 'complex')
-            
-        Returns:
-            Dictionary containing start and end frames
-        """
-        # Use provided parameters or fall back to class parameters
-        motion_data = motion_data if motion_data is not None else self.motion_data.get("smoothed")
-        start_threshold = start_threshold or self.params.get("motion_start_threshold")
-        end_threshold = end_threshold or self.params.get("motion_end_threshold")
-        method = method or self.params.get("motion_threshold_method")
-        
-        if motion_data is None:
-            raise ValueError("No motion data available. Run motion_detect first.")
-        
-        if self.verbose:
-            print(f"Analyzing motion using {method} method with thresholds {start_threshold}/{end_threshold}")
-        
-        # Detect motion boundaries
-        if method == "simple":
-            start_frame, end_frame = md.find_motion_boundaries_simple(
-                motion_data, 
-                start_threshold,
-                end_threshold
-            )
-        elif method == "complex":
-            start_frame, end_frame = md.find_motion_boundaries_complex(
-                motion_data,
-                self.fps,
-                threshold=start_threshold,
-                min_motion_duration=self.params.get("min_motion_duration", 0.3)
-            )
-        else:
-            raise ValueError(f"Unknown motion analysis method: {method}")
-        
-        self.start_frame = start_frame
-        self.end_frame = end_frame
-        
-        result = {
-            "start_frame": start_frame,
-            "end_frame": end_frame,
-            "start_time": start_frame / self.fps if start_frame is not None else None,
-            "end_time": end_frame / self.fps if end_frame is not None else None,
-            "duration_frames": end_frame - start_frame if (start_frame is not None and end_frame is not None) else None,
-            "duration_sec": (end_frame - start_frame) / self.fps if (start_frame is not None and end_frame is not None) else None
-        }
-        
-        if self.verbose:
-            print(f"Motion detected from frame {start_frame} to {end_frame} ({result['duration_sec']:.2f} seconds)")
-        
-        # Store analysis results
-        self.motion_data["analysis"] = result
-        
-        return result
     
     def pose_detect(self, load: Optional[bool] = None) -> Dict:
         """
@@ -580,7 +645,7 @@ class VideoAnalyzer:
 
         if verbose:
             print(f"Saved pose estimation results to {result_dir}")
-        
+
     def pose_analyze(self) -> Dict:
         """
         Analyze pose data to get various measurements and statistics.
@@ -597,12 +662,14 @@ class VideoAnalyzer:
         mp_holistic = mph.MediaPipeHolistic()
         # Get horizontal offsets
         horizontal_offsets = mp_holistic.get_video_horizontal_offsets(
-            self.pose_data["landmarks_raw"]
+            self.pose_data["landmarks_raw"],
+            face_ref=self.params.get("pose_face_ref", "mean_point")
         )
         
         # Get vertical offsets
         vertical_offsets = mp_holistic.get_video_vertical_offsets(
-            self.pose_data["landmarks_raw"]
+            self.pose_data["landmarks_raw"],
+            face_ref=self.params.get("pose_face_ref", "mean_point")
         )
         
         # Get landmark measurements
@@ -624,6 +691,174 @@ class VideoAnalyzer:
             print(f"Landmark measurements: {landmark_measurements}")
         
         return self.pose_data["analysis"]
+
+    def motion_detect(self, window_duration: Optional[float] = None, load: Optional[bool] = None) -> Dict:
+        """
+        Perform motion detection on the video using landmarks method.
+        
+        Args:
+            window_duration: Duration in seconds for moving average window
+            load: Whether to load previous results if available
+            
+        Returns:
+            Dictionary containing motion detection results
+        """
+        # Check if pose detection has been run
+        if not hasattr(self, "pose_data") or not self.pose_data:
+            raise ValueError("No pose data available. You must run pose_detect before motion_detect.")
+        
+        # Use provided parameters or fall back to class parameters
+        window_duration = window_duration or self.params.get("moving_avg_window_duration")
+        load = load if load is not None else self.params.get("reuse_results")
+        
+        # Try to load previous results if requested
+        if load:
+            previous_results = self.load_previous_results("motion", verbose=self.verbose)
+            if previous_results:
+                self.motion_data = previous_results
+                return self.motion_data
+        
+        # If no previous results or not loading, run motion detection
+        if self.verbose:
+            print(f"Running motion detection using landmarks method")
+        
+        # Get landmarks path from pose data
+        landmarks_path = os.path.join(
+            self.pose_estimation_dir,
+            self.pose_detection_version,
+            f"{self.filename.split('.')[0]}.npy"
+        )
+        
+        # Run motion detection using landmarks
+        motion_raw = md.measure_landmark_change(
+            landmarks_path,
+            use_pose=True,
+            use_face=False,
+            use_hands=True,
+            combination_method='mean'
+        )
+        
+        # Store raw results with consistent key name
+        self.motion_data = {
+            "landmarks_motion_raw": np.array(motion_raw)
+        }
+                
+        # Save results
+        self._save_raw_motion_results()
+        
+        return self.motion_data
+    
+    def _save_raw_motion_results(self, verbose: bool = True) -> None:
+        """Save only the raw motion detection results to disk."""
+        # Create directory for results
+        result_dir = os.path.join(
+            self.motion_detection_dir,
+            self.motion_detection_version
+        )
+        os.makedirs(result_dir, exist_ok=True)
+        
+        # Save raw motion data
+        np.save(os.path.join(result_dir, f"{self.filename.split('.')[0]}_landmarks.npy"), self.motion_data["landmarks_motion_raw"])
+        
+        if verbose:
+            print(f"Saved motion detection results to {result_dir}")
+    
+    def motion_analyze(self, window_duration: Optional[float] = None, load: Optional[bool] = None) -> Dict:
+        """
+        Analyze motion data to find motion boundaries using either simple threshold or peaks method.
+        
+        Args:
+            window_duration: Duration in seconds for moving average window
+            load: Whether to load previous results if available
+            
+        Returns:
+            Dictionary containing motion analysis results
+        """
+        # Check if motion detection has been run
+        if not hasattr(self, "motion_data") or not self.motion_data:
+            raise ValueError("No motion data available. You must run motion_detect before motion_analyze.")
+        
+        # Try to load previous results if requested
+        if load:
+            previous_results = self.load_previous_results("motion_analysis", verbose=self.verbose)
+            if previous_results:
+                self.motion_analysis = previous_results
+                return self.motion_analysis
+        
+        # Process raw motion data
+        window_duration = window_duration or self.params.get("moving_avg_window_duration")
+        # Apply moving average
+        smoothed_motion = md.moving_average(self.motion_data["landmarks_motion_raw"], self.fps, window_duration, verbose=self.verbose)
+        # Normalize data
+        motion_data = md.normalize_list_of_data(smoothed_motion)
+        
+        # Get parameters
+        method = self.params.get("motion_analysis_method", "simple")  # Default to simple method
+        
+        if self.verbose:
+            print(f"Analyzing motion using {method} method")
+        
+        if method == "peaks":
+            # Use peaks method with parameters from self.params
+            boundaries = md.find_motion_boundaries_peaks(
+                motion_data,
+                fps=self.fps,
+                min_motion_peak_height=self.params.get("min_motion_peak_height", 0.35),
+                min_motion_peak_width_seconds=self.params.get("min_motion_peak_width_seconds", 0.2),
+                slope_window_size=self.params.get("slope_window_size", 5),
+                min_slope_peak_height=self.params.get("min_slope_peak_height", 0.1),
+                min_slope_peak_width_seconds=self.params.get("min_slope_peak_width_seconds", 0.2),
+                start_buffer_seconds=self.params.get("start_buffer_seconds", 0.15),
+                end_buffer_seconds=self.params.get("end_buffer_seconds", 0.15),
+                fallback_simple_start_threshold=self.params.get("motion_start_threshold", 0.3),
+                fallback_simple_end_threshold=self.params.get("motion_end_threshold", 0.3),
+                verbose=self.verbose
+            )
+            start_frame, end_frame = boundaries[0], boundaries[1]
+        else:  # simple method
+            start_frame, end_frame = md.find_motion_boundaries_simple(
+                motion_data,
+                start_threshold=self.params.get("motion_start_threshold", 0.2),
+                end_threshold=self.params.get("motion_end_threshold", 0.2)
+            )
+
+        # Hard coding for special cases
+        if self.filename == "vagina_ne_1.mp4":
+            start_frame = 3
+            end_frame = 28
+        
+        if start_frame is None or end_frame is None:
+            raise ValueError("Failed to detect motion boundaries")
+        
+        # Store results
+        self.motion_analysis = {
+            "start_frame": start_frame,
+            "end_frame": end_frame,
+            "start_time": start_frame / self.fps,
+            "end_time": end_frame / self.fps,
+            "duration_frames": end_frame - start_frame,
+            "duration_sec": (end_frame - start_frame) / self.fps
+        }
+        
+        # Save results
+        self._save_motion_analysis()
+        
+        return self.motion_analysis
+    
+    def _save_motion_analysis(self, verbose: bool = True) -> None:
+        """Save motion analysis results to disk."""
+        # Create directory for results
+        result_dir = os.path.join(
+            self.motion_detection_dir,
+            self.motion_detection_version
+        )
+        os.makedirs(result_dir, exist_ok=True)
+        
+        # Save motion analysis data
+        np.save(os.path.join(result_dir, f"{self.filename.split('.')[0]}_motion_analysis.npy"), self.motion_analysis)
+        
+        if verbose:
+            print(f"Saved motion analysis results to {result_dir}")
 
     def save_analysis_info(self) -> Dict:
         """
@@ -649,7 +884,7 @@ class VideoAnalyzer:
         # Check for required data
         if not hasattr(self, "motion_data") or not self.motion_data:
             raise ValueError("Motion data not available. Run motion_detect first.")
-        if "analysis" not in self.motion_data:
+        if not hasattr(self, "motion_analysis"):
             raise ValueError("Motion analysis not available. Run motion_analyze first.")
             
         if not hasattr(self, "pose_data") or not self.pose_data:
@@ -674,12 +909,12 @@ class VideoAnalyzer:
         
         # Convert motion analysis values
         motion_analysis = {
-            "start_frame": int(self.motion_data["analysis"]["start_frame"]),
-            "end_frame": int(self.motion_data["analysis"]["end_frame"]),
-            "start_time": float(self.motion_data["analysis"]["start_time"]),
-            "end_time": float(self.motion_data["analysis"]["end_time"]),
-            "duration_frames": int(self.motion_data["analysis"]["duration_frames"]),
-            "duration_sec": float(self.motion_data["analysis"]["duration_sec"])
+            "start_frame": int(self.motion_analysis["start_frame"]),
+            "end_frame": int(self.motion_analysis["end_frame"]),
+            "start_time": float(self.motion_analysis["start_time"]),
+            "end_time": float(self.motion_analysis["end_time"]),
+            "duration_frames": int(self.motion_analysis["duration_frames"]),
+            "duration_sec": float(self.motion_analysis["duration_sec"])
         }
         
         # Collect all analysis info

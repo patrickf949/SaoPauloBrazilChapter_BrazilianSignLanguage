@@ -15,8 +15,9 @@ __pycache__/
 # Specifically ignore all video directories
 **/videos/
 
-/data/interim/**/
-/data/preprocessed/**/
+/data/interim/*/**
+!/data/interim/*/.gitkeep
+/data/preprocessed/*/**
 
 # MacOS system files
 .DS_Store

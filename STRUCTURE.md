@@ -13,12 +13,14 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 │   │   └── V-Librasil/  # V-Librasil dataset
 │   │       └── videos/ # Video files (stored on Google Drive)
 │   ├── interim/             # Intermediate data
+│   │   ├── Analysis/        # Analysis info of the data
+│   │   │   └── [analysis_info.json files]
 │   │   ├── Debug/         # Debug files for inspecting preprocessing steps
 │   │   │   ├── videos/   # Intermediate video files
 │   │   │   └── landmarks/ # Intermediate landmark files
+│   │   ├── RawCleanVideos/ # The raw video files after some initial cleaning before the preprocessing pipeline
 │   │   ├── RawMotionMeasurements/ # Raw motion measurements
-│   │   ├── RawPoseLandmarks/      # Raw pose landmarks
-│   │   └── Videos/      # Preprocessed video files
+│   │   └── RawPoseLandmarks/      # Raw pose landmarks
 │   ├── processed/           # Final datasets
 │   │   ├── metadata_v*.csv # Metadata for each preprocessing version
 │   │   ├── videos/      # Preprocessed videos
