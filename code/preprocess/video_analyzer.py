@@ -242,8 +242,9 @@ def analyze_none_landmarks(landmarks_data: np.ndarray) -> Dict:
     stats = {
         'overall': {
             'total_frames': len(landmarks_data),
-            'none_frames': 0,  # Frames where all landmark groups are None
-            'frame_percentage': 0.0
+            'total_landmark_frames': len(landmarks_data) * 4,  # 4 landmark groups per frame
+            'none_landmark_frames': 0,  # Total None landmarks across all groups
+            'landmark_frame_percentage': 0.0  # Percentage of None landmarks
         }
     }
     
@@ -266,26 +267,25 @@ def analyze_none_landmarks(landmarks_data: np.ndarray) -> Dict:
     # Process each frame
     for frame_idx, frame_landmarks in enumerate(landmarks_data):
         if frame_landmarks is None:
-            stats['overall']['none_frames'] += 1
+            # If entire frame is None, all landmark groups are None
+            stats['overall']['none_landmark_frames'] += 4  # All 4 groups are None
+            for key in landmark_groups:
+                stats[key]['none_frames'] += 1
             continue
             
-        all_none = True  # Track if all groups in frame are None
-        
         # Process each landmark group
         for key in landmark_groups:
             if key not in frame_landmarks:
                 stats[key]['none_frames'] += 1
+                stats['overall']['none_landmark_frames'] += 1
                 continue
                 
             group = frame_landmarks[key]
             if group is None:
                 stats[key]['none_frames'] += 1
+                stats['overall']['none_landmark_frames'] += 1
             else:
                 presence_by_type[key][frame_idx] = True
-                all_none = False
-        
-        if all_none:
-            stats['overall']['none_frames'] += 1
     
     # Calculate valid range statistics for each group
     for key in landmark_groups:
@@ -314,9 +314,9 @@ def analyze_none_landmarks(landmarks_data: np.ndarray) -> Dict:
         # Calculate overall percentage
         stats[key]['frame_percentage'] = (stats[key]['none_frames'] / stats[key]['total_frames']) * 100
     
-    # Calculate overall frame percentage
-    stats['overall']['frame_percentage'] = (
-        stats['overall']['none_frames'] / stats['overall']['total_frames']
+    # Calculate overall landmark frame percentage
+    stats['overall']['landmark_frame_percentage'] = (
+        stats['overall']['none_landmark_frames'] / stats['overall']['total_landmark_frames']
     ) * 100
     
     return stats
@@ -821,6 +821,11 @@ class VideoAnalyzer:
                 start_threshold=self.params.get("motion_start_threshold", 0.2),
                 end_threshold=self.params.get("motion_end_threshold", 0.2)
             )
+
+        # Hard coding for special cases
+        if self.filename == "vagina_ne_1.mp4":
+            start_frame = 3
+            end_frame = 28
         
         if start_frame is None or end_frame is None:
             raise ValueError("Failed to detect motion boundaries")
