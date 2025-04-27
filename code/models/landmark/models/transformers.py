@@ -70,5 +70,4 @@ class TransformerClassifier(nn.Module):
 
         x = self.transformer_encoder(x)
         x = x.mean(dim=1)  # Global average pooling over time
-        print(x.shape)
         return self.cls_head(x)  # [B, num_classes]

@@ -39,7 +39,8 @@ model = [
     "mediapipe",     # for landmark detection
     "torch>=2.6.0",
     "hydra-core>=1.3.2", 
-     "unidecode>=1.3.8"
+    "unidecode>=1.3.8",
+    "scikit-learn==1.6.1"
 ]
 
 # Dependencies for formatting and development

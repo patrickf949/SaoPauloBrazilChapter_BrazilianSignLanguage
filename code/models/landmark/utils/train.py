@@ -122,21 +122,3 @@ def train_epoch(
 
     return avg_train_loss, avg_val_loss
 
-
-
-if __name__ == "__main__":
-    train_dataset = LandmarkDataset(
-        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml",
-        "train",
-    )
-    test_dataset = LandmarkDataset(
-        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/dataset/configs/dataset.yaml",
-        "test",
-    )
-    model = TransformerClassifier(input_size=212, num_classes=25)
-    train_rotating_folds(
-        model,
-        train_dataset,
-        test_dataset,
-        "/home/ana/Projects/Omdena/HealthSignLangBrazil/SaoPauloBrazilChapter_BrazilianSignLanguage/code/models/landmark/training/configs/training.yaml",
-    )
