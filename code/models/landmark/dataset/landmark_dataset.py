@@ -15,6 +15,7 @@ import os
 from mediapipe.framework.formats import landmark_pb2
 from omegaconf import DictConfig
 
+
 def uniform_intervals(start: int, end: int, interval: int):
     return list(range(start, end + 1, interval))
 
@@ -88,7 +89,7 @@ class LandmarkDataset(Dataset):
         )
         self.feature_computation_types = config["feature_computation_types"]
         self.feature_modes = config["feature_modes"]
-        
+
         self.estimators = {
             "angles": AnglesEstimator(
                 hand_angles=config["hand_angle_triplets"],
@@ -135,8 +136,8 @@ class LandmarkDataset(Dataset):
         idx = self.data.index[idx]
         landmark_path = os.path.join(self.data_dir, self.data.loc[idx, "filename"])
         label = torch.tensor([self.data.loc[idx, "label_encoded"]], dtype=torch.int64)
-        preprocessed_first_index = self.data.loc[idx, "preprocessed_start_frame"]
-        preprocessed_last_index = self.data.loc[idx, "preprocessed_end_frame"]
+        preprocessed_first_index = self.data.loc[idx, "start_frame"]
+        preprocessed_last_index = self.data.loc[idx, "end_frame"]
         frames = np.load(landmark_path, allow_pickle=True)
         frames = frames[preprocessed_first_index:preprocessed_last_index]
 

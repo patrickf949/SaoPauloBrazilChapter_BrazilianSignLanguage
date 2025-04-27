@@ -1,6 +1,7 @@
 import torch
 from sklearn.metrics import accuracy_score
 
+
 def evaluate(
     model,
     test_loader: torch.utils.data.DataLoader,
