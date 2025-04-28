@@ -1,6 +1,7 @@
+<mark>This page is under construction</mark>
+
 # Healthcare Sign Language Brazil
 
-This page is under construction
 
 ## Summary
 *This should be somewhat similar to what is described in the [project's main page](https://www.omdena.com/chapter-challenges/ai-assisted-sign-language-translation-for-brazilian-healthcare-settings)*
@@ -9,14 +10,6 @@ This page is under construction
 
 ### Contributors
 Here's a list of people that contributed to the project. Feel free to reach out to them if needed:
-<!-- <ul style="list-style-type:none;">
-    <li>
-        <a ref="https://www.linkedin.com/in/ben-d-thompson/">Ben Thompson</a> (Project Manager)
-    </li>
-    <li>
-        <a ref="https://www.linkedin.com/in/ben-d-thompson/">Ben Thompson</a> (Project Manager)
-    </li>
-</ul> -->
 
 [Ben Thompson](https://www.linkedin.com/in/ben-d-thompson/) (Project Manager)
 
@@ -40,12 +33,7 @@ Here's a list of people that contributed to the project. Feel free to reach out 
 
 [Pooja Prasad](https://www.linkedin.com)
 
-.
-
-.
-
 [Lorem Ipsum](https://www.linkedin.com) (Main role)
-
 
 
 ### Results
