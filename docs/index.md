@@ -9,21 +9,43 @@ This page is under construction
 
 ### Contributors
 Here's a list of people that contributed to the project. Feel free to reach out to them if needed:
+<!-- <ul style="list-style-type:none;">
+    <li>
+        <a ref="https://www.linkedin.com/in/ben-d-thompson/">Ben Thompson</a> (Project Manager)
+    </li>
+    <li>
+        <a ref="https://www.linkedin.com/in/ben-d-thompson/">Ben Thompson</a> (Project Manager)
+    </li>
+</ul> -->
 
 [Ben Thompson](https://www.linkedin.com/in/ben-d-thompson/) (Project Manager)
+
 [Ayushya Pare](https://www.linkedin.com) (Data Scraping)
+
 [Gustavo Santos](https://www.linkedin.com/in/gustavopsantos) (Data cleaning)
+
 [Anastasiia Derzhanskaia](https://www.linkedin.com) (Model development)
+
 [Kunal Sood](https://www.linkedin.com) (Model development)
+
 [Patrick Fitz](https://www.linkedin.com) (App development)
+
 [Damla Helvaci](https://www.linkedin.com)
+
 [Ethel Phiri](https://www.linkedin.com/in/ethel-phiri261312/)
+
 [Gulzar](https://www.linkedin.com)
+
 [Michael Spurgeon Jr](https://www.linkedin.com)
+
 [Pooja Prasad](https://www.linkedin.com)
+
 .
+
 .
+
 [Lorem Ipsum](https://www.linkedin.com) (Main role)
+
 
 
 ### Results
