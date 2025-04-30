@@ -167,133 +167,213 @@ class Preprocessor:
     # Landmark Processing Methods
     # ==========================================
     
-    def _interpolate_hand_landmarks(self, landmarks: np.ndarray) -> Tuple[np.ndarray, Dict]:
+    def _interpolate_landmarks(self, landmarks: np.ndarray) -> Tuple[np.ndarray, Dict]:
         """
-        Interpolate hand landmarks when there are individual None frames between valid frames.
-        Only interpolates single-frame gaps (i.e., one None frame with valid frames before and after).
-        Does not interpolate longer sequences of None frames.
+        Interpolate landmarks when there are None frames between valid frames.
+        Handles both single-frame gaps and sequences of None frames.
+        Applies to all landmark groups: pose, face, and hands.
+        
+        For single None frames:
+        - Uses simple midpoint interpolation between valid frames before and after
+        
+        For sequences of None frames:
+        - Uses linear interpolation to create equidistant values between valid frames
+        
+        For None frames at start/end:
+        - Repeats the nearest valid frame
         
         Args:
             landmarks: Array of landmarks to process
             
         Returns:
             Tuple containing:
-            - Array of landmarks with interpolated hand landmarks where possible
+            - Array of landmarks with interpolated values where possible
             - Dictionary containing interpolation metadata
         """
         interpolation_info = {
+            'pose_landmarks': {
+                'total_interpolated_frames': 0,
+                'interpolated_frame_indices': [],  # List of all interpolated frame indices
+                'interpolated_sequences_start_end_length': []  # List of (start_idx, end_idx, sequence_length) tuples
+            },
+            'face_landmarks': {
+                'total_interpolated_frames': 0,
+                'interpolated_frame_indices': [],
+                'interpolated_sequences_start_end_length': []
+            },
             'left_hand_landmarks': {
                 'total_interpolated_frames': 0,
-                'interpolated_frame_indices': []  # List of all interpolated frame indices
+                'interpolated_frame_indices': [],
+                'interpolated_sequences_start_end_length': []
             },
             'right_hand_landmarks': {
                 'total_interpolated_frames': 0,
-                'interpolated_frame_indices': []
+                'interpolated_frame_indices': [],
+                'interpolated_sequences_start_end_length': []
             }
         }
         
-        # Get None analysis once before processing any hands
+        # Get None analysis once before processing any landmarks
         none_analysis = analyze_none_landmarks(landmarks)
         
         if self.verbose:
-            # Analyze before interpolation
             print("None analysis before interpolation:")
-            print(f"Left hand None frames: {none_analysis['left_hand_landmarks']['valid_range_none_details']}")
-            print(f"Right hand None frames: {none_analysis['right_hand_landmarks']['valid_range_none_details']}")
+            for landmark_type in none_analysis:
+                print(f"{landmark_type} None frames: {none_analysis[landmark_type]['none_details']}")
         
-        # Process each hand type
-        for hand_type in ['left_hand_landmarks', 'right_hand_landmarks']:
-            none_frames = sorted(none_analysis[hand_type]['valid_range_none_details'])
+        # Process each landmark type
+        for landmark_type in ['pose_landmarks', 'face_landmarks', 'left_hand_landmarks', 'right_hand_landmarks']:
+            none_frames = sorted(none_analysis[landmark_type]['none_details'])
             
             if self.verbose:
-                print(f"\nProcessing {hand_type}")
+                print(f"\nProcessing {landmark_type}")
                 print(f"Found None frames: {none_frames}")
             
-            # First, identify frames that need interpolation
-            frames_to_interpolate = []
-            for frame_idx in none_frames:
-                # Check if this is an isolated None frame by examining actual frame content
-                if frame_idx > 0 and frame_idx < len(landmarks) - 1:
-                    before_frame = landmarks[frame_idx - 1]
-                    after_frame = landmarks[frame_idx + 1]
-                    
-                    # Check if both neighboring frames exist and have valid hand landmarks
-                    has_valid_before = (before_frame is not None and 
-                                      hand_type in before_frame and 
-                                      before_frame[hand_type] is not None)
-                    
-                    has_valid_after = (after_frame is not None and 
-                                     hand_type in after_frame and 
-                                     after_frame[hand_type] is not None)
-                    
-                    if has_valid_before and has_valid_after:
-                        frames_to_interpolate.append(frame_idx)
+            if not none_frames:
+                continue
+                
+            # Find sequences of consecutive None frames
+            none_sequences = []
+            seq_start = none_frames[0]
+            prev_frame = none_frames[0]
+            
+            for frame in none_frames[1:] + [none_frames[-1] + 2]:  # Add sentinel value
+                if frame != prev_frame + 1:
+                    # End of sequence
+                    none_sequences.append((seq_start, prev_frame))
+                    seq_start = frame
+                prev_frame = frame
             
             if self.verbose:
-                print(f"Found {len(frames_to_interpolate)} frames to interpolate: {frames_to_interpolate}")
+                print(f"Found None sequences: {none_sequences}")
             
-            # Then, perform interpolation for identified frames
-            for frame_idx in frames_to_interpolate:
-                before_frame = landmarks[frame_idx - 1]
-                after_frame = landmarks[frame_idx + 1]
+            # Process each sequence
+            for seq_start, seq_end in none_sequences:
+                seq_length = seq_end - seq_start + 1
                 
-                if self.verbose:
-                    print(f"Interpolating frame {frame_idx} using frames {frame_idx-1} and {frame_idx+1}")
+                # Find valid frames before and after sequence
+                before_frame_idx = seq_start - 1
+                after_frame_idx = seq_end + 1
                 
-                # Create a new frame by deep copying the before frame
-                new_frame = self._deep_copy_landmarks_frame(before_frame)
+                # Handle sequences at start of video
+                if before_frame_idx < 0:
+                    if after_frame_idx >= len(landmarks) or landmarks[after_frame_idx] is None:
+                        continue  # Can't interpolate if no valid frames available
+                    
+                    # Repeat the first valid frame
+                    valid_frame = self._deep_copy_landmarks_frame(landmarks[after_frame_idx])
+                    if valid_frame is None or landmark_type not in valid_frame or valid_frame[landmark_type] is None:
+                        continue
+                        
+                    for frame_idx in range(seq_start, seq_end + 1):
+                        if frame_idx >= len(landmarks):
+                            break
+                        new_frame = self._deep_copy_landmarks_frame(landmarks[frame_idx])
+                        if new_frame is None:
+                            new_frame = {}
+                        new_frame[landmark_type] = copy.deepcopy(valid_frame[landmark_type])
+                        landmarks[frame_idx] = new_frame
+                        
+                        # Track interpolation
+                        interpolation_info[landmark_type]['total_interpolated_frames'] += 1
+                        interpolation_info[landmark_type]['interpolated_frame_indices'].append(frame_idx)
+                    
+                    interpolation_info[landmark_type]['interpolated_sequences_start_end_length'].append((seq_start, seq_end, seq_length))
+                    continue
+                
+                # Handle sequences at end of video
+                if after_frame_idx >= len(landmarks):
+                    if before_frame_idx < 0 or landmarks[before_frame_idx] is None:
+                        continue  # Can't interpolate if no valid frames available
+                    
+                    # Repeat the last valid frame
+                    valid_frame = self._deep_copy_landmarks_frame(landmarks[before_frame_idx])
+                    if valid_frame is None or landmark_type not in valid_frame or valid_frame[landmark_type] is None:
+                        continue
+                        
+                    for frame_idx in range(seq_start, seq_end + 1):
+                        if frame_idx >= len(landmarks):
+                            break
+                        new_frame = self._deep_copy_landmarks_frame(landmarks[frame_idx])
+                        if new_frame is None:
+                            new_frame = {}
+                        new_frame[landmark_type] = copy.deepcopy(valid_frame[landmark_type])
+                        landmarks[frame_idx] = new_frame
+                        
+                        # Track interpolation
+                        interpolation_info[landmark_type]['total_interpolated_frames'] += 1
+                        interpolation_info[landmark_type]['interpolated_frame_indices'].append(frame_idx)
+                    
+                    interpolation_info[landmark_type]['interpolated_sequences_start_end_length'].append((seq_start, seq_end, seq_length))
+                    continue
+                
+                # Get valid frames before and after sequence
+                before_frame = landmarks[before_frame_idx]
+                after_frame = landmarks[after_frame_idx]
+                
+                # Skip if either frame is invalid
+                if (before_frame is None or after_frame is None or
+                    landmark_type not in before_frame or landmark_type not in after_frame or
+                    before_frame[landmark_type] is None or after_frame[landmark_type] is None):
+                    continue
                 
                 # Get landmarks from before and after frames
-                before_landmarks = before_frame[hand_type].landmark
-                after_landmarks = after_frame[hand_type].landmark
-                
-                # Create new hand landmarks if they don't exist
-                if hand_type not in new_frame or new_frame[hand_type] is None:
-                    new_frame[hand_type] = copy.deepcopy(before_frame[hand_type])
+                before_landmarks = before_frame[landmark_type].landmark
+                after_landmarks = after_frame[landmark_type].landmark
                 
                 # Debug output for first landmark point before interpolation
                 if self.verbose:
-                    print(f"\nDebug - First landmark point before interpolation:")
+                    print(f"\nDebug - First landmark point before interpolation for sequence {seq_start}-{seq_end}:")
                     print(f"Before frame: x={before_landmarks[0].x:.4f}, y={before_landmarks[0].y:.4f}, z={before_landmarks[0].z:.4f}")
                     print(f"After frame:  x={after_landmarks[0].x:.4f}, y={after_landmarks[0].y:.4f}, z={after_landmarks[0].z:.4f}")
                 
-                # Interpolate with t=0.5 for the middle frame
-                for j in range(len(before_landmarks)):
-                    # Linear interpolation for x, y, z coordinates
-                    x = (before_landmarks[j].x + after_landmarks[j].x) / 2
-                    y = (before_landmarks[j].y + after_landmarks[j].y) / 2
-                    z = (before_landmarks[j].z + after_landmarks[j].z) / 2
+                # Create interpolated frames
+                for frame_idx in range(seq_start, seq_end + 1):
+                    # Create new frame by deep copying the before frame
+                    new_frame = self._deep_copy_landmarks_frame(before_frame)
+                    if landmark_type not in new_frame or new_frame[landmark_type] is None:
+                        new_frame[landmark_type] = copy.deepcopy(before_frame[landmark_type])
                     
-                    new_frame[hand_type].landmark[j].x = x
-                    new_frame[hand_type].landmark[j].y = y
-                    new_frame[hand_type].landmark[j].z = z
+                    # Calculate interpolation factor (0 to 1)
+                    t = (frame_idx - before_frame_idx) / (after_frame_idx - before_frame_idx)
                     
-                    # Debug output for first landmark point after interpolation
-                    if j == 0 and self.verbose:
-                        print(f"Interpolated:  x={x:.4f}, y={y:.4f}, z={z:.4f}")
+                    # Interpolate each landmark
+                    for j in range(len(before_landmarks)):
+                        # Linear interpolation for x, y, z coordinates
+                        x = before_landmarks[j].x + t * (after_landmarks[j].x - before_landmarks[j].x)
+                        y = before_landmarks[j].y + t * (after_landmarks[j].y - before_landmarks[j].y)
+                        z = before_landmarks[j].z + t * (after_landmarks[j].z - before_landmarks[j].z)
+                        
+                        new_frame[landmark_type].landmark[j].x = x
+                        new_frame[landmark_type].landmark[j].y = y
+                        new_frame[landmark_type].landmark[j].z = z
+                        
+                        # Debug output for first landmark point after interpolation
+                        if j == 0 and self.verbose:
+                            print(f"Interpolated frame {frame_idx}: x={x:.4f}, y={y:.4f}, z={z:.4f}")
+                    
+                    # Store the interpolated frame
+                    landmarks[frame_idx] = new_frame
+                    
+                    # Track this successful interpolation
+                    interpolation_info[landmark_type]['total_interpolated_frames'] += 1
+                    interpolation_info[landmark_type]['interpolated_frame_indices'].append(frame_idx)
                 
-                # Store the interpolated frame
-                landmarks[frame_idx] = new_frame
-                
-                # Track this successful interpolation
-                interpolation_info[hand_type]['total_interpolated_frames'] += 1
-                interpolation_info[hand_type]['interpolated_frame_indices'].append(frame_idx)
+                interpolation_info[landmark_type]['interpolated_sequences_start_end_length'].append((seq_start, seq_end, seq_length))
         
         if self.verbose:
             # Analyze after interpolation
             after_analysis = analyze_none_landmarks(landmarks)
             print("\nNone analysis after interpolation:")
-            print(f"Left hand None frames: {after_analysis['left_hand_landmarks']['valid_range_none_details']}")
-            print(f"Right hand None frames: {after_analysis['right_hand_landmarks']['valid_range_none_details']}")
-            print(f"Reduced left hand None frames by: {len(none_analysis['left_hand_landmarks']['valid_range_none_details']) - len(after_analysis['left_hand_landmarks']['valid_range_none_details'])}")
-            print(f"Reduced right hand None frames by: {len(none_analysis['right_hand_landmarks']['valid_range_none_details']) - len(after_analysis['right_hand_landmarks']['valid_range_none_details'])}")
+            for landmark_type in after_analysis:
+                print(f"{landmark_type} None frames: {after_analysis[landmark_type]['none_details']}")
+                print(f"Reduced {landmark_type} None frames by: {len(none_analysis[landmark_type]['none_details']) - len(after_analysis[landmark_type]['none_details'])}")
             
             # Print interpolation summary
-            for hand_type in ['left_hand_landmarks', 'right_hand_landmarks']:
-                print(f"\n{hand_type} interpolation summary:")
-                print(f"Total frames interpolated: {interpolation_info[hand_type]['total_interpolated_frames']}")
-                if interpolation_info[hand_type]['interpolated_frame_indices']:
-                    print(f"Frames interpolated: {interpolation_info[hand_type]['interpolated_frame_indices']}")
+            for landmark_type in interpolation_info:
+                print(f"\n{landmark_type} interpolation summary:")
+                print(f"Total frames interpolated: {interpolation_info[landmark_type]['total_interpolated_frames']}")
+                print(f"Sequences interpolated: {interpolation_info[landmark_type]['interpolated_sequences_start_end_length']}")
             
         return landmarks, interpolation_info
 
@@ -376,8 +456,8 @@ class Preprocessor:
         self.trimmed_landmark_extremes = self._get_landmark_extremes_for_series(trimmed_landmarks, skip_stationary_frames)
         self.trimmed_none_analysis = analyze_none_landmarks(trimmed_landmarks)
 
-        # 8. Interpolate hand landmarks
-        interpolated_landmarks, self.interpolation_info = self._interpolate_hand_landmarks(trimmed_landmarks)
+        # 8. Interpolate landmarks
+        interpolated_landmarks, self.interpolation_info = self._interpolate_landmarks(trimmed_landmarks)
         if self.save_intermediate:
             self._save_intermediate_landmarks(interpolated_landmarks, "interpolated")
         self.interpolated_none_analysis = analyze_none_landmarks(interpolated_landmarks)
@@ -944,6 +1024,53 @@ class Preprocessor:
             "new_duration_percent": (preprocessing_params['end_frame'] - preprocessing_params['start_frame']) / original_metadata['frame_count']
         }
         
+        interpolation_binary_arrays = {}
+        interpolation_sequence_length_arrays = {}
+        interpolation_binary_arrays_no_trailing_values = {}
+        interpolation_sequence_length_arrays_no_trailing_values = {}
+
+        for landmark_type in ['pose_landmarks', 'face_landmarks', 'left_hand_landmarks', 'right_hand_landmarks']:
+            trimmed_length = preprocessing_params['end_frame'] - preprocessing_params['start_frame'] + 1
+
+            interpolated_frames = self.interpolation_info[landmark_type]['interpolated_frame_indices']
+            interpolation_binary_arrays[landmark_type] = np.zeros(trimmed_length, dtype=int)
+            for frame_idx in interpolated_frames:
+                interpolation_binary_arrays[landmark_type][frame_idx] = 1
+
+            start_end_length = self.interpolation_info[landmark_type]['interpolated_sequences_start_end_length']
+            interpolation_sequence_length_arrays[landmark_type] = np.zeros(trimmed_length, dtype=int)
+            for start, end, length in start_end_length:
+                interpolation_sequence_length_arrays[landmark_type][start : end+1] = length
+                
+            # Initialize no_trailing_values arrays with copies of the original arrays
+            interpolation_binary_arrays_no_trailing_values[landmark_type] = interpolation_binary_arrays[landmark_type].copy()
+            interpolation_sequence_length_arrays_no_trailing_values[landmark_type] = interpolation_sequence_length_arrays[landmark_type].copy()
+
+        # Now process the no_trailing_values arrays
+        for landmark_type in ['pose_landmarks', 'face_landmarks', 'left_hand_landmarks', 'right_hand_landmarks']:
+            # Reset sequences at start
+            for i in range(trimmed_length):
+                if interpolation_binary_arrays_no_trailing_values[landmark_type][i] == 0:
+                    break
+                interpolation_binary_arrays_no_trailing_values[landmark_type][i] = 0
+                interpolation_sequence_length_arrays_no_trailing_values[landmark_type][i] = 0
+            
+            # Reset sequences at end
+            for i in range(trimmed_length - 1, -1, -1):
+                if interpolation_binary_arrays_no_trailing_values[landmark_type][i] == 0:
+                    break
+                interpolation_binary_arrays_no_trailing_values[landmark_type][i] = 0
+                interpolation_sequence_length_arrays_no_trailing_values[landmark_type][i] = 0
+
+        landmark_arrays = {}
+        for landmark_type in ['pose_landmarks', 'face_landmarks', 'left_hand_landmarks', 'right_hand_landmarks']:
+            landmark_arrays[landmark_type] = {
+                'interpolation_binary_array': interpolation_binary_arrays[landmark_type],
+                'interpolation_sequence_length_array': interpolation_sequence_length_arrays[landmark_type],
+                'interpolation_binary_array_no_trailing_values': interpolation_binary_arrays_no_trailing_values[landmark_type],
+                'interpolation_sequence_length_array_no_trailing_values': interpolation_sequence_length_arrays_no_trailing_values[landmark_type]
+            }
+
         metadata = {
             "metadata": {
                 **original_metadata,
@@ -977,11 +1104,11 @@ class Preprocessor:
                 "none_analysis": self.trimmed_none_analysis
             },
             "interpolated": {
-                "none_analysis": self.interpolated_none_analysis,
-                "interpolation_info": self.interpolation_info
-            }
+                "none_analysis": {"overall": self.interpolated_none_analysis['overall']},
+                "interpolation_info": self.interpolation_info,
+            },
+            "landmark_none_mask_arrays": landmark_arrays
         }
-        
         
         # Convert to JSON serializable types
         metadata = _convert_for_json(metadata)
@@ -1026,13 +1153,8 @@ class Preprocessor:
             "shoulders_width": self.raw_reference_points.get('shoulders_width'),
             "face_midpoint_to_shoulders_height": self.raw_reference_points.get('face_midpoint_to_shoulders_height'),
             # Add interpolation statistics
-            "left_hand_interpolated_frames": self.interpolation_info['left_hand_landmarks']['total_interpolated_frames'],
-            "right_hand_interpolated_frames": self.interpolation_info['right_hand_landmarks']['total_interpolated_frames'],
-            # Add None analysis statistics
-            "original_left_hand_none_frames": len(self.raw_none_analysis['left_hand_landmarks']['valid_range_none_details']),
-            "original_right_hand_none_frames": len(self.raw_none_analysis['right_hand_landmarks']['valid_range_none_details']),
-            "final_left_hand_none_frames": len(self.interpolated_none_analysis['left_hand_landmarks']['valid_range_none_details']),
-            "final_right_hand_none_frames": len(self.interpolated_none_analysis['right_hand_landmarks']['valid_range_none_details'])
+            "left_hand_interpolated_none_frames": self.interpolation_info['left_hand_landmarks']['total_interpolated_frames'],
+            "right_hand_interpolated_none_frames": self.interpolation_info['right_hand_landmarks']['total_interpolated_frames'],
         }
         
         # Convert row to DataFrame
