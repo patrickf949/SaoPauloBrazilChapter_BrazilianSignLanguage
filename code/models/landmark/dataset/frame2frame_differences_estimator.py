@@ -78,6 +78,11 @@ class DifferencesEstimator(BaseEstimator):
         mode: str,
         diff_type: str,
     ) -> List[Tuple[float]]:
+        if prev_landmarks is None or next_landmarks is None:
+            if mode == "3D":
+                return np.zeros(shape=3 * len(landmark_indices))
+            else:
+                return np.zeros(shape=2 * len(landmark_indices))
         return [
             difference(next_landmarks[idx], prev_landmarks[idx], mode, diff_type)
             for idx in landmark_indices

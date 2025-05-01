@@ -153,3 +153,38 @@ class TestEstimators(unittest.TestCase):
             self.angle_estimator.compute(self.landmarks, "hand", "4D")
             self.diff_estimator.compute(self.landmarks, "hand", "4D")
             self.landmark_estimator.compute(self.landmarks, "hand", "4D")
+
+    def test_none_landmarks(self):
+        result = self.landmark_estimator.compute(None, "pose", "2D")
+        expected = [0.0, 0.0, 0.0, 0.0]
+        assert_array_almost_equal(result, expected)
+        result = self.landmark_estimator.compute(None, "hand", "3D")
+        expected = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        assert_array_almost_equal(result, expected)
+
+        result = self.angle_estimator.compute(None, "pose", "2D", "func")
+        expected = [0.0, 0.0]
+        assert_array_almost_equal(result, expected)
+        result = self.angle_estimator.compute(None, "hand", "3D", "rad")
+        expected = [0.0]
+        assert_array_almost_equal(result, expected)
+
+        result = self.dist_estimator.compute(None, "pose", "2D")
+        expected = [0.0]
+        assert_array_almost_equal(result, expected)
+        result = self.dist_estimator.compute(None, "hand", "3D")
+        expected = [0.0]
+        assert_array_almost_equal(result, expected)
+
+        result = self.diff_estimator.compute(None, self.next_landmarks, "pose", "2D")
+        expected = [0.0, 0.0]
+        assert_array_almost_equal(result, expected)
+        result = self.diff_estimator.compute(None, self.next_landmarks, "hand", "3D")
+        expected = [0.0, 0.0, 0.0]
+        assert_array_almost_equal(result, expected)
+        result = self.diff_estimator.compute(self.prev_landmarks, None, "pose", "2D")
+        expected = [0.0, 0.0]
+        assert_array_almost_equal(result, expected)
+        result = self.diff_estimator.compute(None, None, "hand", "3D")
+        expected = [0.0, 0.0, 0.0]
+        assert_array_almost_equal(result, expected)

@@ -22,7 +22,9 @@ def get_dataset(config: DictConfig):
 
     def create_dataloader(split: str, shuffle: bool):
         return DataLoader(
-            LandmarkDataset(config.dataset, split),
+            LandmarkDataset(
+                config.dataset, config.features, config.augmentation, split
+            ),
             shuffle=shuffle,
             batch_size=batch_size,
             collate_fn=collate_fn,
@@ -30,8 +32,12 @@ def get_dataset(config: DictConfig):
 
     if config.training.type == "cross_validation":
         datasets = {
-            "train_dataset": LandmarkDataset(config.dataset, "train"),
-            "test_dataset": LandmarkDataset(config.dataset, "test"),
+            "train_dataset": LandmarkDataset(
+                config.dataset, config.features, config.augmentation, "train"
+            ),
+            "test_dataset": LandmarkDataset(
+                config.dataset, config.features, config.augmentation, "test"
+            ),
         }
     else:
         datasets = {

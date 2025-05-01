@@ -20,7 +20,8 @@ class RotateLandmarks:
 
         for key in ["pose_landmarks", "left_hand_landmarks", "right_hand_landmarks"]:
             if key in landmarks and landmarks[key]:
-                landmarks[key] = rotate(landmarks[key])
+                if landmarks[key] is not None:
+                    landmarks[key] = rotate(landmarks[key])
 
         return landmarks
 
@@ -40,6 +41,7 @@ class LandmarksNoise:
 
         for key in ["pose_landmarks", "left_hand_landmarks", "right_hand_landmarks"]:
             if key in landmarks and landmarks[key]:
-                landmarks[key] = add_noise(landmarks[key])
+                if landmarks[key] is not None:
+                    landmarks[key] = add_noise(landmarks[key])
 
         return landmarks

@@ -1,6 +1,6 @@
 class_name: models.landmark.models.transformers.TransformerClassifier
 params:
-  input_size: 212
+  input_size: 215
   num_classes: 25
   d_model: 128
   nhead: 8
