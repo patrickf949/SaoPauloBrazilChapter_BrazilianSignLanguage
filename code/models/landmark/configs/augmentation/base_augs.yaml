@@ -1,0 +1,10 @@
+train: 
+  rotate: 
+    class_name: models.landmark.dataset.RotateLandmarks
+    p: 0.5
+  noise:
+    class_name: models.landmark.dataset.LandmarksNoise
+    p: 0.5
+
+val:
+test: 

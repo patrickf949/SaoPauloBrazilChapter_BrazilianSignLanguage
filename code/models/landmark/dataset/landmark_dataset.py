@@ -4,12 +4,7 @@ import numpy as np
 import torch
 from models.landmark.utils.utils import load_config
 from typing import Dict, List, Union, Callable, Tuple
-from models.landmark.dataset.angles_estimator import AnglesEstimator
-from models.landmark.dataset.distances_estimator import DistancesEstimator
-from models.landmark.dataset.frame2frame_differences_estimator import (
-    DifferencesEstimator,
-)
-from models.landmark.dataset.augmentations import AUGMENTATIONS
+from models.landmark.utils.utils import load_obj
 from functools import partial
 import os
 from mediapipe.framework.formats import landmark_pb2
@@ -77,34 +72,48 @@ class LandmarkFeatureTorchJoiner:
 
 
 class LandmarkDataset(Dataset):
-    def __init__(self, config: Union[str, Dict, DictConfig], dataset_split: str):
-        config = load_config(config, "dataset_config")
+    def __init__(
+        self,
+        dataset_config: Union[str, Dict, DictConfig],
+        features_config: Union[str, Dict, DictConfig],
+        augmentation_config: Union[str, Dict, DictConfig],
+        dataset_split: str,
+    ):
+        config = load_config(dataset_config, "dataset_config")
+        features_config = load_config(features_config, "features_config")
+
         self.data_dir = config["data_dir"]
         self.data = pd.read_csv(config["data_path"])
         self.data = self.data[self.data["dataset_split"] == dataset_split]
-        self.augmentations = AUGMENTATIONS[dataset_split]
-        self.landmark_features = config["landmark_features"]
+        self.augmentations = [
+            {
+                "augmentation": load_obj(augmentation["class_name"]),
+                "p": augmentation["p"],
+            }
+            for _, augmentation in augmentation_config[dataset_split].items()
+        ]
+
         self.frame_interval_fn = partial(
             INTERVAL_FUNCTIONS[config["frame_interval_fn"]], interval=config["interval"]
         )
-        self.feature_computation_types = config["feature_computation_types"]
-        self.feature_modes = config["feature_modes"]
+
+        self.configuration = {
+            "landmark_types": config["landmark_types"],
+            "features": list(features_config.keys()),
+            "ordering": config["ordering"],
+        }
 
         self.estimators = {
-            "angles": AnglesEstimator(
-                hand_angles=config["hand_angle_triplets"],
-                pose_angles=config["pose_angle_triplets"],
-            ),
-            "distances": DistancesEstimator(
-                hand_distances=config["hand_distance_pairs"],
-                pose_distances=config["pose_distance_pairs"],
-            ),
-            "differences": DifferencesEstimator(
-                hand_differences=config["hand_differences"],
-                pose_differences=config["pose_differences"],
-            ),
+            name: {
+                "estimator": load_obj(estimator_params["class_name"])(
+                    hand_angles=estimator_params["hand"],
+                    pose_angles=config["pose_angle"],
+                ),
+                "mode": estimator_params["mode"],
+                "computation_type": estimator_params["computation_type"],
+            }
+            for name, estimator_params in features_config.items()
         }
-        self.landmark_types = config["landmark_types"]
 
     def __len__(self) -> int:
         return self.data.shape[0]
@@ -114,9 +123,9 @@ class LandmarkDataset(Dataset):
     ) -> Tuple[str, str]:
         """To allow free order of of features inside a feature vectors"""
 
-        if second_key in self.landmark_types:
+        if second_key in self.configuration["landmark_types"]:
             return first_key, second_key
-        if first_key in self.landmark_types:
+        if first_key in self.configuration["landmark_types"]:
             return second_key, first_key
 
         raise Exception(

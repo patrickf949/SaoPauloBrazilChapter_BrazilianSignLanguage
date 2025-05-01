@@ -10,7 +10,7 @@ from models.landmark.utils.train import (
 from models.landmark.utils.evaluate import evaluate
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_fn_pad
-from omegaconf import DictConfig, open_dict
+from omegaconf import DictConfig
 import hydra
 
 
@@ -19,13 +19,6 @@ def get_dataset(config: DictConfig):
         collate_fn_pad if "intervals" in config.dataset.frame_interval_fn else None
     )
     batch_size = config.training.batch_size
-    with open_dict(config):
-        config.dataset["hand_angle_triplets"] = config.features.hand_angles
-        config.dataset["pose_angle_triplets"] = config.features.pose_angles
-        config.dataset["hand_distance_pairs"] = config.features.hand_distances
-        config.dataset["pose_distance_pairs"] = config.features.pose_distances
-        config.dataset["hand_differences"] = config.features.hand_differences
-        config.dataset["pose_differences"] = config.features.pose_differences
 
     def create_dataloader(split: str, shuffle: bool):
         return DataLoader(
@@ -50,7 +43,7 @@ def get_dataset(config: DictConfig):
     return datasets
 
 
-@hydra.main(version_base=None, config_path="./configs", config_name="config")
+@hydra.main(version_base=None, config_path="./configs", config_name="train_config")
 def train(config: DictConfig):
     device = config.training.device
     num_epochs = config.training.num_epochs

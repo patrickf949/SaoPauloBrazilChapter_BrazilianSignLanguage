@@ -9,7 +9,10 @@ defaults:
     - angles
     - differences
     - distances
+  - augmentation: base_augs
 
 general: 
   log_path: 
   save_dir: 
+  experiment_name:
+  author: 

@@ -1,32 +1,13 @@
 data_dir: data/processed/v2
 data_path: data/preprocessed/landmarks_metadata_v3_training.csv
 
-landmark_features: 
-  angles: [pose, right_hand, left_hand]
-  distances: [pose, right_hand, left_hand]
-  differences: [pose, right_hand, left_hand]
+frame_interval_fn: random_timestamps
+interval: 15
 
+# the order and presence different landmarks types in input vector
 landmark_types: [pose, right_hand, left_hand]
 
-frame_interval_fn: uniform_intervals
-interval: 100
-
-feature_computation_types: 
-  distances: shifted_dist
-  angles: func
-  differences: normalized_diff
-
-feature_modes:
-  distances: 3D
-  angles: 3D
-  differences: 3D
-
-estimators:
-  angles:
-    class_name: models.landmark.dataset.angles_estimator.AnglesEstimator
-    
-  distances:
-    class_name: models.landmark.dataset.distances_estimator.DistancesEstimator
-    
-  differences:
-    class_name: models.landmark.dataset.frame2frame_differences_estimator.DifferencesEstimator
+# the order of features computation:
+# [features, landmarks] will result in [**pose_angles, **righ_hand_angles, **left_hand_angles, **pose_distances, ...]
+# [landmarks, features] will result in [**pose_angles, **pose_distances, **right_hand_angles, **right_hand_distances, ...]
+ordering: [features, landmarks]
