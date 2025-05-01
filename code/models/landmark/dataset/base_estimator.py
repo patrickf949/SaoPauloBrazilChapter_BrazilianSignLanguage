@@ -1,7 +1,7 @@
 from typing import Union, Dict, List, Iterable
 from abc import ABC, abstractmethod
-from models.landmark.utils import load_config, check_landmark_type, check_mode
-
+from models.landmark.utils.utils import load_config, check_landmark_type, check_mode
+from omegaconf import DictConfig
 import numpy as np
 
 
@@ -13,8 +13,8 @@ class BaseEstimator(ABC):
 
     def __init__(
         self,
-        hand_config: Union[str, Dict],
-        pose_config: Union[str, Dict],
+        hand_config: Union[str, Dict, DictConfig],
+        pose_config: Union[str, Dict, DictConfig],
         config_type: str,
     ):
         self.hand_config = load_config(hand_config, f"hand_{config_type}")
@@ -41,7 +41,9 @@ class LandmarkEstimator(BaseEstimator):
     """
 
     def __init__(
-        self, hand_landmarks: Union[str, Dict], pose_landmarks: Union[str, Dict]
+        self,
+        hand_landmarks: Union[str, Dict, DictConfig],
+        pose_landmarks: Union[str, Dict, DictConfig],
     ):
         """
         Parameters:
@@ -63,6 +65,11 @@ class LandmarkEstimator(BaseEstimator):
     def __compute(
         self, landmarks_positions: List[int], landmarks: Iterable, mode: str
     ) -> List[List[float]]:
+        if landmarks is None:
+            if mode == "2D":
+                return np.zeros(shape=2 * len(landmarks_positions))
+            else:
+                return np.zeros(shape=3 * len(landmarks_positions))
         return [
             self.__unpack_landmark(landmarks[position], mode)
             for position in landmarks_positions

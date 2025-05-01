@@ -1,11 +1,13 @@
 from typing import Union, Dict, List, Tuple, Iterable
-from models.landmark.utils import (
+from models.landmark.utils.utils import (
     check_mode,
     check_difference_type,
     check_landmark_type,
 )
 import numpy as np
 from models.landmark.dataset.base_estimator import BaseEstimator
+
+from omegaconf import DictConfig
 
 
 def difference(
@@ -55,8 +57,8 @@ class DifferencesEstimator(BaseEstimator):
 
     def __init__(
         self,
-        hand_differences: Union[str, Dict],
-        pose_differences: Union[str, Dict],
+        hand_differences: Union[str, Dict, DictConfig],
+        pose_differences: Union[str, Dict, DictConfig],
     ):
         """
         Parameters:
@@ -76,6 +78,11 @@ class DifferencesEstimator(BaseEstimator):
         mode: str,
         diff_type: str,
     ) -> List[Tuple[float]]:
+        if prev_landmarks is None or next_landmarks is None:
+            if mode == "3D":
+                return np.zeros(shape=3 * len(landmark_indices))
+            else:
+                return np.zeros(shape=2 * len(landmark_indices))
         return [
             difference(next_landmarks[idx], prev_landmarks[idx], mode, diff_type)
             for idx in landmark_indices
