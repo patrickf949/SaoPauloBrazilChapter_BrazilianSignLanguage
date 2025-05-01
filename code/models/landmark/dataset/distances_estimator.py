@@ -73,6 +73,8 @@ class DistancesEstimator(BaseEstimator):
         mode: str,
         distance_type: str,
     ) -> List[float]:
+        if landmarks is None:
+            return np.zeros(shape=len(landmark_pairs))
         return [
             distance(landmarks[start], landmarks[end], mode, distance_type)
             for start, end in landmark_pairs

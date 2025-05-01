@@ -65,6 +65,11 @@ class LandmarkEstimator(BaseEstimator):
     def __compute(
         self, landmarks_positions: List[int], landmarks: Iterable, mode: str
     ) -> List[List[float]]:
+        if landmarks is None:
+            if mode == "2D":
+                return np.zeros(shape=2 * len(landmarks_positions))
+            else:
+                return np.zeros(shape=3 * len(landmarks_positions))
         return [
             self.__unpack_landmark(landmarks[position], mode)
             for position in landmarks_positions
