@@ -1,0 +1,9 @@
+num_epochs: 300
+batch_size: 256
+patience: 50
+lr: 1e-4
+
+device: cuda
+
+type: cross_validation
+k_folds: 5

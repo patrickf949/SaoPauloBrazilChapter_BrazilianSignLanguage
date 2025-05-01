@@ -1,7 +1,12 @@
 import numpy as np
 from typing import Union, Dict, List, Tuple, Iterable
-from models.landmark.utils import check_mode, check_landmark_type, check_distance_type
+from models.landmark.utils.utils import (
+    check_mode,
+    check_landmark_type,
+    check_distance_type,
+)
 from models.landmark.dataset.base_estimator import BaseEstimator
+from omegaconf import DictConfig
 
 
 def distance(p1, p2, mode: str = "3D", distance_type: str = "shifted_dist") -> float:
@@ -47,8 +52,8 @@ class DistancesEstimator(BaseEstimator):
 
     def __init__(
         self,
-        hand_distances: Union[str, Dict],
-        pose_distances: Union[str, Dict],
+        hand_distances: Union[str, Dict, DictConfig],
+        pose_distances: Union[str, Dict, DictConfig],
     ):
         """
         Parameters:
@@ -68,6 +73,8 @@ class DistancesEstimator(BaseEstimator):
         mode: str,
         distance_type: str,
     ) -> List[float]:
+        if landmarks is None:
+            return np.zeros(shape=len(landmark_pairs))
         return [
             distance(landmarks[start], landmarks[end], mode, distance_type)
             for start, end in landmark_pairs

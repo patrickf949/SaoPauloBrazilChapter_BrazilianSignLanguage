@@ -2,7 +2,9 @@ import torch.nn as nn
 
 
 class RNNClassifier(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+    def __init__(
+        self, input_size: int, hidden_size: int, num_layers: int, num_classes: int
+    ):
         super().__init__()
         self.rnn = nn.GRU(
             input_size=input_size,
@@ -12,6 +14,10 @@ class RNNClassifier(nn.Module):
         )
         self.fc = nn.Linear(hidden_size, num_classes)
 
+    def embedding(self, x):
+        _, hidden = self.rnn(x)  # hidden: [num_layers, B, hidden_size]
+        return hidden
+
     def forward(self, x):  # x: [B, T, D]
         _, hidden = self.rnn(x)  # hidden: [num_layers, B, hidden_size]
         out = self.fc(hidden[-1])  # use last layer's hidden state
@@ -19,7 +25,9 @@ class RNNClassifier(nn.Module):
 
 
 class LSTMClassifier(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+    def __init__(
+        self, input_size: int, hidden_size: int, num_layers: int, num_classes: int
+    ):
         super().__init__()
         self.lstm = nn.LSTM(
             input_size=input_size,
@@ -28,6 +36,10 @@ class LSTMClassifier(nn.Module):
             batch_first=True,
         )
         self.fc = nn.Linear(hidden_size, num_classes)
+
+    def embedding(self, x):
+        output, (hidden, cell) = self.lstm(x)  # hidden: [num_layers, B, hidden_size]
+        return hidden[-1]
 
     def forward(self, x):  # x: [B, T, D]
         output, (hidden, cell) = self.lstm(x)  # hidden: [num_layers, B, hidden_size]

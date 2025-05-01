@@ -1,7 +1,12 @@
 import numpy as np
 from typing import Union, Dict, List, Tuple, Iterable
-from models.landmark.utils import check_mode, check_landmark_type, check_angle_type
+from models.landmark.utils.utils import (
+    check_mode,
+    check_landmark_type,
+    check_angle_type,
+)
 from models.landmark.dataset.base_estimator import BaseEstimator
+from omegaconf import DictConfig
 
 
 def angle(
@@ -80,7 +85,11 @@ class AnglesEstimator(BaseEstimator):
     Estimates angles between triplets of landmarks.
     """
 
-    def __init__(self, hand_angles: Union[str, Dict], pose_angles: Union[str, Dict]):
+    def __init__(
+        self,
+        hand_angles: Union[str, Dict, DictConfig],
+        pose_angles: Union[str, Dict, DictConfig],
+    ):
         super().__init__(hand_angles, pose_angles, config_type="angles")
 
     def __compute_angles(
@@ -90,6 +99,11 @@ class AnglesEstimator(BaseEstimator):
         mode: str,
         angle_type: str,
     ) -> List[float]:
+        if landmarks is None:
+            if angle_type == "func":  # sin, cos
+                return np.zeros(shape=2 * len(landmark_triplets))
+            else:
+                return np.zeros(shape=len(landmark_triplets))
         return [
             angle(
                 landmarks[start],

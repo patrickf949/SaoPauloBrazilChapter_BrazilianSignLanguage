@@ -2,17 +2,12 @@ from torch.utils.data import Dataset
 import pandas as pd
 import numpy as np
 import torch
-from models.landmark.utils import load_config
+from models.landmark.utils.utils import load_config
 from typing import Dict, List, Union, Callable, Tuple
-from models.landmark.dataset.angles_estimator import AnglesEstimator
-from models.landmark.dataset.distances_estimator import DistancesEstimator
-from models.landmark.dataset.frame2frame_differences_estimator import (
-    DifferencesEstimator,
-)
-from models.landmark.dataset.augmentations import AUGMENTATIONS
+from models.landmark.utils.utils import load_obj
 from functools import partial
 import os
-from mediapipe.framework.formats import landmark_pb2
+from omegaconf import DictConfig
 
 
 def uniform_intervals(start: int, end: int, interval: int):
@@ -76,34 +71,54 @@ class LandmarkFeatureTorchJoiner:
 
 
 class LandmarkDataset(Dataset):
-    def __init__(self, config: Union[str, Dict], dataset_split: str):
-        config = load_config(config, "dataset_config")
+    def __init__(
+        self,
+        dataset_config: Union[str, Dict, DictConfig],
+        features_config: Union[str, Dict, DictConfig],
+        augmentation_config: Union[str, Dict, DictConfig],
+        dataset_split: str,
+    ):
+        config = load_config(dataset_config, "dataset_config")
+        features_config = load_config(features_config, "features_config")
+
         self.data_dir = config["data_dir"]
         self.data = pd.read_csv(config["data_path"])
         self.data = self.data[self.data["dataset_split"] == dataset_split]
-        self.augmentations = AUGMENTATIONS[dataset_split]
-        self.landmark_features = config["landmark_features"]
+        self.augmentations = (
+            [
+                {
+                    "augmentation": load_obj(augmentation["class_name"])(
+                        **augmentation["params"]
+                    ),
+                    "p": augmentation["p"],
+                }
+                for _, augmentation in augmentation_config[dataset_split].items()
+            ]
+            if augmentation_config[dataset_split] is not None
+            else []
+        )
+
         self.frame_interval_fn = partial(
             INTERVAL_FUNCTIONS[config["frame_interval_fn"]], interval=config["interval"]
         )
-        self.feature_computation_types = config["feature_computation_types"]
-        self.feature_modes = config["feature_modes"]
+
+        self.configuration = {
+            "landmark_types": config["landmark_types"],
+            "features": list(features_config.keys()),
+            "ordering": config["ordering"],
+        }
 
         self.estimators = {
-            "angles": AnglesEstimator(
-                hand_angles=config["hand_angle_triplets"],
-                pose_angles=config["pose_angle_triplets"],
-            ),
-            "distances": DistancesEstimator(
-                hand_distances=config["hand_distance_pairs"],
-                pose_distances=config["pose_distance_pairs"],
-            ),
-            "differences": DifferencesEstimator(
-                hand_differences=config["hand_differences"],
-                pose_differences=config["pose_differences"],
-            ),
+            name: {
+                "estimator": load_obj(estimator_params["class_name"])(
+                    estimator_params["hand"],
+                    estimator_params["pose"],
+                ),
+                "mode": estimator_params["mode"],
+                "computation_type": estimator_params["computation_type"],
+            }
+            for name, estimator_params in features_config.items()
         }
-        self.landmark_types = config["landmark_types"]
 
     def __len__(self) -> int:
         return self.data.shape[0]
@@ -113,37 +128,23 @@ class LandmarkDataset(Dataset):
     ) -> Tuple[str, str]:
         """To allow free order of of features inside a feature vectors"""
 
-        if second_key in self.landmark_types:
+        if second_key in self.configuration["landmark_types"]:
             return first_key, second_key
-        if first_key in self.landmark_types:
+        if first_key in self.configuration["landmark_types"]:
             return second_key, first_key
 
         raise Exception(
             "Error with landmark_features in dataset config, it is not specified correctly"
         )
 
-    def _get_empty_landmark_list(self, landmark_type: str):
-        landmark_numbers = {"right_hand": 21, "left_hand": 21, "pose": 33}
-        return landmark_pb2.NormalizedLandmarkList(
-            landmark=[
-                landmark_pb2.NormalizedLandmark(x=0.0, y=0.0, z=0.0)
-                for _ in range(landmark_numbers[landmark_type])
-            ]
-        )
-
     def __getitem__(self, idx: int):
         idx = self.data.index[idx]
         landmark_path = os.path.join(self.data_dir, self.data.loc[idx, "filename"])
         label = torch.tensor([self.data.loc[idx, "label_encoded"]], dtype=torch.int64)
-        preprocessed_first_index = self.data.loc[idx, "preprocessed_start_frame"]
-        preprocessed_last_index = self.data.loc[idx, "preprocessed_end_frame"]
+        preprocessed_first_index = self.data.loc[idx, "start_frame"]
+        preprocessed_last_index = self.data.loc[idx, "end_frame"]
         frames = np.load(landmark_path, allow_pickle=True)
         frames = frames[preprocessed_first_index:preprocessed_last_index]
-
-        for i in range(len(frames)):
-            for key in self.landmark_types:
-                if frames[i][f"{key}_landmarks"] is None:
-                    frames[i][f"{key}_landmarks"] = self._get_empty_landmark_list(key)
 
         # Get timestamps and select relevant frame indices
         timestamps = [f["timestamp_ms"] for f in frames]
@@ -157,7 +158,9 @@ class LandmarkDataset(Dataset):
             frame = frames[i]
             frame = {
                 f"{key}_landmarks": frame[f"{key}_landmarks"].landmark
-                for key in self.landmark_types
+                if frame[f"{key}_landmarks"] is not None
+                else None
+                for key in self.configuration["landmark_types"]
             }
 
             for aug in self.augmentations:
@@ -165,46 +168,51 @@ class LandmarkDataset(Dataset):
                     frame = aug["augmentation"](frame)
             features = {}
 
+            prev_frame = {
+                f"{key}_landmarks": None for key in self.configuration["landmark_types"]
+            }
             if indx > 0:
                 prev_frame = frames[selected_indices[indx - 1]]
                 prev_frame = {
                     f"{key}_landmarks": prev_frame[f"{key}_landmarks"].landmark
-                    for key in self.landmark_types
-                }
-            else:
-                prev_frame = {
-                    f"{key}_landmarks": self._get_empty_landmark_list(key).landmark
-                    for key in self.landmark_types
+                    if prev_frame[f"{key}_landmarks"] is not None
+                    else None
+                    for key in self.configuration["landmark_types"]
                 }
 
-            for first_key in self.landmark_features:
-                for second_key in self.landmark_features[first_key]:
+            for first_key in self.configuration[self.configuration["ordering"][0]]:
+                for second_key in self.configuration[self.configuration["ordering"][1]]:
                     feature_type, landmark_type = self._check_landmark_config(
                         first_key, second_key
                     )
                     if feature_type == "differences":
                         features[f"{feature_type}/{landmark_type}"] = self.estimators[
                             feature_type
-                        ].compute(
+                        ]["estimator"].compute(
                             prev_frame[f"{landmark_type}_landmarks"],
                             frame[f"{landmark_type}_landmarks"],
                             landmark_type=landmark_type.split("_")[-1],
-                            mode=self.feature_modes[feature_type],
-                            computation_type=self.feature_computation_types[
-                                feature_type
+                            mode=self.estimators[feature_type]["mode"],
+                            computation_type=self.estimators[feature_type][
+                                "computation_type"
                             ],
                         )
                     else:
                         features[f"{feature_type}/{landmark_type}"] = self.estimators[
                             feature_type
-                        ].compute(
+                        ]["estimator"].compute(
                             frame[f"{landmark_type}_landmarks"],
                             landmark_type=landmark_type.split("_")[-1],
-                            mode=self.feature_modes[feature_type],
-                            computation_type=self.feature_computation_types[
-                                feature_type
+                            mode=self.estimators[feature_type]["mode"],
+                            computation_type=self.estimators[feature_type][
+                                "computation_type"
                             ],
                         )
+            # landmark validness features
+            features["validness"] = [
+                int(frame[f"{key}_landmarks"] is not None)
+                for key in self.configuration["landmark_types"]
+            ]
             feature_vector = np.concatenate(list(features.values()), axis=None)
 
             all_features.append(torch.tensor(feature_vector, dtype=torch.float))
