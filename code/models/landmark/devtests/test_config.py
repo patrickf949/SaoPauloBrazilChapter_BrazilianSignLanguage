@@ -6,8 +6,16 @@ import unittest
 class TestEstimators(unittest.TestCase):
     def setUp(self):
         with initialize(version_base=None, config_path="../configs"):
-            self.config = compose(config_name="config")
+            self.config = compose(
+                config_name="train_config",
+                overrides=[
+                    "optimizer=sgd",
+                    "features=[angles, distances]",
+                    "general.log_path=papa",
+                ],
+            )
             OmegaConf.resolve(self.config)
+            print(self.config)
 
     def test_config(self):
         assert isinstance(self.config.optimizer.params.lr, float)
@@ -17,6 +25,7 @@ class TestEstimators(unittest.TestCase):
         assert isinstance(self.config.dataset.data_path, str)
         assert isinstance(self.config.training.num_epochs, int)
         assert isinstance(self.config.training.batch_size, int)
+        assert isinstance(self.config.optimizer.params.momentum, float)
         assert (
             "cuda" in self.config.training.device
             or "cpu" in self.config.training.device

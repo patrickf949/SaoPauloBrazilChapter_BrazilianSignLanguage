@@ -41,7 +41,9 @@ class LandmarkEstimator(BaseEstimator):
     """
 
     def __init__(
-        self, hand_landmarks: Union[str, Dict], pose_landmarks: Union[str, Dict]
+        self,
+        hand_landmarks: Union[str, Dict, DictConfig],
+        pose_landmarks: Union[str, Dict, DictConfig],
     ):
         """
         Parameters:

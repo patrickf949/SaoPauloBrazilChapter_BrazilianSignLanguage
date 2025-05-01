@@ -1,30 +1,35 @@
-hand_differences:
-  wrist: 0
-  thumb_tip: 4
-  index_tip: 8
-  middle_tip: 12
-  ring_tip: 16
-  pinky_tip: 20
+differences:
+  class_name:  models.landmark.dataset.frame2frame_differences_estimator.DifferencesEstimator
+  hand:
+    wrist: 0
+    thumb_tip: 4
+    index_tip: 8
+    middle_tip: 12
+    ring_tip: 16
+    pinky_tip: 20
 
-  index_base: 5
-  middle_base: 9
-  ring_base: 13
-  pinky_base: 17
+    index_base: 5
+    middle_base: 9
+    ring_base: 13
+    pinky_base: 17
 
-pose_differences:
-  nose: 0
+  pose:
+    nose: 0
 
-  left_shoulder: 11
-  right_shoulder: 12
+    left_shoulder: 11
+    right_shoulder: 12
 
-  left_elbow: 13
-  right_elbow: 14
+    left_elbow: 13
+    right_elbow: 14
 
-  left_wrist: 15
-  right_wrist: 16
+    left_wrist: 15
+    right_wrist: 16
 
-  left_index: 19
-  right_index: 20
+    left_index: 19
+    right_index: 20
 
-  left_thumb: 21
-  right_thumb: 22
+    left_thumb: 21
+    right_thumb: 22
+
+  computation_type: normalized_diff
+  mode: 3D

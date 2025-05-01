@@ -43,13 +43,3 @@ class LandmarksNoise:
                 landmarks[key] = add_noise(landmarks[key])
 
         return landmarks
-
-
-AUGMENTATIONS = {
-    "train": [
-        {"augmentation": RotateLandmarks(), "p": 0.5},
-        {"augmentation": LandmarksNoise(), "p": 0.5},
-    ],
-    "val": [],
-    "test": [],
-}
