@@ -9,7 +9,7 @@ import VideoPlayer from "@/components/VideoPlayer";
 export default function Home() {
   return (
     <Container sx={{ padding: 4 }}>
-      <Typography variant="h1" sx={{ margin: "3em" }}>
+      <Typography variant="h5" sx={{ margin: 2 }}>
         Sign Language Recognition - Brazil Sao Paulo
       </Typography>
 
