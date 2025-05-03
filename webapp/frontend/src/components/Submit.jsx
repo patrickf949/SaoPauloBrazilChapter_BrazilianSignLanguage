@@ -19,7 +19,7 @@ const SubmitButton = () => {
       color="primary"
       sx={{
         margin: "1rem auto",
-        animation: `${pulse} 2s infinite`,
+        animation: `${pulse} 2s 3`,
         width: "100%",
         maxHeight: 50,
       }}
