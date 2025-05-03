@@ -1029,7 +1029,7 @@ class Preprocessor:
         interpolation_binary_arrays_no_trailing_values = {}
         interpolation_sequence_length_arrays_no_trailing_values = {}
 
-        for landmark_type in ['pose_landmarks', 'face_landmarks', 'left_hand_landmarks', 'right_hand_landmarks']:
+        for landmark_type in ['left_hand_landmarks', 'right_hand_landmarks']:
             trimmed_length = preprocessing_params['end_frame'] - preprocessing_params['start_frame'] + 1
 
             interpolated_frames = self.interpolation_info[landmark_type]['interpolated_frame_indices']
@@ -1047,7 +1047,7 @@ class Preprocessor:
             interpolation_sequence_length_arrays_no_trailing_values[landmark_type] = interpolation_sequence_length_arrays[landmark_type].copy()
 
         # Now process the no_trailing_values arrays
-        for landmark_type in ['pose_landmarks', 'face_landmarks', 'left_hand_landmarks', 'right_hand_landmarks']:
+        for landmark_type in ['left_hand_landmarks', 'right_hand_landmarks']:
             # Reset sequences at start
             for i in range(trimmed_length):
                 if interpolation_binary_arrays_no_trailing_values[landmark_type][i] == 0:
@@ -1063,7 +1063,7 @@ class Preprocessor:
                 interpolation_sequence_length_arrays_no_trailing_values[landmark_type][i] = 0
 
         landmark_arrays = {}
-        for landmark_type in ['pose_landmarks', 'face_landmarks', 'left_hand_landmarks', 'right_hand_landmarks']:
+        for landmark_type in ['left_hand_landmarks', 'right_hand_landmarks']:
             landmark_arrays[landmark_type] = {
                 'interpolation_binary_array': interpolation_binary_arrays[landmark_type],
                 'interpolation_sequence_length_array': interpolation_sequence_length_arrays[landmark_type],
