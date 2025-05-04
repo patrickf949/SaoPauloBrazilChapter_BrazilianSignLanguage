@@ -103,6 +103,7 @@ def train(config: DictConfig):
         csv_writer.writeheader()
 
     for epoch in range(num_epochs):
+        print(f"\n--- Epoch {epoch + 1}/{num_epochs} ---")
         if config.training.type == "cross_validation":
             avg_train_loss, avg_val_loss = train_epoch_fold(
                 epoch,
@@ -120,7 +121,7 @@ def train(config: DictConfig):
             )
 
         print(
-            f"Epoch {epoch + 1}/{num_epochs} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}"
+            f"Epoch Average Results:\n\tTrain Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}"
         )
 
         log_data.append(
