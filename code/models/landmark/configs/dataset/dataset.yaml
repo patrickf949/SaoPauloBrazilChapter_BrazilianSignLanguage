@@ -1,5 +1,5 @@
-data_dir: data/processed/v2
-data_path: data/preprocessed/landmarks_metadata_v3_training.csv
+# Version of the preprocessed landmark data to use
+data_version: "v3"
 
 frame_interval_fn: random_timestamps
 interval: 15
@@ -11,3 +11,10 @@ landmark_types: [pose, right_hand, left_hand]
 # [features, landmark_types] will result in [**pose_angles, **righ_hand_angles, **left_hand_angles, **pose_distances, ...]
 # [landmark_types, features] will result in [**pose_angles, **pose_distances, **right_hand_angles, **right_hand_distances, ...]
 ordering: [features, landmark_types]
+
+# Base paths configuration
+paths:
+  preprocessed_base: "data/preprocessed"
+  metadata_base: "modelling/metadata"
+  models_base: "modelling/models"
+  logs_base: "modelling/logs"
