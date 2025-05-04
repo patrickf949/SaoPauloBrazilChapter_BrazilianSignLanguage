@@ -1,14 +1,26 @@
 # Version of the preprocessed landmark data to use
 data_version: "v3"
 
-frame_interval_fn: random_timestamps
-interval: 15
+# Frame sampling for training split
+frame_sampling_train:
+  enabled: true
+  method: exhaustive  # Sample all possible sequences without replacement
+  params:
+    frames_per_sample: 15
+    min_spacing: 5  # Minimum frames between selected frames
+
+# Frame sampling for validation/test splits
+frame_sampling_test:
+  method: uniform  # Deterministic sampling for consistent evaluation
+  params:
+    frames_per_sample: 15
+    num_samples: 1
 
 # the order and presence different landmarks types in input vector
 landmark_types: [pose, right_hand, left_hand]
 
 # the order of features computation:
-# [features, landmark_types] will result in [**pose_angles, **righ_hand_angles, **left_hand_angles, **pose_distances, ...]
+# [features, landmark_types] will result in [**pose_angles, **right_hand_angles, **left_hand_angles, **pose_distances, ...]
 # [landmark_types, features] will result in [**pose_angles, **pose_distances, **right_hand_angles, **right_hand_distances, ...]
 ordering: [features, landmark_types]
 
