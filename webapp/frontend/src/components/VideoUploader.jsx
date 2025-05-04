@@ -24,7 +24,7 @@ const VideoUploader = () => {
     if (file && file.type.startsWith("video/")) {
       const url = URL.createObjectURL(file);
 
-      setVideo({ video: file, videoUrl: url });
+      setVideo({ video: file, videoUrl: url, label:null });
     } else {
       toast.error("Please select a valid video file.");
     }
