@@ -1,3 +1,7 @@
+/* 
+This file is responsible for the root layout of the application.
+It uses Material-UI for styling and theming.
+*/
 'use client';
 import * as React from 'react';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
