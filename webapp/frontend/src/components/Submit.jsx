@@ -13,9 +13,14 @@ const pulse = keyframes`
   }
 `;
 const SubmitButton = () => {
+  const handleSubmit = () => {
+    // Handle the submit action here
+    console.log("Submit button clicked");
+  };
   return (
     <Button
       variant="contained"
+      onClick={handleSubmit}
       color="primary"
       sx={{
         margin: "1rem auto",
