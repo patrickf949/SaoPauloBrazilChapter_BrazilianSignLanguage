@@ -73,17 +73,18 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 │   │   ├── RawCleanVideos/ # The raw video files after some initial cleaning before the preprocessing pipeline
 │   │   ├── RawMotionMeasurements/ # Raw motion measurements
 │   │   └── RawPoseLandmarks/ # Raw pose landmarks
-│   ├── processed/        # Final datasets
+│   ├── preprocessed/        # Final datasets
 │   │   ├── metadata_v*.csv # Metadata for each preprocessing version
 │   │   ├── videos/      # Preprocessed videos
 │   │   │   └── v*/      # Version-specific processed videos (e.g., v1, v2, v3...)
 │   │   └── landmarks/   # Processed landmark data
 │   │       └── v*/      # Version-specific processed landmarks (e.g., v1, v2, v3...)
-│   ├── external/         # Third party data
-│   └── papers/           # Related research
 ├── code/                 # Source code
 │   ├── data/            # Data processing
 │   ├── models/          # Model implementations
+├── modelling/            # Model training and evaluation
+│   ├── logs/            # Logs
+│   ├── model_files/     # Model files
 └── tests/               # Unit tests
 ```
 
@@ -100,6 +101,6 @@ See [STRUCTURE.md](STRUCTURE.md) for complete structure details.
 
 ### Data Files
 - Small files like CSV files, labels, and metadata are tracked in Git
-- Store processed data (features, embeddings) in `processed/`
+- Store processed data (features, embeddings) in `preprocessed/`
 - Document data formats in respective directories
 - Metadata files track preprocessing steps and configurations
