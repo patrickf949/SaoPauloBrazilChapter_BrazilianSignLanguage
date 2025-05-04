@@ -10,15 +10,26 @@ from models.landmark.utils.train import (
 from models.landmark.utils.evaluate import evaluate
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_fn_pad
+from models.landmark.utils.path_utils import get_save_paths, get_data_paths
+from models.landmark.dataset.prepare_data_csv import prepare_training_metadata
+import torch
 from omegaconf import DictConfig
 import hydra
+from datetime import datetime
 
+# Ensure base output directory exists
+os.makedirs("modelling/outputs", exist_ok=True)
 
 def get_dataset(config: DictConfig):
     collate_fn = (
         collate_fn_pad if "intervals" in config.dataset.frame_interval_fn else None
     )
     batch_size = config.training.batch_size
+
+    # Always generate fresh training metadata
+    _, metadata_path = get_data_paths(config.dataset.data_version)
+    print(f"Generating training metadata at {metadata_path}...")
+    prepare_training_metadata(config.dataset.data_version)
 
     def create_dataloader(split: str, shuffle: bool):
         return DataLoader(
@@ -48,8 +59,11 @@ def get_dataset(config: DictConfig):
 
     return datasets
 
-
-@hydra.main(version_base=None, config_path="./configs", config_name="train_config")
+@hydra.main(
+    version_base=None,
+    config_path="./configs",
+    config_name="train_config",
+)
 def train(config: DictConfig):
     device = config.training.device
     num_epochs = config.training.num_epochs
@@ -75,6 +89,18 @@ def train(config: DictConfig):
     log_data = []
 
     datasets = get_dataset(config)
+
+    # Get save paths
+    log_path, best_model_path, final_model_path = get_save_paths(config)
+
+    # Initialize CSV file if logging is enabled
+    csv_writer = None
+    if log_path is not None:
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        log_file = open(log_path, "w", newline="")
+        fieldnames = ["epoch", "train_loss", "val_loss"]
+        csv_writer = csv.DictWriter(log_file, fieldnames=fieldnames)
+        csv_writer.writeheader()
 
     for epoch in range(num_epochs):
         if config.training.type == "cross_validation":
@@ -117,8 +143,35 @@ def train(config: DictConfig):
                 print("Early stopping triggered.")
                 break
 
+    # Load the best model state before final evaluation
     if best_model_state:
         model.load_state_dict(best_model_state)
+        # Save best model checkpoint if enabled
+        if best_model_path is not None:
+            torch.save({
+                'epoch': best_epoch,
+                'model_state_dict': best_model_state,
+                'optimizer_state_dict': optimizer.state_dict(),
+                'scheduler_state_dict': scheduler.state_dict(),
+                'loss': best_loss,
+            }, best_model_path)
+            print(f"Saved best model checkpoint to: {best_model_path}")
+
+    # Save final model state if enabled
+    if final_model_path is not None:
+        torch.save({
+            'epoch': epoch + 1,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': scheduler.state_dict(),
+            'loss': avg_val_loss,
+        }, final_model_path)
+        print(f"Saved final model checkpoint to: {final_model_path}")
+
+    # Close the log file if it was opened
+    if csv_writer is not None:
+        log_file.close()
+        print(f"Training log saved to: {log_path}")
 
     # ----- evaluate -----
     # Final evaluation (optional - could be on last fold or an extra hold-out set)
@@ -127,16 +180,6 @@ def train(config: DictConfig):
     print(
         f"\nBest Epoch: {best_epoch} | Final Val Accuracy (Top-1): {top1_acc:.4f} | Top-K Accuracy: {topk_acc:.4f}"
     )
-
-    # ----- optional logging to file -----
-    if "log_path" in config:
-        log_path = config["log_path"]
-        os.makedirs(os.path.dirname(log_path), exist_ok=True)
-        with open(log_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=["epoch", "train_loss", "val_loss"])
-            writer.writeheader()
-            writer.writerows(log_data)
-        print(f"Training log saved to: {log_path}")
 
     return top1_acc, topk_acc, best_epoch, log_data
 
