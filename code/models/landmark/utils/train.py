@@ -21,55 +21,66 @@ def train_epoch_fold(
     kfold = KFold(n_splits=k_folds, shuffle=True, random_state=42)
     fold_indices = list(kfold.split(dataset))
 
-    fold = epoch % k_folds
-    print(f"\n--- Fold {fold + 1}/{k_folds} ---")
+    total_train_loss = 0
+    total_val_loss = 0
 
-    train_ids, val_ids = fold_indices[fold]
-    train_loader = DataLoader(
-        Subset(dataset, train_ids),
-        batch_size=batch_size,
-        shuffle=True,
-        collate_fn=collate_fn_pad,
-    )
-    val_loader = DataLoader(
-        Subset(dataset, val_ids),
-        batch_size=batch_size,
-        shuffle=False,
-        collate_fn=collate_fn_pad,
-    )
+    print(f"{k_folds}-fold Cross-Validation Results:")
+    # Iterate through all folds for this epoch
+    for fold, (train_ids, val_ids) in enumerate(fold_indices):
+        
+        train_loader = DataLoader(
+            Subset(dataset, train_ids),
+            batch_size=batch_size,
+            shuffle=True,
+            collate_fn=collate_fn_pad,
+        )
+        val_loader = DataLoader(
+            Subset(dataset, val_ids),
+            batch_size=batch_size,
+            shuffle=False,
+            collate_fn=collate_fn_pad,
+        )
 
-    # ----- training step -----
-    model.train()
-    total_loss = 0
+        # ----- training step -----
+        model.train()
+        fold_train_loss = 0
 
-    for features, labels, attention_mask in train_loader:
-        y = labels.squeeze().to(device)
-        features = features.to(device)
-        attention_mask = attention_mask.to(device)
-
-        optimizer.zero_grad()
-        logits = model(features, attention_mask=attention_mask)
-        loss = criterion(logits, y)
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
-
-    avg_train_loss = total_loss / len(train_loader)
-
-    # ----- validation step -----
-    model.eval()
-    val_loss = 0
-    with torch.no_grad():
-        for features, labels, attention_mask in val_loader:
+        for features, labels, attention_mask in train_loader:
             y = labels.squeeze().to(device)
             features = features.to(device)
             attention_mask = attention_mask.to(device)
+
+            optimizer.zero_grad()
             logits = model(features, attention_mask=attention_mask)
             loss = criterion(logits, y)
-            val_loss += loss.item()
+            loss.backward()
+            optimizer.step()
 
-    avg_val_loss = val_loss / len(val_loader)
+            fold_train_loss += loss.item()
+
+        avg_fold_train_loss = fold_train_loss / len(train_loader)
+        total_train_loss += avg_fold_train_loss
+
+        # ----- validation step -----
+        model.eval()
+        fold_val_loss = 0
+        with torch.no_grad():
+            for features, labels, attention_mask in val_loader:
+                y = labels.squeeze().to(device)
+                features = features.to(device)
+                attention_mask = attention_mask.to(device)
+                logits = model(features, attention_mask=attention_mask)
+                loss = criterion(logits, y)
+                fold_val_loss += loss.item()
+
+        avg_fold_val_loss = fold_val_loss / len(val_loader)
+        total_val_loss += avg_fold_val_loss
+
+        print(f"\tFold {fold + 1} - Train Loss: {avg_fold_train_loss:.4f} | Val Loss: {avg_fold_val_loss:.4f}")
+
+    # Return average losses across all folds
+    avg_train_loss = total_train_loss / k_folds
+    avg_val_loss = total_val_loss / k_folds
 
     return avg_train_loss, avg_val_loss
 
