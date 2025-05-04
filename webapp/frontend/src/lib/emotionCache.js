@@ -1,6 +1,4 @@
-// lib/emotionCache.ts
-'use client';
-
+// src/utils/createEmotionCache.ts
 import createCache from '@emotion/cache';
 
 export default function createEmotionCache() {

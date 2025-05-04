@@ -1,26 +1,23 @@
-"use client";
-import { Roboto } from "next/font/google";
-import ThemeRegistry from "@/components/ThemeRegistry";
-import GlobalToast from "@/components/GlobalToast";
-import "./globals.css";
+'use client';
+import * as React from 'react';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import GlobalToast from '@/components/GlobalToast';
+import theme from '@/theme';
 
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-});
-
-export default function RootLayout({ children }) {
+export default function RootLayout(props) {
   return (
     <html lang="en">
-      <head>
-        <meta name="viewport" content="initial-scale=1, width=device-width" />
-        <link rel="icon" type="image/ico" href="favicon.ico" />
-      </head>
-      <body className={`${roboto.className} antialiased`}>
-        <ThemeRegistry>
-          {children}
-          <GlobalToast />
-        </ThemeRegistry>
+      <body>
+        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+          <ThemeProvider theme={theme}>
+            {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
+            <CssBaseline />
+            {props.children}
+            <GlobalToast />
+          </ThemeProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );
