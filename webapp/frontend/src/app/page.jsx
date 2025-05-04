@@ -1,4 +1,5 @@
-import Home from "./page.client";
+
+import Home from './page.client'
 
 export const metadata = {
   title: "Sign Language Recognition - Brazil Sao Paulo",
