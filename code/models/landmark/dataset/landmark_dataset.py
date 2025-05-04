@@ -5,6 +5,7 @@ import torch
 from models.landmark.utils.utils import load_config
 from typing import Dict, List, Union, Callable, Tuple
 from models.landmark.utils.utils import load_obj
+from models.landmark.utils.path_utils import get_data_paths
 from functools import partial
 import os
 from omegaconf import DictConfig
@@ -81,9 +82,13 @@ class LandmarkDataset(Dataset):
         config = load_config(dataset_config, "dataset_config")
         features_config = load_config(features_config, "features_config")
 
-        self.data_dir = config["data_dir"]
-        self.data = pd.read_csv(config["data_path"])
+        # Get standardized paths based on data version
+        self.data_dir, metadata_path = get_data_paths(config["data_version"])
+        
+        # Load and filter metadata
+        self.data = pd.read_csv(metadata_path)
         self.data = self.data[self.data["dataset_split"] == dataset_split]
+        
         self.augmentations = (
             [
                 {
