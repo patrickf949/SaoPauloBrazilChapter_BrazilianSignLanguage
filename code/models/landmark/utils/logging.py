@@ -74,7 +74,16 @@ class TrainingLogger:
         avg_val_samples_per_group = sum(s['val_samples_per_group'] for s in fold_stats) / len(fold_stats)
 
         # Log to TensorBoard
+        # Log average losses
+        self.writer.add_scalar('Loss/train', avg_train_loss, epoch)
+        self.writer.add_scalar('Loss/val', avg_val_loss, epoch)
+        
+        # Log per-fold metrics
         for fold_idx, ((fold_train_loss, fold_val_loss), fold_stat) in enumerate(zip(fold_metrics, fold_stats)):
+            # Log fold losses
+            self.writer.add_scalar(f'Loss/train/fold_{fold_idx}', fold_train_loss, epoch)
+            self.writer.add_scalar(f'Loss/val/fold_{fold_idx}', fold_val_loss, epoch)
+            
             # Log fold statistics
             self.writer.add_scalar(f'FoldStats/train_samples/fold_{fold_idx}', fold_stat['train_samples'], epoch)
             self.writer.add_scalar(f'FoldStats/val_samples/fold_{fold_idx}', fold_stat['val_samples'], epoch)
@@ -124,6 +133,11 @@ class TrainingLogger:
         val_loss: float
     ) -> None:
         """Log metrics for standard training."""
+        # Log to TensorBoard
+        self.writer.add_scalar('Loss/train', train_loss, epoch)
+        self.writer.add_scalar('Loss/val', val_loss, epoch)
+        
+        # Log to CSV if enabled
         if self.csv_writer:
             self.csv_writer.writerow({
                 "epoch": epoch + 1,

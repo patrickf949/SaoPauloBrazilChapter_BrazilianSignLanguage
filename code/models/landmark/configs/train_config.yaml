@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - optimizer: adam
-  - scheduler: cyclic
+  - scheduler: plateau
   - model: transformer
   - dataset: dataset
   - training: training
@@ -22,5 +22,3 @@ general:
   enable_saving: true  # Set to false to disable all saving
   experiment_name: null  # Optional name to include in filenames
   author: null  # Optional metadata
-  log_path: 
-  save_dir: 

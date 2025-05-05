@@ -99,19 +99,19 @@ def train(config: DictConfig):
     k_folds = config.training.k_folds if config.training.type == "cross_validation" else None
     logger = TrainingLogger(log_dir, log_path, k_folds)
 
-    # Add model graph to TensorBoard
-    try:
-        if isinstance(datasets["train_dataset"], DataLoader):
-            sample_input = next(iter(datasets["train_dataset"]))[0]
-        else:
-            sample_input = next(iter(datasets["train_dataset"]))[0]
-        
-        if not isinstance(sample_input, torch.Tensor):
-            sample_input = torch.tensor(sample_input)
-        sample_input = sample_input.unsqueeze(0).to(device)
-        logger.writer.add_graph(model, sample_input)
-    except Exception as e:
-        print(f"Could not add model graph to TensorBoard: {e}")
+    # Remove model graph logging - causing tracing issues
+    # try:
+    #     if isinstance(datasets["train_dataset"], DataLoader):
+    #         sample_input = next(iter(datasets["train_dataset"]))[0]
+    #     else:
+    #         sample_input = next(iter(datasets["train_dataset"]))[0]
+    #     
+    #     if not isinstance(sample_input, torch.Tensor):
+    #         sample_input = torch.tensor(sample_input)
+    #     sample_input = sample_input.unsqueeze(0).to(device)
+    #     logger.writer.add_graph(model, sample_input)
+    # except Exception as e:
+    #     print(f"Could not add model graph to TensorBoard: {e}")
 
     for epoch in range(num_epochs):
         print(f"\n--- Epoch {epoch + 1}/{num_epochs} ---")
@@ -164,7 +164,10 @@ def train(config: DictConfig):
 
         # Step the scheduler if it exists
         if scheduler is not None:
-            scheduler.step()
+            if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler.step(avg_val_loss)
+            else:
+                scheduler.step()
 
     # Load the best model state before final evaluation
     if best_model_state:
