@@ -12,13 +12,15 @@ from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_func_pad
 from models.landmark.utils.path_utils import get_save_paths, get_data_paths
 from models.landmark.dataset.prepare_data_csv import prepare_training_metadata
+from models.landmark.utils.logging import TrainingLogger
 import torch
 from omegaconf import DictConfig
 import hydra
 from datetime import datetime
 
-# Ensure base output directory exists
+# Ensure base output directories exist
 os.makedirs("modelling/outputs", exist_ok=True)
+os.makedirs("modelling/runs", exist_ok=True)
 
 def get_dataset(config: DictConfig):
     batch_size = config.training.batch_size
@@ -90,19 +92,31 @@ def train(config: DictConfig):
     # Get save paths
     log_path, best_model_path, final_model_path = get_save_paths(config)
 
-    # Initialize CSV file if logging is enabled
-    csv_writer = None
-    if log_path is not None:
-        os.makedirs(os.path.dirname(log_path), exist_ok=True)
-        log_file = open(log_path, "w", newline="")
-        fieldnames = ["epoch", "train_loss", "val_loss"]
-        csv_writer = csv.DictWriter(log_file, fieldnames=fieldnames)
-        csv_writer.writeheader()
+    # Initialize logger
+    current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
+    log_dir = os.path.join('modelling/runs', current_time)
+    k_folds = config.training.k_folds if config.training.type == "cross_validation" else None
+    logger = TrainingLogger(log_dir, log_path, k_folds)
+
+    # Add model graph to TensorBoard
+    try:
+        if isinstance(datasets["train_dataset"], DataLoader):
+            sample_input = next(iter(datasets["train_dataset"]))[0]
+        else:
+            sample_input = next(iter(datasets["train_dataset"]))[0]
+        
+        if not isinstance(sample_input, torch.Tensor):
+            sample_input = torch.tensor(sample_input)
+        sample_input = sample_input.unsqueeze(0).to(device)
+        logger.writer.add_graph(model, sample_input)
+    except Exception as e:
+        print(f"Could not add model graph to TensorBoard: {e}")
 
     for epoch in range(num_epochs):
         print(f"\n--- Epoch {epoch + 1}/{num_epochs} ---")
         if config.training.type == "cross_validation":
-            avg_train_loss, avg_val_loss = train_epoch_fold(
+            # Modified to get per-fold metrics
+            avg_train_loss, avg_val_loss, fold_metrics, fold_stats = train_epoch_fold(
                 epoch,
                 config.training.k_folds,
                 model,
@@ -112,10 +126,16 @@ def train(config: DictConfig):
                 optimizer,
                 criterion,
             )
+            
+            # Log metrics
+            logger.log_fold_training(epoch, fold_metrics, fold_stats, avg_train_loss, avg_val_loss)
         else:
             avg_train_loss, avg_val_loss = train_epoch(
                 model, device, datasets, optimizer, criterion
             )
+            
+            # Log metrics
+            logger.log_standard_training(epoch, avg_train_loss, avg_val_loss)
 
         print(
             f"Epoch Average Results:\n\tTrain Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}"
@@ -140,6 +160,10 @@ def train(config: DictConfig):
             if patience_counter >= config.training.patience:
                 print("Early stopping triggered.")
                 break
+
+        # Step the scheduler if it exists
+        if scheduler is not None:
+            scheduler.step()
 
     # Load the best model state before final evaluation
     if best_model_state:
@@ -166,11 +190,6 @@ def train(config: DictConfig):
         }, final_model_path)
         print(f"Saved final model checkpoint to: {final_model_path}")
 
-    # Close the log file if it was opened
-    if csv_writer is not None:
-        log_file.close()
-        print(f"Training log saved to: {log_path}")
-
     # ----- evaluate -----
     # Final evaluation (optional - could be on last fold or an extra hold-out set)
     test_loader = DataLoader(datasets["test_dataset"], batch_size=1)
@@ -178,6 +197,9 @@ def train(config: DictConfig):
     print(
         f"\nBest Epoch: {best_epoch} | Final Val Accuracy (Top-1): {top1_acc:.4f} | Top-K Accuracy: {topk_acc:.4f}"
     )
+
+    # Close logger
+    logger.close()
 
     return top1_acc, topk_acc, best_epoch, log_data
 
