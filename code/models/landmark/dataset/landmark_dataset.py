@@ -115,19 +115,19 @@ class LandmarkDataset(Dataset):
         # Frame sampling configuration
         if dataset_split == "train":
             sampling_config = config["frame_sampling_train"]
-            self.sampling_fn = frame_sampling.get_sampling_function(sampling_config["method"])
+            self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
             self.sampling_params = sampling_config["params"]
         else:
             # Use test sampling for validation and test splits
             sampling_config = config["frame_sampling_test"]
-            self.sampling_fn = frame_sampling.get_sampling_function(sampling_config["method"])
+            self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
             self.sampling_params = sampling_config["params"]
 
         # Calculate samples per video based on sampling method
         self.samples_per_video = []
         for idx in range(len(self.data)):
             frames = self._load_frames(idx)
-            samples = self.sampling_fn(
+            samples = self.sampling_func(
                 num_frames=len(frames),
                 params=self.sampling_params
             )
@@ -152,6 +152,7 @@ class LandmarkDataset(Dataset):
                 "computation_type": estimator_params["computation_type"],
             }
             for name, estimator_params in features_config.items()
+            # this was empty in Ana's code too
         }
 
     def _load_frames(self, idx: int):
@@ -189,7 +190,7 @@ class LandmarkDataset(Dataset):
         frames = self._load_frames(video_idx)
         
         # Get frame indices using configured sampling method
-        all_samples = self.sampling_fn(
+        all_samples = self.sampling_func(
             num_frames=len(frames),
             params=self.sampling_params
         )
