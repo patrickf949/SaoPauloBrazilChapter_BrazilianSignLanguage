@@ -9,8 +9,8 @@ class TrainingLogger:
         """Initialize the training logger.
         
         Args:
-            log_dir: Directory for TensorBoard logs
-            log_path: Path for CSV logs (optional)
+            log_dir: Directory for TensorBoard logs, should be under logs_base/runs/timestamp
+            log_path: Path for CSV logs (optional), should be under logs_base/experiment_name.csv
             k_folds: Number of folds for cross-validation (optional)
         """
         # Initialize TensorBoard writer
@@ -87,7 +87,7 @@ class TrainingLogger:
         self.writer.add_scalar('FoldStats/train_samples_per_group/average', avg_train_samples_per_group, epoch)
         self.writer.add_scalar('FoldStats/val_samples_per_group/average', avg_val_samples_per_group, epoch)
 
-        # Log to CSV if enabled
+        # Log to CSV if enabled - write once per epoch with all fold information
         if self.csv_writer:
             log_row = {
                 "epoch": epoch + 1,
@@ -114,6 +114,8 @@ class TrainingLogger:
                     f"fold{fold_idx}_val_samples_per_group": fold_stat['val_samples_per_group']
                 })
             self.csv_writer.writerow(log_row)
+            # Ensure the CSV is written to disk after each epoch
+            self.log_file.flush()
 
     def log_standard_training(
         self,
@@ -128,6 +130,8 @@ class TrainingLogger:
                 "train_loss": train_loss,
                 "val_loss": val_loss
             })
+            # Ensure the CSV is written to disk after each epoch
+            self.log_file.flush()
 
     def close(self) -> None:
         """Close all logging resources."""
