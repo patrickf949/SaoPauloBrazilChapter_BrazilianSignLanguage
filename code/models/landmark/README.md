@@ -58,6 +58,103 @@ All aspects of the system are configured through YAML files in the `configs/` di
 - **Optimizer configs**: `configs/optimizer/*.yaml`
 - **Scheduler configs**: `configs/scheduler/*.yaml`
 
+## Feature Engineering Details
+
+The feature engineering process transforms raw landmark coordinates into meaningful features for sign language recognition:
+
+### Feature Estimator Classes
+
+Each type of feature is computed by a dedicated estimator class:
+
+1. **`AnglesEstimator`** (`dataset/angles_estimator.py`)
+   - Computes angles between triplets of landmarks (e.g., between finger joints)
+   - Supports various angle representations: radians, degrees, normalized, or (sin, cos) pairs
+   - Example: `thumb_bend: [1, 2, 3]` calculates the angle between landmarks 1, 2, and 3
+
+2. **`DistancesEstimator`** (`dataset/distances_estimator.py`)
+   - Calculates distances between pairs of landmarks
+   - Supports raw, normalized, or shifted distance formats
+   - Example: `left_hand_to_head: [15, 0]` measures distance between landmarks 15 and 0
+
+3. **`DifferencesEstimator`** (`dataset/frame2frame_differences_estimator.py`)
+   - Captures motion by calculating position changes between consecutive frames
+   - Tracks specified landmark indices to measure movement
+   - Example: `wrist: 0` tracks the movement of landmark 0 (wrist) between frames
+
+4. **`LandmarkEstimator`** (`dataset/base_estimator.py`)
+   - Extracts raw landmark coordinates as features
+   - Useful as a baseline or combined with other features
+
+### Feature Computation Pipeline
+
+Features are computed in the `__getitem__` method of the `LandmarkDataset` class:
+
+1. Load a sequence of landmarks from .npy files
+2. For each frame, apply augmentations (if enabled)
+3. For each feature type and landmark type (pose, left_hand, right_hand):
+   - Call the appropriate estimator's `compute` method
+   - Store the feature vector
+4. Concatenate all feature vectors into a single tensor
+5. Return the features along with the label
+
+### Configuration-Driven Features
+
+All feature definitions are stored in YAML files in `configs/features/`:
+- Features can be added, modified, or disabled by editing these files
+- The `train_config.yaml` file controls which feature types are included
+
+## Data Splitting & Cross-Validation
+
+The system provides two approaches to data management for training:
+
+### Train/Test Splitting
+
+Data is divided into training and test sets at the video level (not frame level):
+
+1. **Split Mechanism** (`dataset/prepare_data_csv.py`):
+   - Videos are categorized using a shifting letter-based system (A-F)
+   - By default, 5/6 of videos per label go to training (A-E), 1/6 to test (F)
+   - Letter assignments are intentionally shifted for each label to prevent biases
+   - Example mapping:
+     ```python
+     dataset_split_dict = {
+         "A": "train", "B": "train", "C": "train", 
+         "D": "train", "E": "train", "F": "test"
+     }
+     ```
+
+2. **Process Flow**:
+   - Splitting happens in the `prepare_training_metadata` function
+   - The resulting metadata contains a `dataset_split` column
+   - `LandmarkDataset` filters data based on the requested split
+
+### Cross-Validation
+
+When `config.training.type` is set to "cross_validation":
+
+1. **K-Fold Implementation** (`utils/train.py`):
+   - Uses scikit-learn's `KFold` to create train/validation splits
+   - The number of folds is configurable (default is 5)
+   - Example configuration:
+     ```yaml
+     training:
+       type: cross_validation
+       k_folds: 5
+     ```
+
+2. **Execution Process**:
+   - Only the "train" portion of the data is used for cross-validation
+   - In each fold, this data is further split into training and validation sets
+   - Model is trained on all folds and performance averaged
+   - Final evaluation uses the separate "test" set that was never seen during training
+
+### Benefits of This Approach
+
+- **Robustness**: Cross-validation provides better estimates of model performance
+- **Data Efficiency**: Makes best use of limited training data
+- **Hold-out Testing**: Final test set ensures honest evaluation on unseen data
+- **Configurability**: Easily switch between standard and cross-validation approaches
+
 ## Making Modifications
 
 ### 1. Changing Configuration Settings

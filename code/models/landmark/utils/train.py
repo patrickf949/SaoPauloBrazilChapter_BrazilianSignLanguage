@@ -1,10 +1,11 @@
 import torch
 from torch import nn
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedGroupKFold
 from torch.utils.data import Subset, DataLoader
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_fn_pad
 from typing import Dict
+import numpy as np
 
 
 def train_epoch_fold(
@@ -18,16 +19,24 @@ def train_epoch_fold(
     criterion,
 ):
     dataset = datasets["train_dataset"]
-    kfold = KFold(n_splits=k_folds, shuffle=True, random_state=42)
-    fold_indices = list(kfold.split(dataset))
+    
+    # Create groups array where each sample from the same video gets the same group number
+    groups = []
+    labels = []
+    for video_idx in range(len(dataset.data)):
+        video_label = dataset.data.iloc[video_idx]["label_encoded"]
+        groups.extend([video_idx] * dataset.samples_per_video[video_idx])
+        labels.extend([video_label] * dataset.samples_per_video[video_idx])
+    
+    stratified_group_kfold = StratifiedGroupKFold(n_splits=k_folds, shuffle=True, random_state=42 + epoch)
+    fold_indices = list(stratified_group_kfold.split(range(len(dataset)), labels, groups=groups))
 
     total_train_loss = 0
     total_val_loss = 0
 
-    print(f"{k_folds}-fold Cross-Validation Results:")
+    print(f"{k_folds}-fold Cross-Validation Results (using StratifiedGroupKFold):")
     # Iterate through all folds for this epoch
     for fold, (train_ids, val_ids) in enumerate(fold_indices):
-        
         train_loader = DataLoader(
             Subset(dataset, train_ids),
             batch_size=batch_size,
