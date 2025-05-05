@@ -56,14 +56,6 @@ def train_epoch_fold(
         }
         fold_stats.append(fold_k_stats)
 
-        print(
-            f"\tTrain: {fold_k_stats['train_samples']} samples "
-            f"from {fold_k_stats['train_groups']} groups "
-            f"({fold_k_stats['train_samples_per_group']:.1f} per) | "
-            f"Val: {fold_k_stats['val_samples']} samples "
-            f"from {fold_k_stats['val_groups']} groups "
-            f"({fold_k_stats['val_samples_per_group']:.1f} per)"
-        )
         train_loader = DataLoader(
             Subset(dataset, train_ids),
             batch_size=batch_size,
@@ -115,7 +107,16 @@ def train_epoch_fold(
         # Store per-fold metrics
         fold_metrics.append((avg_fold_train_loss, avg_fold_val_loss))
 
-        print(f"\tTrain Loss: {avg_fold_train_loss:.4f} | Val Loss: {avg_fold_val_loss:.4f}")
+        print(
+            f"\tTrain Loss: {avg_fold_train_loss:.4f} | "
+            f"{fold_k_stats['train_samples']} samples from {fold_k_stats['train_groups']} groups "
+            f"({fold_k_stats['train_samples_per_group']:.1f} per)"
+        )
+        print(
+            f"\tVal Loss: {avg_fold_val_loss:.4f}   | "
+            f"{fold_k_stats['val_samples']} samples from {fold_k_stats['val_groups']} groups "
+            f"({fold_k_stats['val_samples_per_group']:.1f} per)"
+        )
 
     # Return average losses across all folds and per-fold metrics
     avg_train_loss = total_train_loss / k_folds
