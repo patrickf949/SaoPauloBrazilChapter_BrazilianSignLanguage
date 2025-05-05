@@ -28,15 +28,42 @@ def train_epoch_fold(
         groups.extend([video_idx] * dataset.samples_per_video[video_idx])
         labels.extend([video_label] * dataset.samples_per_video[video_idx])
     
+    groups = np.array(groups)
     stratified_group_kfold = StratifiedGroupKFold(n_splits=k_folds, shuffle=True, random_state=42 + epoch)
     fold_indices = list(stratified_group_kfold.split(range(len(dataset)), labels, groups=groups))
 
     total_train_loss = 0
     total_val_loss = 0
+    fold_metrics = []  # Store per-fold metrics
+    fold_stats = []    # Store fold statistics
 
     print(f"{k_folds}-fold Cross-Validation Results (using StratifiedGroupKFold):")
     # Iterate through all folds for this epoch
     for fold, (train_ids, val_ids) in enumerate(fold_indices):
+
+        print(f"\t- Fold {fold + 1} -")
+
+        # Calculate fold statistics
+        train_groups = np.unique(groups[train_ids])
+        val_groups = np.unique(groups[val_ids])
+        fold_k_stats = {
+            'train_samples': len(train_ids),
+            'val_samples': len(val_ids),
+            'train_groups': len(train_groups),
+            'val_groups': len(val_groups),
+            'train_samples_per_group': len(train_ids) / len(train_groups),
+            'val_samples_per_group': len(val_ids) / len(val_groups)
+        }
+        fold_stats.append(fold_k_stats)
+
+        print(
+            f"\t\tTrain: {fold_k_stats['train_samples']} samples "
+            f"from {fold_k_stats['train_groups']} groups "
+            f"({fold_k_stats['train_samples_per_group']:.1f} per) | "
+            f"Val: {fold_k_stats['val_samples']} samples "
+            f"from {fold_k_stats['val_groups']} groups "
+            f"({fold_k_stats['val_samples_per_group']:.1f} per)"
+        )
         train_loader = DataLoader(
             Subset(dataset, train_ids),
             batch_size=batch_size,
@@ -85,13 +112,16 @@ def train_epoch_fold(
         avg_fold_val_loss = fold_val_loss / len(val_loader)
         total_val_loss += avg_fold_val_loss
 
-        print(f"\tFold {fold + 1} - Train Loss: {avg_fold_train_loss:.4f} | Val Loss: {avg_fold_val_loss:.4f}")
+        # Store per-fold metrics
+        fold_metrics.append((avg_fold_train_loss, avg_fold_val_loss))
 
-    # Return average losses across all folds
+        print(f"\t\tTrain Loss: {avg_fold_train_loss:.4f} | Val Loss: {avg_fold_val_loss:.4f}")
+
+    # Return average losses across all folds and per-fold metrics
     avg_train_loss = total_train_loss / k_folds
     avg_val_loss = total_val_loss / k_folds
 
-    return avg_train_loss, avg_val_loss
+    return avg_train_loss, avg_val_loss, fold_metrics, fold_stats
 
 
 def train_epoch(
