@@ -8,7 +8,11 @@ def load_base_paths() -> DictConfig:
     Load base paths from dataset config.
     
     Returns:
-        DictConfig containing base paths
+        DictConfig containing base paths with the following structure:
+        - preprocessed_base: "data/preprocessed"
+        - metadata_base: "modelling/metadata"
+        - models_base: "modelling/models"
+        - logs_base: "modelling/logs"
     """
     config_path = os.path.join(os.path.dirname(__file__), "..", "configs", "dataset", "dataset.yaml")
     config = OmegaConf.load(config_path)
@@ -23,6 +27,8 @@ def get_data_paths(data_version: str) -> tuple[str, str]:
         
     Returns:
         Tuple of (landmarks_dir, metadata_path)
+        - landmarks_dir: preprocessed_base/landmarks/data_version
+        - metadata_path: metadata_base/landmarks_metadata_data_version_training.csv
     """
     paths = load_base_paths()
     
@@ -80,6 +86,9 @@ def get_save_paths(config: DictConfig) -> tuple[Optional[str], Optional[str], Op
         
     Returns:
         Tuple of (log_path, best_model_path, final_model_path)
+        - log_path: logs_base/experiment_name.csv
+        - best_model_path: models_base/experiment_name_best.pt
+        - final_model_path: models_base/experiment_name_final.pt
         Returns None for each path if saving is disabled
     """
     # If saving is disabled, return None for all paths

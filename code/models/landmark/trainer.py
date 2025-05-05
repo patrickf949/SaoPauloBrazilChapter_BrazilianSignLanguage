@@ -10,7 +10,7 @@ from models.landmark.utils.train import (
 from models.landmark.utils.evaluate import evaluate
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_func_pad
-from models.landmark.utils.path_utils import get_save_paths, get_data_paths
+from models.landmark.utils.path_utils import get_save_paths, get_data_paths, load_base_paths
 from models.landmark.dataset.prepare_data_csv import prepare_training_metadata
 from models.landmark.utils.logging import TrainingLogger
 import torch
@@ -19,8 +19,9 @@ import hydra
 from datetime import datetime
 
 # Ensure base output directories exist
-os.makedirs("modelling/outputs", exist_ok=True)
-os.makedirs("modelling/runs", exist_ok=True)
+paths = load_base_paths()
+os.makedirs(paths.logs_base, exist_ok=True)
+os.makedirs(os.path.join(paths.logs_base, "runs"), exist_ok=True)
 
 def get_dataset(config: DictConfig):
     batch_size = config.training.batch_size
@@ -94,7 +95,7 @@ def train(config: DictConfig):
 
     # Initialize logger
     current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
-    log_dir = os.path.join('modelling/runs', current_time)
+    log_dir = os.path.join(paths.logs_base, "runs", current_time)
     k_folds = config.training.k_folds if config.training.type == "cross_validation" else None
     logger = TrainingLogger(log_dir, log_path, k_folds)
 

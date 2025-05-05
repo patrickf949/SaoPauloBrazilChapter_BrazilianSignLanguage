@@ -41,7 +41,7 @@ def train_epoch_fold(
     # Iterate through all folds for this epoch
     for fold, (train_ids, val_ids) in enumerate(fold_indices):
 
-        print(f"\t- Fold {fold + 1} -")
+        print(f"- Fold {fold + 1} -")
 
         # Calculate fold statistics
         train_groups = np.unique(groups[train_ids])
@@ -57,7 +57,7 @@ def train_epoch_fold(
         fold_stats.append(fold_k_stats)
 
         print(
-            f"\t\tTrain: {fold_k_stats['train_samples']} samples "
+            f"\tTrain: {fold_k_stats['train_samples']} samples "
             f"from {fold_k_stats['train_groups']} groups "
             f"({fold_k_stats['train_samples_per_group']:.1f} per) | "
             f"Val: {fold_k_stats['val_samples']} samples "
@@ -115,7 +115,7 @@ def train_epoch_fold(
         # Store per-fold metrics
         fold_metrics.append((avg_fold_train_loss, avg_fold_val_loss))
 
-        print(f"\t\tTrain Loss: {avg_fold_train_loss:.4f} | Val Loss: {avg_fold_val_loss:.4f}")
+        print(f"\tTrain Loss: {avg_fold_train_loss:.4f} | Val Loss: {avg_fold_val_loss:.4f}")
 
     # Return average losses across all folds and per-fold metrics
     avg_train_loss = total_train_loss / k_folds
