@@ -2,7 +2,7 @@ from torch.nn.utils.rnn import pad_sequence
 import torch
 
 
-def collate_fn_pad(batch):
+def collate_func_pad(batch):
     features, labels = zip(*batch)  # Each feature is [T, D]
 
     lengths = [x.shape[0] for x in features]

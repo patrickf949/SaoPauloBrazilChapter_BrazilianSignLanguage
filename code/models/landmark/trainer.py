@@ -9,7 +9,7 @@ from models.landmark.utils.train import (
 )
 from models.landmark.utils.evaluate import evaluate
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
-from models.landmark.dataset.dataloader_functions import collate_fn_pad
+from models.landmark.dataset.dataloader_functions import collate_func_pad
 from models.landmark.utils.path_utils import get_save_paths, get_data_paths
 from models.landmark.dataset.prepare_data_csv import prepare_training_metadata
 import torch
@@ -21,9 +21,6 @@ from datetime import datetime
 os.makedirs("modelling/outputs", exist_ok=True)
 
 def get_dataset(config: DictConfig):
-    collate_fn = (
-        collate_fn_pad if "intervals" in config.dataset.frame_interval_fn else None
-    )
     batch_size = config.training.batch_size
 
     # Always generate fresh training metadata
@@ -38,7 +35,7 @@ def get_dataset(config: DictConfig):
             ),
             shuffle=shuffle,
             batch_size=batch_size,
-            collate_fn=collate_fn,
+            collate_fn=collate_func_pad,
         )
 
     if config.training.type == "cross_validation":

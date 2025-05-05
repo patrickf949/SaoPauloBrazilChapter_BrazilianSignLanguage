@@ -11,6 +11,7 @@ import os
 from omegaconf import DictConfig
 import os
 from . import frame_sampling
+from models.landmark.dataset.feature_processor import FeatureProcessor
 
 
 def uniform_intervals(start: int, end: int, interval: int):
@@ -115,19 +116,19 @@ class LandmarkDataset(Dataset):
         # Frame sampling configuration
         if dataset_split == "train":
             sampling_config = config["frame_sampling_train"]
-            self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
+            self.sampling_fn = frame_sampling.get_sampling_function(sampling_config["method"])
             self.sampling_params = sampling_config["params"]
         else:
             # Use test sampling for validation and test splits
             sampling_config = config["frame_sampling_test"]
-            self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
+            self.sampling_fn = frame_sampling.get_sampling_function(sampling_config["method"])
             self.sampling_params = sampling_config["params"]
 
         # Calculate samples per video based on sampling method
         self.samples_per_video = []
         for idx in range(len(self.data)):
             frames = self._load_frames(idx)
-            samples = self.sampling_func(
+            samples = self.sampling_fn(
                 num_frames=len(frames),
                 params=self.sampling_params
             )
@@ -136,13 +137,13 @@ class LandmarkDataset(Dataset):
         # Cumulative sum for index mapping
         self.cumsum_samples = np.cumsum([0] + self.samples_per_video)
 
-        self.configuration = {
+        configuration = {
             "landmark_types": config["landmark_types"],
             "features": list(features_config.keys()),
             "ordering": config["ordering"],
         }
 
-        self.estimators = {
+        estimators = {
             name: {
                 "estimator": load_obj(estimator_params["class_name"])(
                     estimator_params["hand"],
@@ -152,8 +153,14 @@ class LandmarkDataset(Dataset):
                 "computation_type": estimator_params["computation_type"],
             }
             for name, estimator_params in features_config.items()
-            # this was empty in Ana's code too
         }
+
+        # Initialize feature processor
+        self.feature_processor = FeatureProcessor(
+            configuration=configuration,
+            estimators=estimators,
+            augmentations=self.augmentations
+        )
 
     def _load_frames(self, idx: int):
         """Helper to load frames for a video."""
@@ -190,7 +197,7 @@ class LandmarkDataset(Dataset):
         frames = self._load_frames(video_idx)
         
         # Get frame indices using configured sampling method
-        all_samples = self.sampling_func(
+        all_samples = self.sampling_fn(
             num_frames=len(frames),
             params=self.sampling_params
         )
@@ -198,73 +205,11 @@ class LandmarkDataset(Dataset):
         # Get the specific sample for this index
         selected_indices = all_samples[sample_idx]
         
-        # Process each sample
-        all_features = []
-        for indx, i in enumerate(selected_indices):
-            frame = frames[i]
-            frame = {
-                f"{key}_landmarks": frame[f"{key}_landmarks"].landmark
-                if frame[f"{key}_landmarks"] is not None
-                else None
-                for key in self.configuration["landmark_types"]
-            }
+        # Process frames using feature processor
+        features = self.feature_processor.process_frames(frames, selected_indices)
 
-            for aug in self.augmentations:
-                if np.random.uniform() <= aug["p"]:
-                    frame = aug["augmentation"](frame)
-            features = {}
-
-            prev_frame = {
-                f"{key}_landmarks": None for key in self.configuration["landmark_types"]
-            }
-            if indx > 0:
-                prev_frame = frames[selected_indices[indx - 1]]
-                prev_frame = {
-                    f"{key}_landmarks": prev_frame[f"{key}_landmarks"].landmark
-                    if prev_frame[f"{key}_landmarks"] is not None
-                    else None
-                    for key in self.configuration["landmark_types"]
-                }
-
-            for first_key in self.configuration[self.configuration["ordering"][0]]:
-                for second_key in self.configuration[self.configuration["ordering"][1]]:
-                    feature_type, landmark_type = self._check_landmark_config(
-                        first_key, second_key
-                    )
-                    if feature_type == "differences":
-                        features[f"{feature_type}/{landmark_type}"] = self.estimators[
-                            feature_type
-                        ]["estimator"].compute(
-                            prev_frame[f"{landmark_type}_landmarks"],
-                            frame[f"{landmark_type}_landmarks"],
-                            landmark_type=landmark_type.split("_")[-1],
-                            mode=self.estimators[feature_type]["mode"],
-                            computation_type=self.estimators[feature_type][
-                                "computation_type"
-                            ],
-                        )
-                    else:
-                        features[f"{feature_type}/{landmark_type}"] = self.estimators[
-                            feature_type
-                        ]["estimator"].compute(
-                            frame[f"{landmark_type}_landmarks"],
-                            landmark_type=landmark_type.split("_")[-1],
-                            mode=self.estimators[feature_type]["mode"],
-                            computation_type=self.estimators[feature_type][
-                                "computation_type"
-                            ],
-                        )
-            # landmark validness features
-            features["validness"] = [
-                int(frame[f"{key}_landmarks"] is not None)
-                for key in self.configuration["landmark_types"]
-            ]
-            feature_vector = np.concatenate(list(features.values()), axis=None)
-
-            all_features.append(torch.tensor(feature_vector, dtype=torch.float))
-
-        # Get label (same for all samples from this video)
+        # Get label
         video_idx = self.data.index[video_idx]
         label = torch.tensor([self.data.loc[video_idx, "label_encoded"]], dtype=torch.int64)
 
-        return torch.stack(all_features), label
+        return features, label

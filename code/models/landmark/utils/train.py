@@ -3,7 +3,7 @@ from torch import nn
 from sklearn.model_selection import StratifiedGroupKFold
 from torch.utils.data import Subset, DataLoader
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
-from models.landmark.dataset.dataloader_functions import collate_fn_pad
+from models.landmark.dataset.dataloader_functions import collate_func_pad
 from typing import Dict
 import numpy as np
 
@@ -41,13 +41,13 @@ def train_epoch_fold(
             Subset(dataset, train_ids),
             batch_size=batch_size,
             shuffle=True,
-            collate_fn=collate_fn_pad,
+            collate_fn=collate_func_pad,
         )
         val_loader = DataLoader(
             Subset(dataset, val_ids),
             batch_size=batch_size,
             shuffle=False,
-            collate_fn=collate_fn_pad,
+            collate_fn=collate_func_pad,
         )
 
         # ----- training step -----
