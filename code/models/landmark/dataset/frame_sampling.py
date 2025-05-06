@@ -134,10 +134,89 @@ def exhaustive_sampling(num_frames: int, params: Dict[str, Any]) -> List[List[in
     return samples if samples else uniform_sampling(num_frames, {'frames_per_sample': frames_per_sample})
 
 
+def multiple_sampling_without_replacement_uniform(num_frames: int, params: Dict[str, Any]) -> List[List[int]]:
+    """Sample multiple frames without replacement.
+    
+    Required params:
+        frames_per_sample (int): Number of frames per sample
+        num_samples_limit (int, optional): Number of samples to generate, defaults to no limit (all possible samples)
+        replacement_rate (float, optional): The rate of replacement, defaults to 0.0. For example, if 0.1, 
+            then 10% of sampled frames will be put back into the available pool.
+        include_remaining (bool, optional): Whether to include the remaining frames in the last sample, defaults to True.
+            If True and there are insufficient remaining frames for a complete sample, will combine remaining frames
+            with additional sampled frames to create one final complete sample.
+
+    Returns:
+        List[List[int]]: A list of lists of frame indices
+    """
+    # Initialize & check required parameters
+    required = {'frames_per_sample'}
+    if not all(p in params for p in required):
+        raise ValueError(f"Missing required parameters: {required - set(params.keys())}")
+        
+    frames_per_sample = params['frames_per_sample']
+    num_samples_limit = params.get('num_samples_limit', None)
+    replacement_rate = params.get('replacement_rate', 0.0)
+    include_remaining = params.get('include_remaining', True)
+
+    if replacement_rate < 0.0 or replacement_rate > 1.0:
+        raise ValueError("Replacement rate must be between 0.0 and 1.0")
+        
+    if num_samples_limit is None:
+        num_samples_limit = np.inf
+
+    # Initialize available frames
+    available_frames = list(range(num_frames))
+    samples = []
+    
+    # Main sampling loop
+    while len(samples) < num_samples_limit and len(available_frames) >= frames_per_sample:
+        # Sample frames without replacement
+        sample = list(np.random.choice(available_frames, size=frames_per_sample, replace=False))
+        samples.append(sorted(sample))
+        
+        # Calculate how many frames to replace
+        num_frames_to_replace = int(frames_per_sample * replacement_rate)
+        
+        if num_frames_to_replace > 0:
+            # Randomly select frames to put back
+            frames_to_replace = list(np.random.choice(sample, size=num_frames_to_replace, replace=False))
+            frames_to_remove = [f for f in sample if f not in frames_to_replace]
+            
+            # Update available frames
+            available_frames = [f for f in available_frames if f not in frames_to_remove]
+            available_frames.extend(frames_to_replace)
+        else:
+            # Remove all sampled frames from available pool
+            available_frames = [f for f in available_frames if f not in sample]
+    
+    # Handle remaining frames if enabled and we have some frames left
+    if include_remaining and len(available_frames) > 0 and len(available_frames) < frames_per_sample:
+        # Use all remaining frames
+        final_sample = available_frames.copy()
+        
+        # Calculate how many additional frames we need
+        frames_needed = frames_per_sample - len(final_sample)
+        
+        # Get pool of frames we can sample from (all frames except those in final_sample)
+        available_for_final = [f for f in range(num_frames) if f not in final_sample]
+        
+        # Sample additional frames needed
+        if frames_needed > 0 and available_for_final:
+            additional_frames = list(np.random.choice(available_for_final, size=frames_needed, replace=False))
+            final_sample.extend(additional_frames)
+            
+        if len(final_sample) == frames_per_sample:
+            samples.append(sorted(final_sample))
+            
+    return samples
+
+
 SAMPLING_METHODS = {
     "uniform": uniform_sampling,
     "random": random_sampling,
     "exhaustive": exhaustive_sampling,
+    "multiple_uniform": multiple_sampling_without_replacement_uniform
 }
 
 
