@@ -197,15 +197,15 @@ def train(config: DictConfig):
     # ----- evaluate -----
     # Final evaluation (optional - could be on last fold or an extra hold-out set)
     test_loader = DataLoader(datasets["test_dataset"], batch_size=1)
-    top1_acc, topk_acc = evaluate(model, test_loader, device)
+    top1_acc, topk_acc, test_loss = evaluate(model, test_loader, device, criterion=criterion)
     print(
-        f"\nBest Epoch: {best_epoch} | Final Val Accuracy (Top-1): {top1_acc:.4f} | Top-K Accuracy: {topk_acc:.4f}"
+        f"\nBest Epoch: {best_epoch} | Final Val Accuracy (Top-1): {top1_acc:.4f} | Top-K Accuracy: {topk_acc:.4f} | Test Loss: {test_loss:.4f}"
     )
 
     # Close logger
     logger.close()
 
-    return top1_acc, topk_acc, best_epoch, log_data
+    return top1_acc, topk_acc, test_loss, best_epoch, log_data
 
 
 if __name__ == "__main__":
