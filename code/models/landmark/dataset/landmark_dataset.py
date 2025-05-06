@@ -197,7 +197,7 @@ class LandmarkDataset(Dataset):
         frames = self._load_frames(video_idx)
         
         # Get frame indices using configured sampling method
-        all_samples = self.sampling_fn(
+        all_samples = self.sampling_func(
             num_frames=len(frames),
             params=self.sampling_params
         )
