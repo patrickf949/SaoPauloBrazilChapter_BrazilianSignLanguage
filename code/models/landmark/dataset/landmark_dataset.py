@@ -168,10 +168,11 @@ class LandmarkDataset(Dataset):
         """Helper to load frames for a video."""
         idx = self.data.index[idx]
         landmark_path = os.path.join(self.data_dir, self.data.loc[idx, "filename"])
-        preprocessed_first_index = self.data.loc[idx, "start_frame"]
-        preprocessed_last_index = self.data.loc[idx, "end_frame"]
+        # --- Landmark series are already trimmed to start and end frame now
+        # preprocessed_first_index = self.data.loc[idx, "start_frame"]
+        # preprocessed_last_index = self.data.loc[idx, "end_frame"]
         frames = np.load(landmark_path, allow_pickle=True)
-        return frames #[preprocessed_first_index:preprocessed_last_index]
+        return frames # [preprocessed_first_index:preprocessed_last_index]
 
     def __len__(self) -> int:
         return self.cumsum_samples[-1]
@@ -200,9 +201,12 @@ class LandmarkDataset(Dataset):
         
         # Get the pre-calculated sample for this index
         selected_indices = self.all_samples[video_idx][sample_idx]
+
+        # Get the metadata row
+        metadata_row = self.data.iloc[video_idx]
         
         # Process frames using feature processor
-        features = self.feature_processor.process_frames(frames, selected_indices)
+        features = self.feature_processor.process_frames(frames, selected_indices, metadata_row)
 
         # Get label
         video_idx = self.data.index[video_idx]

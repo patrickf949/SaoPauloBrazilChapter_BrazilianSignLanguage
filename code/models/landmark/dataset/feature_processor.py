@@ -9,6 +9,7 @@ class FeatureProcessor:
         configuration: Dict[str, Any],
         estimators: Dict[str, Dict[str, Any]],
         augmentations: List[Dict[str, Any]] = None,
+        landmarks_dir: str = None,
     ):
         """
         Initialize the feature processor.
@@ -21,15 +22,15 @@ class FeatureProcessor:
         self.configuration = configuration
         self.estimators = estimators
         self.augmentations = augmentations or []
-
-    def process_frames(self, frames: List[Any], selected_indices: List[int]) -> torch.Tensor:
+        self.landmarks_dir = landmarks_dir
+    def process_frames(self, frames: List[Any], selected_indices: List[int], metadata_row: Dict[str, Any]) -> torch.Tensor:
         """
         Process a sequence of frames to generate feature vectors.
         
         Args:
             frames: List of frames containing landmark data
             selected_indices: List of indices indicating which frames to process
-            
+            metadata_row: Metadata row containing video information
         Returns:
             torch.Tensor: Processed features for the sequence
         """
@@ -142,4 +143,12 @@ class FeatureProcessor:
 
         raise Exception(
             "Error with landmark_features in dataset config, it is not specified correctly"
-        ) 
+        )
+    
+    def _get_metadata_row_features(self, metadata_row: Dict[str, Any]) -> Dict[str, Any]:
+        """Get metadata features from metadata row."""
+        pass
+
+    def _get_metadata_json_features(self, landmarks_dir: str, metadata_row: Dict[str, Any]) -> Dict[str, Any]:
+        """Get metadata features from metadata json file."""
+        pass
