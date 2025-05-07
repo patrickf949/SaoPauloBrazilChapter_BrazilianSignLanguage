@@ -8,7 +8,7 @@ def uniform_sampling(num_frames: int, params: Dict[str, Any]) -> List[List[int]]
     Required params:
         frames_per_sample (int): Number of frames to select
         num_samples (int, optional): Number of samples to generate, defaults to 1
-        min_spacing (int, optional): Minimum frames between selected frames
+        min_spacing (int, optional): Minimum frames between selected frames, defaults to 0
     """
     required = {'frames_per_sample'}
     if not all(p in params for p in required):
@@ -16,7 +16,7 @@ def uniform_sampling(num_frames: int, params: Dict[str, Any]) -> List[List[int]]
         
     frames_per_sample = params['frames_per_sample']
     num_samples = params.get('num_samples', 1)
-    min_spacing = params.get('min_spacing')
+    min_spacing = params.get('min_spacing', 0)
     
     samples = []
     spacing = (num_frames - 1) / (frames_per_sample - 1)
