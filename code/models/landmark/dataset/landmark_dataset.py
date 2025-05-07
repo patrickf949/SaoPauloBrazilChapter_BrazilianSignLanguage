@@ -116,23 +116,25 @@ class LandmarkDataset(Dataset):
         # Frame sampling configuration
         if dataset_split == "train":
             sampling_config = config["frame_sampling_train"]
-            self.sampling_fn = frame_sampling.get_sampling_function(sampling_config["method"])
+            self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
             self.sampling_params = sampling_config["params"]
         else:
             # Use test sampling for validation and test splits
             sampling_config = config["frame_sampling_test"]
-            self.sampling_fn = frame_sampling.get_sampling_function(sampling_config["method"])
+            self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
             self.sampling_params = sampling_config["params"]
 
-        # Calculate samples per video based on sampling method
+        # Calculate samples per video and store all samples
         self.samples_per_video = []
+        self.all_samples = []  # Store all samples for each video
         for idx in range(len(self.data)):
             frames = self._load_frames(idx)
-            samples = self.sampling_fn(
+            samples = self.sampling_func(
                 num_frames=len(frames),
                 params=self.sampling_params
             )
             self.samples_per_video.append(len(samples))
+            self.all_samples.append(samples)  # Store the samples
             
         # Cumulative sum for index mapping
         self.cumsum_samples = np.cumsum([0] + self.samples_per_video)
@@ -169,7 +171,7 @@ class LandmarkDataset(Dataset):
         preprocessed_first_index = self.data.loc[idx, "start_frame"]
         preprocessed_last_index = self.data.loc[idx, "end_frame"]
         frames = np.load(landmark_path, allow_pickle=True)
-        return frames[preprocessed_first_index:preprocessed_last_index]
+        return frames #[preprocessed_first_index:preprocessed_last_index]
 
     def __len__(self) -> int:
         return self.cumsum_samples[-1]
@@ -196,14 +198,8 @@ class LandmarkDataset(Dataset):
         # Load the frames
         frames = self._load_frames(video_idx)
         
-        # Get frame indices using configured sampling method
-        all_samples = self.sampling_func(
-            num_frames=len(frames),
-            params=self.sampling_params
-        )
-        
-        # Get the specific sample for this index
-        selected_indices = all_samples[sample_idx]
+        # Get the pre-calculated sample for this index
+        selected_indices = self.all_samples[video_idx][sample_idx]
         
         # Process frames using feature processor
         features = self.feature_processor.process_frames(frames, selected_indices)
