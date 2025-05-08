@@ -125,47 +125,12 @@ class LandmarkDataset(Dataset):
         # Cumulative sum for index mapping
         self.cumsum_samples = np.cumsum([0] + self.samples_per_video)
 
-        # configuration = {
-        #     "landmark_types": dataset_config["landmark_types"],
-        #     "features": list(features_config.keys()),
-        #     "ordering": dataset_config["ordering"],
-        # }
-
-        # estimators = {
-        #     name: {
-        #         "estimator": load_obj(estimator_params["class_name"])(
-        #             estimator_params["hand"],
-        #             estimator_params["pose"],
-        #         ),
-        #         "mode": estimator_params["mode"],
-        #         "computation_type": estimator_params["computation_type"],
-        #     }
-        #     for name, estimator_params in features_config.items()
-        # }
-        
-        # self.augmentations = (
-        #     [
-        #         {
-        #             "augmentation": load_obj(augmentation["class_name"])(
-        #                 **augmentation["params"]
-        #             ),
-        #             "p": augmentation["p"],
-        #         }
-        #         for _, augmentation in augmentation_config[dataset_split].items()
-        #     ]
-        #     if augmentation_config[dataset_split] is not None
-        #     else []
-        # )
-
         # Initialize feature processor
         self.feature_processor = FeatureProcessor(
             dataset_split=dataset_split,
             dataset_config=dataset_config,
             features_config=features_config,
             augmentation_config=augmentation_config,
-            # configuration=configuration,
-            # estimators=estimators,
-            # augmentations=self.augmentations,
             landmarks_dir=self.data_dir,
         )
 
@@ -173,11 +138,8 @@ class LandmarkDataset(Dataset):
         """Helper to load frames for a video."""
         idx = self.metadata.index[idx]
         landmark_path = os.path.join(self.data_dir, self.metadata.loc[idx, "filename"])
-        # --- Landmark series are already trimmed to start and end frame now
-        # preprocessed_first_index = self.metadata.loc[idx, "start_frame"]
-        # preprocessed_last_index = self.metadata.loc[idx, "end_frame"]
         frames = np.load(landmark_path, allow_pickle=True)
-        return frames # [preprocessed_first_index:preprocessed_last_index]
+        return frames
 
     def __len__(self) -> int:
         return self.cumsum_samples[-1]
