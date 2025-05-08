@@ -3,7 +3,22 @@ import torch
 import numpy as np
 from omegaconf import DictConfig
 from models.landmark.utils.utils import load_config, load_obj
+import json
+import os
 
+# Define the columns we want to extract from the metadata row
+METADATA_ROW_FEATURE_COLUMNS = [
+    "original_fps",
+    "processed_frame_count",
+    "processed_duration_sec",
+]
+# Define the feature paths we want to extract from the metadata json file
+METADATA_JSON_FEATURE_PATHS = [
+    ["landmark_none_mask_arrays", "left_hand_landmarks", "interpolation_binary_array"],
+    ["landmark_none_mask_arrays", "left_hand_landmarks", "interpolation_sequence_length_array_no_trailing_values"],
+    ["landmark_none_mask_arrays", "right_hand_landmarks", "interpolation_binary_array"],
+    ["landmark_none_mask_arrays", "right_hand_landmarks", "interpolation_sequence_length_array_no_trailing_values"],
+]
 
 class FeatureProcessor:
     def __init__(
@@ -12,15 +27,17 @@ class FeatureProcessor:
         dataset_config: Union[str, Dict, DictConfig],
         features_config: Union[str, Dict, DictConfig],
         augmentation_config: Union[str, Dict, DictConfig],
-        landmarks_dir: str = None,
+        landmarks_dir: str,
     ):
         """
         Initialize the feature processor.
         
         Args:
-            configuration: Dictionary containing landmark types, features, and ordering
-            estimators: Dictionary of feature estimators and their configurations
-            augmentations: List of augmentation configurations with their probabilities
+            dataset_split: Split of the dataset (train/val/test)
+            dataset_config: Dictionary containing landmark types, features, and ordering
+            features_config: Dictionary of feature estimators and their configurations
+            augmentation_config: List of augmentation configurations with their probabilities
+            landmarks_dir: Directory containing landmark data and metadata
         """
         configuration = {
             "landmark_types": dataset_config["landmark_types"],
@@ -72,14 +89,14 @@ class FeatureProcessor:
         """
         all_features = []
         
-        # Select augmentations once for the entire sequence
+        # Select data augmentations once for the entire sequence
         selected_augmentations = []
         for aug in self.augmentations:
             if np.random.uniform() <= aug["p"]:
                 selected_augmentations.append(aug["augmentation"])
         
-        for indx, i in enumerate(selected_indices):
-            frame = frames[i]
+        for i, frame_idx in enumerate(selected_indices):
+            frame = frames[frame_idx]
             # Extract landmarks
             frame = {
                 f"{key}_landmarks": frame[f"{key}_landmarks"].landmark
@@ -88,12 +105,12 @@ class FeatureProcessor:
                 for key in self.configuration["landmark_types"]
             }
 
-            # Apply the same augmentations to all frames
+            # Apply the same data augmentations to all frames
             for augmentation in selected_augmentations:
                 frame = augmentation(frame)
 
             # Generate features
-            features = self._compute_features(frame, frames, selected_indices, indx)
+            features = self._compute_features(frame, frames, selected_indices, i)
             
             # Add validness features
             features["validness"] = [
@@ -105,7 +122,33 @@ class FeatureProcessor:
             feature_vector = np.concatenate(list(features.values()), axis=None)
             all_features.append(torch.tensor(feature_vector, dtype=torch.float))
 
-        return torch.stack(all_features)
+        # Stack all frame features
+        frame_features = torch.stack(all_features)  # shape: (sequence_length, n_landmark_features)
+        
+        # Get metadata features
+        metadata_row_features = self._get_metadata_row_features(metadata_row, len(selected_indices))  # shape: (sequence_length, n_metadata_row_features)
+        
+        # Load metadata JSON file once
+        metadata_json_path = os.path.join(self.landmarks_dir, "individual_metadata", metadata_row["filename"].replace(".npy", ".json"))
+        if not os.path.exists(metadata_json_path):
+            raise FileNotFoundError(f"Metadata JSON file not found: {metadata_json_path}")
+            
+        try:
+            with open(metadata_json_path, "r") as f:
+                metadata_json = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON file {metadata_json_path}: {str(e)}")
+            
+        metadata_json_features = self._get_metadata_json_features(metadata_json, selected_indices)  # shape: (sequence_length, n_metadata_json_features)
+        
+        # Concatenate all feature types along the feature dimension
+        all_features = torch.cat([
+            frame_features,
+            metadata_row_features,
+            metadata_json_features
+        ], dim=1)  # shape: (sequence_length, n_landmark_features + n_metadata_row_features + n_metadata_json_features)
+
+        return all_features
 
     def _compute_features(
         self, 
@@ -186,10 +229,76 @@ class FeatureProcessor:
             "Error with landmark_features in dataset config, it is not specified correctly"
         )
     
-    def _get_metadata_row_features(self, metadata_row: Dict[str, Any]) -> Dict[str, Any]:
-        """Get metadata features from metadata row."""
-        pass
+    def _get_metadata_row_features(self, metadata_row: Dict[str, Any], sequence_length: int) -> torch.Tensor:
+        """Get metadata features from metadata row.
+        
+        Args:
+            metadata_row: Dictionary containing metadata information
+            sequence_length: Length of the sequence to generate features for
+            
+        Returns:
+            torch.Tensor: Tensor of shape (sequence_length, n_features) containing metadata features
+        """        
+        # Validate all required columns exist
+        missing_columns = [col for col in METADATA_ROW_FEATURE_COLUMNS if col not in metadata_row]
+        if missing_columns:
+            raise KeyError(f"Missing required metadata columns: {missing_columns}")
+            
+        metadata_feature_vector = [metadata_row[col] for col in METADATA_ROW_FEATURE_COLUMNS]
+        # Reshape to (sequence_length, n_features)
+        metadata_feature_tensor = torch.tensor(metadata_feature_vector, dtype=torch.float)
+        metadata_feature_tensor = metadata_feature_tensor.repeat(sequence_length, 1)
+        
+        return metadata_feature_tensor
 
-    def _get_metadata_json_features(self, landmarks_dir: str, metadata_row: Dict[str, Any]) -> Dict[str, Any]:
-        """Get metadata features from metadata json file."""
-        pass
+    def _get_nested_value(self, data: Dict[str, Any], path: List[str]) -> Any:
+        """Safely get a nested value from a dictionary using a path of keys.
+        
+        Args:
+            data: Dictionary to extract value from
+            path: List of keys representing the path to the value
+            
+        Returns:
+            The value at the specified path
+            
+        Raises:
+            KeyError: If any key in the path doesn't exist, with a message indicating the full path
+        """
+        try:
+            current = data
+            for key in path:
+                if key not in current:
+                    raise KeyError(f"Missing key '{key}' in path {path}")
+                current = current[key]
+            return current
+        except KeyError as e:
+            raise KeyError(f"Failed to extract value at path {path}: {str(e)}")
+
+    def _get_metadata_json_features(self, metadata_json: Dict[str, Any], selected_indices: List[int]) -> torch.Tensor:
+        """Get metadata features from metadata json file.
+        
+        Args:
+            metadata_json: Dictionary containing metadata information
+            selected_indices: List of indices to extract features for
+            
+        Returns:
+            torch.Tensor: Tensor of shape (sequence_length, n_features) containing metadata features
+        """
+
+        # extract the features stored in the metadata json file
+        feature_series_list = []
+        for path in METADATA_JSON_FEATURE_PATHS:
+            full_feature_series = self._get_nested_value(metadata_json, path)
+            
+            # Validate indices
+            if max(selected_indices) >= len(full_feature_series):
+                raise IndexError(f"Selected indices exceed feature series length ({len(full_feature_series)})")
+            
+            # Get the features for the selected indices
+            sliced_feature_series = [full_feature_series[i] for i in selected_indices]
+            feature_series_list.append(sliced_feature_series)
+
+        # Convert to tensor and transpose to get shape (sequence_length, n_features)
+        metadata_json_tensor = torch.tensor(feature_series_list, dtype=torch.float).T
+
+        return metadata_json_tensor

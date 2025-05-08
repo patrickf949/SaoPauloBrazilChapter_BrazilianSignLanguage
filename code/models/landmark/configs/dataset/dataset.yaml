@@ -1,5 +1,5 @@
 # Version of the preprocessed landmark data to use
-data_version: "v3"
+data_version: "v4"
 
 # Frame sampling for training split
 frame_sampling_train:
