@@ -4,7 +4,6 @@ import numpy as np
 import torch
 from models.landmark.utils.utils import load_config, load_obj
 from typing import Dict, List, Union, Callable, Tuple
-from models.landmark.utils.utils import load_obj
 from models.landmark.utils.path_utils import get_data_paths
 from functools import partial
 import os
@@ -89,45 +88,32 @@ class LandmarkDataset(Dataset):
         augmentation_config: Union[str, Dict, DictConfig],
         dataset_split: str,
     ):
-        config = load_config(dataset_config, "dataset_config")
+        # these configs should already be DictConfig objects, load_config is just for safety
+        dataset_config = load_config(dataset_config, "dataset_config")
         features_config = load_config(features_config, "features_config")
 
         # Get standardized paths based on data version
-        self.data_dir, metadata_path = get_data_paths(config["data_version"])
+        self.data_dir, metadata_path = get_data_paths(dataset_config["data_version"])
         
         # Load and filter metadata
-        self.data = pd.read_csv(metadata_path)
-        self.data = self.data[self.data["dataset_split"] == dataset_split]
+        self.metadata = pd.read_csv(metadata_path)
+        self.metadata = self.metadata[self.metadata["dataset_split"] == dataset_split]
         
-        self.augmentations = (
-            [
-                {
-                    "augmentation": load_obj(augmentation["class_name"])(
-                        **augmentation["params"]
-                    ),
-                    "p": augmentation["p"],
-                }
-                for _, augmentation in augmentation_config[dataset_split].items()
-            ]
-            if augmentation_config[dataset_split] is not None
-            else []
-        )
-
         # Frame sampling configuration
         if dataset_split == "train":
-            sampling_config = config["frame_sampling_train"]
+            sampling_config = dataset_config["frame_sampling_train"]
             self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
             self.sampling_params = sampling_config["params"]
         else:
             # Use test sampling for validation and test splits
-            sampling_config = config["frame_sampling_test"]
+            sampling_config = dataset_config["frame_sampling_test"]
             self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
             self.sampling_params = sampling_config["params"]
 
         # Calculate samples per video and store all samples
         self.samples_per_video = []
         self.all_samples = []  # Store all samples for each video
-        for idx in range(len(self.data)):
+        for idx in range(len(self.metadata)):
             frames = self._load_frames(idx)
             samples = self.sampling_func(
                 num_frames=len(frames),
@@ -139,38 +125,57 @@ class LandmarkDataset(Dataset):
         # Cumulative sum for index mapping
         self.cumsum_samples = np.cumsum([0] + self.samples_per_video)
 
-        configuration = {
-            "landmark_types": config["landmark_types"],
-            "features": list(features_config.keys()),
-            "ordering": config["ordering"],
-        }
+        # configuration = {
+        #     "landmark_types": dataset_config["landmark_types"],
+        #     "features": list(features_config.keys()),
+        #     "ordering": dataset_config["ordering"],
+        # }
 
-        estimators = {
-            name: {
-                "estimator": load_obj(estimator_params["class_name"])(
-                    estimator_params["hand"],
-                    estimator_params["pose"],
-                ),
-                "mode": estimator_params["mode"],
-                "computation_type": estimator_params["computation_type"],
-            }
-            for name, estimator_params in features_config.items()
-        }
+        # estimators = {
+        #     name: {
+        #         "estimator": load_obj(estimator_params["class_name"])(
+        #             estimator_params["hand"],
+        #             estimator_params["pose"],
+        #         ),
+        #         "mode": estimator_params["mode"],
+        #         "computation_type": estimator_params["computation_type"],
+        #     }
+        #     for name, estimator_params in features_config.items()
+        # }
+        
+        # self.augmentations = (
+        #     [
+        #         {
+        #             "augmentation": load_obj(augmentation["class_name"])(
+        #                 **augmentation["params"]
+        #             ),
+        #             "p": augmentation["p"],
+        #         }
+        #         for _, augmentation in augmentation_config[dataset_split].items()
+        #     ]
+        #     if augmentation_config[dataset_split] is not None
+        #     else []
+        # )
 
         # Initialize feature processor
         self.feature_processor = FeatureProcessor(
-            configuration=configuration,
-            estimators=estimators,
-            augmentations=self.augmentations
+            dataset_split=dataset_split,
+            dataset_config=dataset_config,
+            features_config=features_config,
+            augmentation_config=augmentation_config,
+            # configuration=configuration,
+            # estimators=estimators,
+            # augmentations=self.augmentations,
+            landmarks_dir=self.data_dir,
         )
 
     def _load_frames(self, idx: int):
         """Helper to load frames for a video."""
-        idx = self.data.index[idx]
-        landmark_path = os.path.join(self.data_dir, self.data.loc[idx, "filename"])
+        idx = self.metadata.index[idx]
+        landmark_path = os.path.join(self.data_dir, self.metadata.loc[idx, "filename"])
         # --- Landmark series are already trimmed to start and end frame now
-        # preprocessed_first_index = self.data.loc[idx, "start_frame"]
-        # preprocessed_last_index = self.data.loc[idx, "end_frame"]
+        # preprocessed_first_index = self.metadata.loc[idx, "start_frame"]
+        # preprocessed_last_index = self.metadata.loc[idx, "end_frame"]
         frames = np.load(landmark_path, allow_pickle=True)
         return frames # [preprocessed_first_index:preprocessed_last_index]
 
@@ -203,13 +208,13 @@ class LandmarkDataset(Dataset):
         selected_indices = self.all_samples[video_idx][sample_idx]
 
         # Get the metadata row
-        metadata_row = self.data.iloc[video_idx]
+        metadata_row = self.metadata.iloc[video_idx]
         
         # Process frames using feature processor
         features = self.feature_processor.process_frames(frames, selected_indices, metadata_row)
 
         # Get label
-        video_idx = self.data.index[video_idx]
-        label = torch.tensor([self.data.loc[video_idx, "label_encoded"]], dtype=torch.int64)
+        video_idx = self.metadata.index[video_idx]
+        label = torch.tensor([self.metadata.loc[video_idx, "label_encoded"]], dtype=torch.int64)
 
         return features, label

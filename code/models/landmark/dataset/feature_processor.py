@@ -1,14 +1,20 @@
-from typing import Dict, List, Any
+from typing import Dict, List, Union, Any
 import torch
 import numpy as np
+from omegaconf import DictConfig
+from models.landmark.utils.utils import load_config, load_obj
 
 
 class FeatureProcessor:
     def __init__(
         self,
-        configuration: Dict[str, Any],
-        estimators: Dict[str, Dict[str, Any]],
-        augmentations: List[Dict[str, Any]] = None,
+        dataset_split: str,
+        dataset_config: Union[str, Dict, DictConfig],
+        features_config: Union[str, Dict, DictConfig],
+        augmentation_config: Union[str, Dict, DictConfig],
+        # configuration: Dict[str, Any],
+        # estimators: Dict[str, Dict[str, Any]],
+        # augmentations: List[Dict[str, Any]] = None,
         landmarks_dir: str = None,
     ):
         """
@@ -19,10 +25,43 @@ class FeatureProcessor:
             estimators: Dictionary of feature estimators and their configurations
             augmentations: List of augmentation configurations with their probabilities
         """
+        configuration = {
+            "landmark_types": dataset_config["landmark_types"],
+            "features": list(features_config.keys()),
+            "ordering": dataset_config["ordering"],
+        }
+
+        estimators = {
+            name: {
+                "estimator": load_obj(estimator_params["class_name"])(
+                    estimator_params["hand"],
+                    estimator_params["pose"],
+                ),
+                "mode": estimator_params["mode"],
+                "computation_type": estimator_params["computation_type"],
+            }
+            for name, estimator_params in features_config.items()
+        }
+        
+        augmentations = (
+            [
+                {
+                    "augmentation": load_obj(augmentation["class_name"])(
+                        **augmentation["params"]
+                    ),
+                    "p": augmentation["p"],
+                }
+                for _, augmentation in augmentation_config[dataset_split].items()
+            ]
+            if augmentation_config[dataset_split] is not None
+            else []
+        )
+
         self.configuration = configuration
         self.estimators = estimators
         self.augmentations = augmentations or []
         self.landmarks_dir = landmarks_dir
+
     def process_frames(self, frames: List[Any], selected_indices: List[int], metadata_row: Dict[str, Any]) -> torch.Tensor:
         """
         Process a sequence of frames to generate feature vectors.
