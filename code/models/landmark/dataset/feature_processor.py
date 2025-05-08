@@ -72,6 +72,12 @@ class FeatureProcessor:
         """
         all_features = []
         
+        # Select augmentations once for the entire sequence
+        selected_augmentations = []
+        for aug in self.augmentations:
+            if np.random.uniform() <= aug["p"]:
+                selected_augmentations.append(aug["augmentation"])
+        
         for indx, i in enumerate(selected_indices):
             frame = frames[i]
             # Extract landmarks
@@ -82,10 +88,9 @@ class FeatureProcessor:
                 for key in self.configuration["landmark_types"]
             }
 
-            # Apply augmentations
-            for aug in self.augmentations:
-                if np.random.uniform() <= aug["p"]:
-                    frame = aug["augmentation"](frame)
+            # Apply the same augmentations to all frames
+            for augmentation in selected_augmentations:
+                frame = augmentation(frame)
 
             # Generate features
             features = self._compute_features(frame, frames, selected_indices, indx)
