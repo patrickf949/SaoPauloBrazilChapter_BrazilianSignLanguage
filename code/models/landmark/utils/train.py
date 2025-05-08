@@ -23,8 +23,8 @@ def train_epoch_fold(
     # Create groups array where each sample from the same video gets the same group number
     groups = []
     labels = []
-    for video_idx in range(len(dataset.data)):
-        video_label = dataset.data.iloc[video_idx]["label_encoded"]
+    for video_idx in range(len(dataset.metadata)):
+        video_label = dataset.metadata.iloc[video_idx]["label_encoded"]
         groups.extend([video_idx] * dataset.samples_per_video[video_idx])
         labels.extend([video_label] * dataset.samples_per_video[video_idx])
     

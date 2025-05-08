@@ -12,9 +12,6 @@ class FeatureProcessor:
         dataset_config: Union[str, Dict, DictConfig],
         features_config: Union[str, Dict, DictConfig],
         augmentation_config: Union[str, Dict, DictConfig],
-        # configuration: Dict[str, Any],
-        # estimators: Dict[str, Dict[str, Any]],
-        # augmentations: List[Dict[str, Any]] = None,
         landmarks_dir: str = None,
     ):
         """
