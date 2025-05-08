@@ -16,6 +16,7 @@ from models.landmark.utils.logging import TrainingLogger
 import torch
 from omegaconf import DictConfig
 import hydra
+from utils.utils import set_config_param
 from datetime import datetime
 
 # Ensure base output directories exist
@@ -68,6 +69,16 @@ def train(config: DictConfig):
     device = config.training.device
     num_epochs = config.training.num_epochs
 
+    # Get dataset first
+    datasets = get_dataset(config)
+    
+    # Check feature dimensions by processing one datapoint
+    sample_features, _ = next(iter(datasets["train_dataset"]))
+    print(f"Feature dimensions: {sample_features.shape[1]}")
+    # Update model config with actual input size
+    set_config_param(config.model.params, "input_size", sample_features.shape[1])
+    
+    # Initialize model with updated config
     model = load_obj(config.model.class_name)(**config.model.params)
     model.to(device)
 
@@ -87,8 +98,6 @@ def train(config: DictConfig):
     best_epoch = 0
 
     log_data = []
-
-    datasets = get_dataset(config)
 
     # Get save paths
     log_path, best_model_path, final_model_path = get_save_paths(config)
