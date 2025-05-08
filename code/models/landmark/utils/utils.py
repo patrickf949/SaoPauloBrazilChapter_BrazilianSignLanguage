@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import random
 import importlib
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 
 def check_mode(mode: str):
@@ -76,3 +76,17 @@ def load_obj(obj_path: str, default_obj_path: str = "") -> Any:
     if not hasattr(module_obj, obj_name):
         raise AttributeError(f"Object `{obj_name}` cannot be loaded from `{obj_path}`.")
     return getattr(module_obj, obj_name)
+
+def set_config_param(config: Union[DictConfig, dict], key_path: str, value: any) -> None:
+    if isinstance(config, dict):
+        config = OmegaConf.create(config)
+
+    # Remember current struct state
+    original_struct = OmegaConf.is_struct(config)
+    OmegaConf.set_struct(config, False)
+
+    # Set the value
+    OmegaConf.update(config, key_path, value, merge=False)
+
+    # Restore original struct state
+    OmegaConf.set_struct(config, original_struct)
