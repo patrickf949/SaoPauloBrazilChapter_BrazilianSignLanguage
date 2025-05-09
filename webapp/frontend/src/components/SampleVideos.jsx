@@ -46,7 +46,7 @@ const fetchVideos = async () => {
 };
 
 const VideoLibrary = () => {
-  const { setVideo,resetVideo, setLoadingVideo } = useTranslationStore();
+  const { setVideo, resetVideo, setLoadingVideo } = useTranslationStore();
   const [videos, setVideos] = useState([]);
   const [playingId, setPlayingId] = useState(null);
   const scrollRef = useRef();
@@ -54,13 +54,12 @@ const VideoLibrary = () => {
   const [showRight, setShowRight] = useState(false);
 
   useEffect(() => {
-
-    fetchVideos().then((response)=>{
-      const videos = response.map((video)=>{
-        video['id'] = extractDriveFileId(video.url);
-        video['videoUrl'] = `https://drive.google.com/uc?id=${video.id}`;
+    fetchVideos().then((response) => {
+      const videos = response.map((video) => {
+        video["id"] = extractDriveFileId(video.url);
+        video["videoUrl"] = `https://drive.google.com/uc?id=${video.id}`;
         return video;
-      })
+      });
       setVideos(videos);
     });
   }, []);
@@ -96,16 +95,14 @@ const VideoLibrary = () => {
   const handleVideo = (video) => {
     if (playingId === video.id) {
       resetVideo();
-      
-    }else{
-      
+    } else {
       setVideo({
         videoUrl: video.id,
         video: null,
         label: video.label,
       });
     }
-  }
+  };
 
   const handlePlay = (id) => {
     setPlayingId((prev) => (prev === id ? null : id));
@@ -175,6 +172,11 @@ const VideoLibrary = () => {
             sx={{
               overflowX: "auto",
               display: "flex",
+              flexGrow: 1,
+              "&::-webkit-scrollbar": {
+                display: "none", // Chrome, Safari
+              },
+
               gap: 2,
               scrollSnapType: "x mandatory",
               pb: 1,
@@ -188,8 +190,12 @@ const VideoLibrary = () => {
               return (
                 <Grid
                   key={id}
+                  size={{ xs: 12, sm: 6 }}
                   sx={{
-                    flex: "0 0 calc(50% - 16px)",
+                    flex: {
+                      xs: "0 0 100%", // Full width on mobile
+                      sm: "0 0 calc(50% - 16px)", // 2 items per row on small screens and up
+                    },
                     scrollSnapAlign: "start",
                   }}
                 >
@@ -204,8 +210,8 @@ const VideoLibrary = () => {
                   >
                     <CardMedia
                       component="img"
-                      sx ={{
-                        height:124
+                      sx={{
+                        maxHeight: 124,
                       }}
                       image={`https://drive.google.com/thumbnail?id=${id}`}
                       alt={video.title}
@@ -228,7 +234,7 @@ const VideoLibrary = () => {
                             borderBottom: "1px solid green",
                             borderRight: "1px solid green",
                             borderLeft: "1px solid green",
-                            borderRadius: "0px 0px 4px 4px", 
+                            borderRadius: "0px 0px 4px 4px",
                           }}
                         >
                           <Typography color="text.primary" variant="subtitle1">
