@@ -1,4 +1,5 @@
 from models.landmark.utils.utils import load_obj
+from models.landmark.dataset.dataset_analysis import analyze_dataset_features
 import os
 from torch import nn
 from torch.utils.data import DataLoader
@@ -33,10 +34,11 @@ def get_dataset(config: DictConfig):
     prepare_training_metadata(config.dataset.data_version)
 
     def create_dataloader(split: str, shuffle: bool):
+        dataset = LandmarkDataset(
+            config.dataset, config.features, config.augmentation, split
+        )
         return DataLoader(
-            LandmarkDataset(
-                config.dataset, config.features, config.augmentation, split
-            ),
+            dataset=dataset,
             shuffle=shuffle,
             batch_size=batch_size,
             collate_fn=collate_func_pad,
@@ -72,11 +74,11 @@ def train(config: DictConfig):
     # Get dataset first
     datasets = get_dataset(config)
     
-    # Check feature dimensions by processing one datapoint
-    sample_features, _ = next(iter(datasets["train_dataset"]))
-    print(f"Feature dimensions: {sample_features.shape[1]}")
+    # Analyze dataset and get feature dimensions
+    n_features = analyze_dataset_features(datasets["train_dataset"])
+    
     # Update model config with actual input size
-    set_config_param(config.model.params, "input_size", sample_features.shape[1])
+    set_config_param(config.model.params, "input_size", n_features)
     
     # Initialize model with updated config
     model = load_obj(config.model.class_name)(**config.model.params)
