@@ -2,10 +2,11 @@ from typing import Dict, List, Union, Any
 import torch
 import numpy as np
 from omegaconf import DictConfig
-from models.landmark.utils.utils import load_config, load_obj
+from models.landmark.utils.utils import load_config, load_obj, minmax_scale_single, minmax_scale_series
 import json
 import os
 
+scale_range = [-1, 1]
 # Define the columns we want to extract from the metadata row
 METADATA_ROW_FEATURE_COLUMNS = [
     "original_fps",
@@ -18,6 +19,33 @@ METADATA_JSON_FEATURE_PATHS = [
     ["landmark_none_mask_arrays", "left_hand_landmarks", "interpolation_sequence_length_array_no_trailing_values"],
     ["landmark_none_mask_arrays", "right_hand_landmarks", "interpolation_binary_array"],
     ["landmark_none_mask_arrays", "right_hand_landmarks", "interpolation_sequence_length_array_no_trailing_values"],
+]
+
+# Define the metadata row features with their scaling parameters
+METADATA_ROW_FEATURES = [
+    {"column": "original_fps", "input_max": 60.0},
+    {"column": "processed_frame_count", "input_max": 350.0},
+    {"column": "processed_duration_sec", "input_max": 7.0}
+]
+
+# Define the metadata JSON features with their scaling parameters
+METADATA_JSON_FEATURES = [
+    {
+        "path": ["landmark_none_mask_arrays", "left_hand_landmarks", "interpolation_binary_array"],
+        "input_max": 1.0,
+    },
+    {
+        "path": ["landmark_none_mask_arrays", "left_hand_landmarks", "interpolation_sequence_length_array_no_trailing_values"],
+        "input_max": 15.0,
+    },
+    {
+        "path": ["landmark_none_mask_arrays", "right_hand_landmarks", "interpolation_binary_array"],
+        "input_max": 1.0,
+    },
+    {
+        "path": ["landmark_none_mask_arrays", "right_hand_landmarks", "interpolation_sequence_length_array_no_trailing_values"],
+        "input_max": 15.0,
+    }
 ]
 
 class FeatureProcessor:
@@ -128,7 +156,7 @@ class FeatureProcessor:
         # Get metadata features
         metadata_row_features = self._get_metadata_row_features(metadata_row, len(selected_indices))  # shape: (sequence_length, n_metadata_row_features)
         
-        # Load metadata JSON file once
+        # Load metadata JSON file
         metadata_json_path = os.path.join(self.landmarks_dir, "individual_metadata", metadata_row["filename"].replace(".npy", ".json"))
         if not os.path.exists(metadata_json_path):
             raise FileNotFoundError(f"Metadata JSON file not found: {metadata_json_path}")
@@ -240,11 +268,21 @@ class FeatureProcessor:
             torch.Tensor: Tensor of shape (sequence_length, n_features) containing metadata features
         """        
         # Validate all required columns exist
-        missing_columns = [col for col in METADATA_ROW_FEATURE_COLUMNS if col not in metadata_row]
+        missing_columns = [feature["column"] for feature in METADATA_ROW_FEATURES if feature["column"] not in metadata_row]
         if missing_columns:
             raise KeyError(f"Missing required metadata columns: {missing_columns}")
             
-        metadata_feature_vector = [metadata_row[col] for col in METADATA_ROW_FEATURE_COLUMNS]
+        # Process each feature with its scaling parameters
+        metadata_feature_vector = []
+        for feature in METADATA_ROW_FEATURES:
+            value = metadata_row[feature["column"]]
+            scaled_value = minmax_scale_single(
+                value=value,
+                input_max=feature["input_max"],
+                output_range=scale_range
+            )
+            metadata_feature_vector.append(scaled_value)
+        
         # Reshape to (sequence_length, n_features)
         metadata_feature_tensor = torch.tensor(metadata_feature_vector, dtype=torch.float)
         metadata_feature_tensor = metadata_feature_tensor.repeat(sequence_length, 1)
@@ -284,21 +322,27 @@ class FeatureProcessor:
         Returns:
             torch.Tensor: Tensor of shape (sequence_length, n_features) containing metadata features
         """
-
-        # extract the features stored in the metadata json file
+        # Extract the features stored in the metadata json file
         feature_series_list = []
-        for path in METADATA_JSON_FEATURE_PATHS:
-            full_feature_series = self._get_nested_value(metadata_json, path)
+        for feature in METADATA_JSON_FEATURES:
+            full_feature_series = self._get_nested_value(metadata_json, feature["path"])
             
             # Validate indices
             if max(selected_indices) >= len(full_feature_series):
                 raise IndexError(f"Selected indices exceed feature series length ({len(full_feature_series)})")
             
             # Get the features for the selected indices
-            sliced_feature_series = [full_feature_series[i] for i in selected_indices]
-            feature_series_list.append(sliced_feature_series)
-
-        # Convert to tensor and transpose to get shape (sequence_length, n_features)
-        metadata_json_tensor = torch.tensor(feature_series_list, dtype=torch.float).T
+            selected_series = [full_feature_series[i] for i in selected_indices]
+            
+            # Scale the entire series at once
+            scaled_series = minmax_scale_series(
+                values=np.array(selected_series),
+                input_max=feature["input_max"],
+                output_range=scale_range
+            )
+            feature_series_list.append(scaled_series)
+        # Convert list to numpy array before creating tensor
+        feature_array = np.array(feature_series_list)
+        metadata_json_tensor = torch.from_numpy(feature_array).float().T
 
         return metadata_json_tensor
