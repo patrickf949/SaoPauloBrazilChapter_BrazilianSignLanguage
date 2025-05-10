@@ -5,7 +5,7 @@ from models.landmark.utils.utils import (
     check_landmark_type,
     check_angle_type,
 )
-from models.landmark.dataset.base_estimator import BaseEstimator
+from models.landmark.features.base_estimator import BaseEstimator
 from omegaconf import DictConfig
 
 

@@ -1,6 +1,7 @@
 positions:
-  class_name: models.landmark.dataset.LandmarkEstimator
-  pose: 
+  class_name: models.landmark.features.LandmarkEstimator
+  pose:
+    # face 0-10
     nose: 0
     left_eye_inner: 1
     left_eye: 2
@@ -12,6 +13,7 @@ positions:
     right_ear: 8
     mouth_left: 9
     mouth_right: 10
+    # upper body 11-22
     left_shoulder: 11
     right_shoulder: 12
     left_elbow: 13
@@ -24,6 +26,7 @@ positions:
     right_index: 20
     left_thumb: 21
     right_thumb: 22
+    # lower body 23-32
     left_hip: 23
     right_hip: 24
     left_knee: 25

@@ -138,7 +138,7 @@ class FeatureProcessor:
                 frame = augmentation(frame)
 
             # Generate features
-            features = self._compute_features(frame, frames, selected_indices, i)
+            features = self._compute_estimator_features(frame, frames, selected_indices, i)
             
             # Add validness features
             features["validness"] = [
@@ -178,7 +178,7 @@ class FeatureProcessor:
 
         return all_features
 
-    def _compute_features(
+    def _compute_estimator_features(
         self, 
         frame: Dict[str, Any], 
         frames: List[Any],
@@ -186,7 +186,7 @@ class FeatureProcessor:
         current_index: int
     ) -> Dict[str, np.ndarray]:
         """
-        Compute all features for a single frame.
+        Compute all estimator features for a single frame.
         
         Args:
             frame: Current frame's landmark data
