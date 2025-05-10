@@ -4,7 +4,7 @@ from sklearn.model_selection import StratifiedGroupKFold
 from torch.utils.data import Subset, DataLoader
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_func_pad
-from typing import Dict
+from typing import Dict, Tuple, List
 import numpy as np
 
 
@@ -17,7 +17,7 @@ def train_epoch_fold(
     device: str,
     optimizer: torch.optim.Optimizer,
     criterion,
-):
+) -> Tuple[float, float, List[Tuple[float, float]], List[dict]]:
     dataset = datasets["train_dataset"]
     
     # Create groups array where each sample from the same video gets the same group number
@@ -73,7 +73,8 @@ def train_epoch_fold(
         model.train()
         fold_train_loss = 0
 
-        for features, labels, attention_mask in train_loader:
+        for idx, batch in enumerate(train_loader):
+            features, labels, attention_mask = batch
             y = labels.squeeze().to(device)
             features = features.to(device)
             attention_mask = attention_mask.to(device)
@@ -93,7 +94,8 @@ def train_epoch_fold(
         model.eval()
         fold_val_loss = 0
         with torch.no_grad():
-            for features, labels, attention_mask in val_loader:
+            for idx, batch in enumerate(val_loader):
+                features, labels, attention_mask = batch
                 y = labels.squeeze().to(device)
                 features = features.to(device)
                 attention_mask = attention_mask.to(device)
@@ -131,17 +133,30 @@ def train_epoch(
     datasets: Dict[str, LandmarkDataset],
     optimizer: torch.optim.Optimizer,
     criterion,
-):
-    train_loader = datasets["train_dataset"]
-    val_loader = datasets["val_dataset"]
+    batch_size: int,
+) -> Tuple[float, float]:
+    # Create DataLoaders from datasets
+    train_loader = DataLoader(
+        datasets["train_dataset"],
+        batch_size=batch_size,
+        shuffle=True,
+        collate_fn=collate_func_pad,
+    )
+    val_loader = DataLoader(
+        datasets["val_dataset"],
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_func_pad,
+    )
 
     model.train()
     total_loss = 0
 
     for idx, batch in enumerate(train_loader):
-        features, labels = batch
+        features, labels, attention_mask = batch
         y = labels.squeeze().to(device)
         features = features.to(device)
+        attention_mask = attention_mask.to(device)
 
         optimizer.zero_grad()
         logits = model(features)
@@ -159,9 +174,10 @@ def train_epoch(
     val_loss = 0
     with torch.no_grad():
         for idx, batch in enumerate(val_loader):
-            features, labels = batch
-            y = labels.squeeze(0).to(device)
+            features, labels, attention_mask = batch
+            y = labels.squeeze().to(device)
             features = features.to(device)
+            attention_mask = attention_mask.to(device)
 
             logits = model(features)
             loss = criterion(logits, y)

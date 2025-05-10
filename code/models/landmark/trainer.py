@@ -26,25 +26,14 @@ os.makedirs(paths.logs_base, exist_ok=True)
 os.makedirs(os.path.join(paths.logs_base, "runs"), exist_ok=True)
 
 def get_dataset(config: DictConfig):
-    batch_size = config.training.batch_size
-
     # Always generate fresh training metadata
     _, metadata_path = get_data_paths(config.dataset.data_version)
     print(f"Generating training metadata at {metadata_path}...")
     prepare_training_metadata(config.dataset.data_version)
 
-    def create_dataloader(split: str, shuffle: bool):
-        dataset = LandmarkDataset(
-            config.dataset, config.features, config.augmentation, split
-        )
-        return DataLoader(
-            dataset=dataset,
-            shuffle=shuffle,
-            batch_size=batch_size,
-            collate_fn=collate_func_pad,
-        )
-
     if config.training.type == "cross_validation":
+        # Create datasets for just train and test
+        # val will be created from train in each fold in the cross validation loop
         datasets = {
             "train_dataset": LandmarkDataset(
                 config.dataset, config.features, config.augmentation, "train"
@@ -54,10 +43,17 @@ def get_dataset(config: DictConfig):
             ),
         }
     else:
+        # Create datasets for all splits
         datasets = {
-            "train_dataset": create_dataloader("train", shuffle=True),
-            "val_dataset": create_dataloader("val", shuffle=False),
-            "test_dataset": create_dataloader("test", shuffle=False),
+            "train_dataset": LandmarkDataset(
+                config.dataset, config.features, config.augmentation, "train"
+            ),
+            "val_dataset": LandmarkDataset(
+                config.dataset, config.features, config.augmentation, "val"
+            ),
+            "test_dataset": LandmarkDataset(
+                config.dataset, config.features, config.augmentation, "test"
+            ),
         }
 
     return datasets
@@ -143,7 +139,7 @@ def train(config: DictConfig):
             logger.log_fold_training(epoch, fold_metrics, fold_stats, avg_train_loss, avg_val_loss)
         else:
             avg_train_loss, avg_val_loss = train_epoch(
-                model, device, datasets, optimizer, criterion
+                model, device, datasets, optimizer, criterion, config.training.batch_size
             )
             
             # Log metrics
