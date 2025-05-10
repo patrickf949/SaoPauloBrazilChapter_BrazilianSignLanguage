@@ -113,7 +113,7 @@ class FeatureProcessor:
         frame_features = torch.stack(all_features)  # shape: (sequence_length, n_landmark_features)
         
         # Get metadata features
-        metadata_row_features = self._get_metadata_row_features(metadata_row, len(selected_indices))  # shape: (sequence_length, n_metadata_row_features)
+        metadata_row_features = self._get_metadata_row_features(metadata_row, selected_indices)  # shape: (sequence_length, n_metadata_row_features)
         
         # Load metadata JSON file
         metadata_json_path = os.path.join(self.landmarks_dir, "individual_metadata", metadata_row["filename"].replace(".npy", ".json"))
@@ -216,35 +216,44 @@ class FeatureProcessor:
             "Error with landmark_features in dataset config, it is not specified correctly"
         )
     
-    def _get_metadata_row_features(self, metadata_row: Dict[str, Any], sequence_length: int) -> torch.Tensor:
+    def _get_metadata_row_features(self, metadata_row: Dict[str, Any], selected_indices: List[int]) -> torch.Tensor:
         """Get metadata features from metadata row.
         
         Args:
             metadata_row: Dictionary containing metadata information
-            sequence_length: Length of the sequence to generate features for
+            selected_indices: List of indices to extract features for
             
         Returns:
             torch.Tensor: Tensor of shape (sequence_length, n_features) containing metadata features
         """        
-        # Validate all required columns exist
-        missing_columns = [feature["column"] for feature in self.metadata_row_features if feature["column"] not in metadata_row]
+        # Validate all required columns exist (except relative_frame_position)
+        missing_columns = [feature["column"] for feature in self.metadata_row_features if feature["column"] not in metadata_row and feature["column"] != "relative_frame_position"]
         if missing_columns:
             raise KeyError(f"Missing required metadata columns: {missing_columns}")
-            
-        # Process each feature with its scaling parameters
-        metadata_feature_vector = []
-        for feature in self.metadata_row_features:
-            value = metadata_row[feature["column"]]
-            scaled_value = minmax_scale_single(
-                value=value,
-                input_max=feature["max_for_scaling"],
-                output_range=self.scale_range
-            )
-            metadata_feature_vector.append(scaled_value)
         
-        # Reshape to (sequence_length, n_features)
-        metadata_feature_tensor = torch.tensor(metadata_feature_vector, dtype=torch.float)
-        metadata_feature_tensor = metadata_feature_tensor.repeat(sequence_length, 1)
+        # Process each feature with its scaling parameters
+        sequence_length = len(selected_indices)
+        n_features = len(self.metadata_row_features)
+        
+        # Initialize tensor with correct shape (sequence_length, n_features)
+        metadata_feature_tensor = torch.zeros((sequence_length, n_features), dtype=torch.float)
+        
+        # Fill in each feature column
+        for feature_idx, feature in enumerate(self.metadata_row_features):
+            column = feature["column"]
+            if column == "relative_frame_position":
+                value = metadata_row['processed_frame_count']
+                # Fill the entire column with relative positions
+                metadata_feature_tensor[:, feature_idx] = torch.tensor([idx/value for idx in selected_indices])
+            else:
+                value = metadata_row[column]
+                value = minmax_scale_single(
+                    value=value,
+                    input_max=feature["max_for_scaling"],
+                    output_range=self.scale_range
+                )
+                # Fill the entire column with the same scaled value
+                metadata_feature_tensor[:, feature_idx] = value
         
         return metadata_feature_tensor
 
@@ -281,9 +290,14 @@ class FeatureProcessor:
         Returns:
             torch.Tensor: Tensor of shape (sequence_length, n_features) containing metadata features
         """
-        # Extract the features stored in the metadata json file
-        feature_series_list = []
-        for feature in self.metadata_json_features:
+        sequence_length = len(selected_indices)
+        n_features = len(self.metadata_json_features)
+        
+        # Initialize tensor with correct shape (sequence_length, n_features)
+        metadata_json_tensor = torch.zeros((sequence_length, n_features), dtype=torch.float)
+        
+        # Fill in each feature column
+        for feature_idx, feature in enumerate(self.metadata_json_features):
             full_feature_series = self._get_nested_value(metadata_json, feature["path"])
             
             # Validate indices
@@ -299,9 +313,8 @@ class FeatureProcessor:
                 input_max=feature["max_for_scaling"],
                 output_range=self.scale_range
             )
-            feature_series_list.append(scaled_series)
-        # Convert list to numpy array before creating tensor
-        feature_array = np.array(feature_series_list)
-        metadata_json_tensor = torch.from_numpy(feature_array).float().T
+            
+            # Fill the entire column with scaled values
+            metadata_json_tensor[:, feature_idx] = torch.from_numpy(scaled_series)
 
         return metadata_json_tensor
