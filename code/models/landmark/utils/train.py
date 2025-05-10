@@ -8,6 +8,67 @@ from typing import Dict, Tuple, List
 import numpy as np
 
 
+def training_step(
+    model: nn.Module,
+    batch: Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    device: str,
+    optimizer: torch.optim.Optimizer,
+    criterion,
+) -> float:
+    """Perform a single training step.
+    
+    Args:
+        model: The neural network model
+        batch: Tuple of (features, labels, attention_mask)
+        device: Device to run the model on
+        optimizer: Optimizer for updating model parameters
+        criterion: Loss function
+        
+    Returns:
+        float: The loss value for this step
+    """
+    features, labels, attention_mask = batch
+    y = labels.squeeze().to(device)
+    features = features.to(device)
+    attention_mask = attention_mask.to(device)
+
+    optimizer.zero_grad()
+    logits = model(features, attention_mask=attention_mask)
+    loss = criterion(logits, y)
+    loss.backward()
+    optimizer.step()
+
+    return loss.item()
+
+
+def validation_step(
+    model: nn.Module,
+    batch: Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    device: str,
+    criterion,
+) -> float:
+    """Perform a single validation step.
+    
+    Args:
+        model: The neural network model
+        batch: Tuple of (features, labels, attention_mask)
+        device: Device to run the model on
+        criterion: Loss function
+        
+    Returns:
+        float: The loss value for this step
+    """
+    features, labels, attention_mask = batch
+    y = labels.squeeze().to(device)
+    features = features.to(device)
+    attention_mask = attention_mask.to(device)
+
+    logits = model(features, attention_mask=attention_mask)
+    loss = criterion(logits, y)
+
+    return loss.item()
+
+
 def train_epoch_fold(
     epoch: int,
     k_folds: int,
@@ -18,7 +79,29 @@ def train_epoch_fold(
     optimizer: torch.optim.Optimizer,
     criterion,
 ) -> Tuple[float, float, List[Tuple[float, float]], List[dict]]:
+    """Train the model for one epoch using k-fold cross-validation (StratifiedGroupKFold).
+    
+    Args:
+        epoch: Current epoch number
+        k_folds: Number of folds for cross-validation
+        model: The neural network model
+        datasets: Dictionary containing train dataset
+        batch_size: Batch size for training
+        device: Device to run the model on
+        optimizer: Optimizer for updating model parameters
+        criterion: Loss function
+        
+    Returns:
+        Tuple containing:
+            - Average training loss across all folds
+            - Average validation loss across all folds
+            - List of (train_loss, val_loss) tuples for each fold
+            - List of statistics for each fold
+    """
     dataset = datasets["train_dataset"]
+    
+    if len(dataset) == 0:
+        raise ValueError("Training dataset is empty")
     
     # Create groups array where each sample from the same video gets the same group number
     groups = []
@@ -40,7 +123,6 @@ def train_epoch_fold(
     print(f"{k_folds}-fold Cross-Validation Results (using StratifiedGroupKFold):")
     # Iterate through all folds for this epoch
     for fold, (train_ids, val_ids) in enumerate(fold_indices):
-
         print(f"- Fold {fold + 1} -")
 
         # Calculate fold statistics
@@ -72,20 +154,8 @@ def train_epoch_fold(
         # ----- training step -----
         model.train()
         fold_train_loss = 0
-
         for idx, batch in enumerate(train_loader):
-            features, labels, attention_mask = batch
-            y = labels.squeeze().to(device)
-            features = features.to(device)
-            attention_mask = attention_mask.to(device)
-
-            optimizer.zero_grad()
-            logits = model(features, attention_mask=attention_mask)
-            loss = criterion(logits, y)
-            loss.backward()
-            optimizer.step()
-
-            fold_train_loss += loss.item()
+            fold_train_loss += training_step(model, batch, device, optimizer, criterion)
 
         avg_fold_train_loss = fold_train_loss / len(train_loader)
         total_train_loss += avg_fold_train_loss
@@ -95,13 +165,7 @@ def train_epoch_fold(
         fold_val_loss = 0
         with torch.no_grad():
             for idx, batch in enumerate(val_loader):
-                features, labels, attention_mask = batch
-                y = labels.squeeze().to(device)
-                features = features.to(device)
-                attention_mask = attention_mask.to(device)
-                logits = model(features, attention_mask=attention_mask)
-                loss = criterion(logits, y)
-                fold_val_loss += loss.item()
+                fold_val_loss += validation_step(model, batch, device, criterion)
 
         avg_fold_val_loss = fold_val_loss / len(val_loader)
         total_val_loss += avg_fold_val_loss
@@ -135,6 +199,26 @@ def train_epoch(
     criterion,
     batch_size: int,
 ) -> Tuple[float, float]:
+    """Train the model for one epoch using standard train/val split.
+    
+    Args:
+        model: The neural network model
+        device: Device to run the model on
+        datasets: Dictionary containing train and validation datasets
+        optimizer: Optimizer for updating model parameters
+        criterion: Loss function
+        batch_size: Batch size for training
+        
+    Returns:
+        Tuple containing:
+            - Average training loss
+            - Average validation loss
+    """
+    if len(datasets["train_dataset"]) == 0:
+        raise ValueError("Train dataset is empty")
+    if len(datasets["val_dataset"]) == 0:
+        raise ValueError("Validation dataset is empty")
+
     # Create DataLoaders from datasets
     train_loader = DataLoader(
         datasets["train_dataset"],
@@ -151,21 +235,8 @@ def train_epoch(
 
     model.train()
     total_loss = 0
-
     for idx, batch in enumerate(train_loader):
-        features, labels, attention_mask = batch
-        y = labels.squeeze().to(device)
-        features = features.to(device)
-        attention_mask = attention_mask.to(device)
-
-        optimizer.zero_grad()
-        logits = model(features)
-
-        loss = criterion(logits, y)
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
+        total_loss += training_step(model, batch, device, optimizer, criterion)
 
     avg_train_loss = total_loss / len(train_loader)
 
@@ -174,14 +245,7 @@ def train_epoch(
     val_loss = 0
     with torch.no_grad():
         for idx, batch in enumerate(val_loader):
-            features, labels, attention_mask = batch
-            y = labels.squeeze().to(device)
-            features = features.to(device)
-            attention_mask = attention_mask.to(device)
-
-            logits = model(features)
-            loss = criterion(logits, y)
-            val_loss += loss.item()
+            val_loss += validation_step(model, batch, device, criterion)
 
     avg_val_loss = val_loss / len(val_loader)
 
