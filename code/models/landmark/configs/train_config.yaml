@@ -2,7 +2,7 @@ defaults:
   - _self_
   - optimizer: adam
   - scheduler: plateau
-  - model: transformer
+  - model: lstm
   - dataset: dataset
   - training: training
   - features: 
