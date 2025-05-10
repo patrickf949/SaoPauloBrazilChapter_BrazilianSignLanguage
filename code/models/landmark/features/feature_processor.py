@@ -6,48 +6,6 @@ from models.landmark.utils.utils import load_config, load_obj, minmax_scale_sing
 import json
 import os
 
-scale_range = [-1, 1]
-# Define the columns we want to extract from the metadata row
-METADATA_ROW_FEATURE_COLUMNS = [
-    "original_fps",
-    "processed_frame_count",
-    "processed_duration_sec",
-]
-# Define the feature paths we want to extract from the metadata json file
-METADATA_JSON_FEATURE_PATHS = [
-    ["landmark_none_mask_arrays", "left_hand_landmarks", "interpolation_binary_array"],
-    ["landmark_none_mask_arrays", "left_hand_landmarks", "interpolation_sequence_length_array_no_trailing_values"],
-    ["landmark_none_mask_arrays", "right_hand_landmarks", "interpolation_binary_array"],
-    ["landmark_none_mask_arrays", "right_hand_landmarks", "interpolation_sequence_length_array_no_trailing_values"],
-]
-
-# Define the metadata row features with their scaling parameters
-METADATA_ROW_FEATURES = [
-    {"column": "original_fps", "input_max": 60.0},
-    {"column": "processed_frame_count", "input_max": 350.0},
-    {"column": "processed_duration_sec", "input_max": 7.0}
-]
-
-# Define the metadata JSON features with their scaling parameters
-METADATA_JSON_FEATURES = [
-    {
-        "path": ["landmark_none_mask_arrays", "left_hand_landmarks", "interpolation_binary_array"],
-        "input_max": 1.0,
-    },
-    {
-        "path": ["landmark_none_mask_arrays", "left_hand_landmarks", "interpolation_sequence_length_array_no_trailing_values"],
-        "input_max": 15.0,
-    },
-    {
-        "path": ["landmark_none_mask_arrays", "right_hand_landmarks", "interpolation_binary_array"],
-        "input_max": 1.0,
-    },
-    {
-        "path": ["landmark_none_mask_arrays", "right_hand_landmarks", "interpolation_sequence_length_array_no_trailing_values"],
-        "input_max": 15.0,
-    }
-]
-
 class FeatureProcessor:
     def __init__(
         self,
@@ -67,6 +25,12 @@ class FeatureProcessor:
             augmentation_config: List of augmentation configurations with their probabilities
             landmarks_dir: Directory containing landmark data and metadata
         """
+        # Extract metadata configuration from features config
+        metadata_config = features_config.get("metadata", {})
+        self.scale_range = metadata_config.get("scale_range", [-1, 1])
+        self.metadata_row_features = metadata_config.get("metadata_row_features", [])
+        self.metadata_json_features = metadata_config.get("metadata_json_features", [])
+
         configuration = {
             "landmark_types": dataset_config["landmark_types"],
             "features": list(features_config.keys()),
@@ -83,6 +47,7 @@ class FeatureProcessor:
                 "computation_type": estimator_params["computation_type"],
             }
             for name, estimator_params in features_config.items()
+            if name != "metadata"  # Skip metadata as it's not an estimator
         }
         
         augmentations = (
@@ -262,18 +227,18 @@ class FeatureProcessor:
             torch.Tensor: Tensor of shape (sequence_length, n_features) containing metadata features
         """        
         # Validate all required columns exist
-        missing_columns = [feature["column"] for feature in METADATA_ROW_FEATURES if feature["column"] not in metadata_row]
+        missing_columns = [feature["column"] for feature in self.metadata_row_features if feature["column"] not in metadata_row]
         if missing_columns:
             raise KeyError(f"Missing required metadata columns: {missing_columns}")
             
         # Process each feature with its scaling parameters
         metadata_feature_vector = []
-        for feature in METADATA_ROW_FEATURES:
+        for feature in self.metadata_row_features:
             value = metadata_row[feature["column"]]
             scaled_value = minmax_scale_single(
                 value=value,
-                input_max=feature["input_max"],
-                output_range=scale_range
+                input_max=feature["max_for_scaling"],
+                output_range=self.scale_range
             )
             metadata_feature_vector.append(scaled_value)
         
@@ -318,7 +283,7 @@ class FeatureProcessor:
         """
         # Extract the features stored in the metadata json file
         feature_series_list = []
-        for feature in METADATA_JSON_FEATURES:
+        for feature in self.metadata_json_features:
             full_feature_series = self._get_nested_value(metadata_json, feature["path"])
             
             # Validate indices
@@ -331,8 +296,8 @@ class FeatureProcessor:
             # Scale the entire series at once
             scaled_series = minmax_scale_series(
                 values=np.array(selected_series),
-                input_max=feature["input_max"],
-                output_range=scale_range
+                input_max=feature["max_for_scaling"],
+                output_range=self.scale_range
             )
             feature_series_list.append(scaled_series)
         # Convert list to numpy array before creating tensor

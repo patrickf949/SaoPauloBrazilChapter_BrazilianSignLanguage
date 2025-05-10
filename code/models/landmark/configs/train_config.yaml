@@ -9,6 +9,7 @@ defaults:
     - angles
     - differences
     - distances
+    - metadata
   - augmentation: base_augs
 
 # Hydra configuration
