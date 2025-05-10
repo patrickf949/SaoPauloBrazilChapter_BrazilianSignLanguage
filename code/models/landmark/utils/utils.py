@@ -18,9 +18,19 @@ def check_landmark_type(landmark_type: str):
 
 
 def check_angle_type(angle_type: str):
-    if angle_type not in ["rad", "grad", "func", "normalized_rad", "shifted_rad"]:
+    if angle_type not in [
+        "rad", "grad",
+        "normalized_rad", "shifted_rad",
+        "func",
+        "clockwise_rad", "clockwise_grad",
+        "clockwise_normalized_rad", "clockwise_shifted_rad",
+        "clockwise_func"
+    ]:
         raise ValueError(
-            "Parameter 'angle_type' should be one of ['rad', 'grad', 'func', 'normalized_rad', 'shifted_rad']"
+            """Parameter 'angle_type' should be one of [
+            'rad', 'grad', 'normalized_rad', 'shifted_rad', 'func',
+            'clockwise_rad', 'clockwise_grad', 'clockwise_normalized_rad', 'clockwise_shifted_rad', 'clockwise_func'
+            ]"""
         )
 
 
