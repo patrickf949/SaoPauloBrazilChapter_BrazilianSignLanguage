@@ -41,5 +41,5 @@ angles:
     left_arm_curve: [11, 15, 19]
     right_arm_curve: [12, 16, 20]
 
-  computation_type: func
-  mode: 3D
+  computation_type: clockwise_func
+  mode: 2D
