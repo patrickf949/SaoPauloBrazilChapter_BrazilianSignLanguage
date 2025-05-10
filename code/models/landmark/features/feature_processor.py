@@ -140,12 +140,6 @@ class FeatureProcessor:
             # Generate features
             features = self._compute_estimator_features(frame, frames, selected_indices, i)
             
-            # Add validness features
-            features["validness"] = [
-                int(frame[f"{key}_landmarks"] is not None)
-                for key in self.configuration["landmark_types"]
-            ]
-            
             # Concatenate all features into a single vector
             feature_vector = np.concatenate(list(features.values()), axis=None)
             all_features.append(torch.tensor(feature_vector, dtype=torch.float))
