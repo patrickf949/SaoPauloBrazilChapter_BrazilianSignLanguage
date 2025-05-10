@@ -10,7 +10,7 @@ import os
 from omegaconf import DictConfig
 import os
 from . import frame_sampling
-from models.landmark.dataset.feature_processor import FeatureProcessor
+from models.landmark.features.feature_processor import FeatureProcessor
 
 
 def uniform_intervals(start: int, end: int, interval: int):

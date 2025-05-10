@@ -1,5 +1,5 @@
 differences:
-  class_name:  models.landmark.dataset.frame2frame_differences_estimator.DifferencesEstimator
+  class_name:  models.landmark.features.differences_frame2frame_estimator.DifferencesEstimator
   hand:
     wrist: 0
     thumb_tip: 4

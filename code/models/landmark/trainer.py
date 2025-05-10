@@ -1,5 +1,5 @@
 from models.landmark.utils.utils import load_obj
-from models.landmark.dataset.dataset_analysis import analyze_dataset_features
+from models.landmark.features.features_analysis import analyze_dataset_features
 import os
 from torch import nn
 from torch.utils.data import DataLoader
