@@ -33,7 +33,7 @@ class FeatureProcessor:
 
         configuration = {
             "landmark_types": dataset_config["landmark_types"],
-            "features": list(features_config.keys()),
+            "features": [name for name in features_config.keys() if name != "metadata"],  # Exclude metadata from features
             "ordering": dataset_config["ordering"],
         }
 

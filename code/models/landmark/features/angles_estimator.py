@@ -127,7 +127,7 @@ class AnglesEstimator(BaseEstimator):
         angle_type: str,
     ) -> List[float]:
         if landmarks is None:
-            if angle_type == "func":  # sin, cos
+            if angle_type == "func" or angle_type == "clockwise_func":  # sin, cos
                 return np.zeros(shape=2 * len(landmark_triplets))
             else:
                 return np.zeros(shape=len(landmark_triplets))
