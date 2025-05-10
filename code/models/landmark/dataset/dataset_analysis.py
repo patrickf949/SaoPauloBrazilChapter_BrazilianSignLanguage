@@ -16,60 +16,184 @@ def analyze_dataset_features(dataset):
     feature_dims = set()
     feature_ranges = {}
     
-    # Single pass through dataset for all analysis
-    for idx, (features, _) in enumerate(dataset):
+    # Single pass through all samples in the dataset for all analysis
+    for sample_idx, (features, _) in enumerate(dataset):
         # Check dimensions
         feature_dims.add(features.shape[1])
         if len(feature_dims) > 1:
-            raise ValueError(f"Inconsistent feature dimensions found: {feature_dims}, sample index: {idx}")
+            raise ValueError(f"Inconsistent feature dimensions found: {feature_dims}, sample index: {sample_idx}")
             
-        # Initialize range tracking on first sample
+        # Initialize range tracking with correct number of features using first sample
         if not feature_ranges:
-            feature_ranges = {i: {'min': float('inf'), 'max': float('-inf')} 
-                            for i in range(features.shape[1])}
+            feature_ranges = {feature_idx: {'min': float('inf'), 'max': float('-inf')} 
+                            for feature_idx in range(features.shape[1])}
         
-        # Analyze feature ranges
-        for i in range(features.shape[1]):
-            feature_min = features[:, i].min().item()
-            feature_max = features[:, i].max().item()
+        # Analyze feature ranges for each feature (of each sample)
+        for feature_idx in range(features.shape[1]):
+            feature_min = features[:, feature_idx].min().item()
+            feature_max = features[:, feature_idx].max().item()
             
             # Update global min/max for this feature
-            feature_ranges[i]['min'] = min(feature_ranges[i]['min'], feature_min)
-            feature_ranges[i]['max'] = max(feature_ranges[i]['max'], feature_max)
+            feature_ranges[feature_idx]['min'] = min(feature_ranges[feature_idx]['min'], feature_min)
+            feature_ranges[feature_idx]['max'] = max(feature_ranges[feature_idx]['max'], feature_max)
     
     analysis_time = time.time() - start_time
     
     n_features = feature_dims.pop()
-    
-    # Count features in each range
-    in_range_0_1 = sum(1 for range_info in feature_ranges.values() 
-                      if range_info['min'] >= 0 and range_info['max'] <= 1)
-    in_range_neg1_1 = sum(1 for range_info in feature_ranges.values() 
-                         if range_info['min'] >= -1 and range_info['max'] <= 1)
-    # Features in [-1,1] but not in [0,1]
-    in_range_neg1_1_only = in_range_neg1_1 - in_range_0_1
-    # Features not in either range
-    other_ranges = n_features - in_range_neg1_1
-    
+
+    in_range_0_1_indices = [i for i, range_info in feature_ranges.items() 
+                            if range_info['min'] >= 0 and range_info['max'] <= 1]
+    in_range_neg1_1_indices = [i for i, range_info in feature_ranges.items() 
+                              if range_info['min'] >= -1 and range_info['max'] <= 1]
+    in_range_neg1_1_only_indices = [i for i in in_range_neg1_1_indices 
+                                   if i not in in_range_0_1_indices]
+    other_ranges_indices = [i for i, _range_info_ in feature_ranges.items() 
+                           if i not in in_range_neg1_1_indices]
+
+    in_range_0_1_n = len(in_range_0_1_indices)
+    in_range_neg1_1_n = len(in_range_neg1_1_indices)
+    in_range_neg1_1_only_n = len(in_range_neg1_1_only_indices)
+    other_ranges_n = len(other_ranges_indices)
+
     print("\nDataset Features Analysis:")
     print(f"- feature dimensions: {n_features} (consistent across all samples)")
-    print(f"- pass through dataset completed in {analysis_time:.2f} seconds ({idx} samples, at {analysis_time/idx:.2f} seconds/sample)")
+    print(f"- pass through dataset completed in {analysis_time:.2f} seconds ({sample_idx} samples, at {analysis_time/sample_idx:.2f} seconds/sample)")
     
     # Print results
     print("\nFeature Range Analysis:")
     print(f"- total features: {n_features}")
-    print(f"- features in range [0,1]: {in_range_0_1}")
-    print(f"- features in range [-1,1]: {in_range_neg1_1_only}")
-    print(f"- features in other ranges: {other_ranges}")
+    print(f"- features in range [0,1]: {in_range_0_1_n}")
+    print(f"- features in range [-1,1]: {in_range_neg1_1_only_n}")
+    print(f"- features in other ranges: {other_ranges_n}")
     
+    # check
+    if not in_range_0_1_n + in_range_neg1_1_only_n + other_ranges_n == n_features:
+        raise ValueError(f"Inconsistent number of features: {in_range_0_1_n} + {in_range_neg1_1_only_n} + {other_ranges_n} != {n_features}")
+    if not in_range_0_1_n + in_range_neg1_1_only_n == in_range_neg1_1_n:
+        raise ValueError(f"Inconsistent number of features: {in_range_0_1_n} + {in_range_neg1_1_only_n} != {in_range_neg1_1_n}")
+
     # Print details of features not in standard ranges
     print("\nFeatures outside standard ranges:")
-    found_outside = False
-    for i, range_info in feature_ranges.items():
-        if not (range_info['min'] >= -1 and range_info['max'] <= 1):
-            found_outside = True
-            print(f"- feature {i}: [{range_info['min']:.3f}, {range_info['max']:.3f}]")
-    if not found_outside:
+    if other_ranges_n > 0:
+        print(f"- {other_ranges_n} features in other ranges:")
+        for i in other_ranges_indices:
+            print(f"- feature {i}: [{feature_ranges[i]['min']:.3f}, {feature_ranges[i]['max']:.3f}]")
+    else:
         print("- none (all features in standard ranges)")
+
+    print("\nFeature Index Details:")
+    print(f"- features in range [0,1]: {indices_info_string_patterns(in_range_0_1_indices)}")
+    print(f"- features in range [-1,1]: {indices_info_string_patterns(in_range_neg1_1_only_indices)}")
+    print(f"- features in other ranges: {indices_info_string_patterns(other_ranges_indices)}")
+
+    return n_features
+
+def indices_info_string_basic(indices):
+    """Convert a list of indices into a basic readable range string.
     
-    return n_features 
+    Args:
+        indices: List of integers
+        
+    Returns:
+        str: Formatted string like "0-2, 5-7, 12, 15"
+    """
+    if not indices:
+        return "none"
+        
+    # Sort indices to ensure proper range detection
+    indices = sorted(indices)
+    ranges = []
+    start = indices[0]
+    prev = start
+    
+    for curr in indices[1:]:
+        if curr != prev + 1:
+            # End of a range
+            if start == prev:
+                ranges.append(str(start))
+            else:
+                ranges.append(f"{start}-{prev}")
+            start = curr
+        prev = curr
+    
+    # Handle the last range
+    if start == prev:
+        ranges.append(str(start))
+    else:
+        ranges.append(f"{start}-{prev}")
+        
+    return ", ".join(ranges)
+
+def indices_info_string_patterns(indices):
+    """Convert a list of indices into a pattern-aware readable range string.
+    
+    Args:
+        indices: List of integers
+        
+    Returns:
+        str: Formatted string like "0-22 (even numbers), 24-84 (even numbers)"
+    """
+    if not indices:
+        return "none"
+        
+    # Sort indices to ensure proper range detection
+    indices = sorted(indices)
+    ranges = []
+    start = indices[0]
+    prev = start
+    
+    def is_even_sequence(nums):
+        return all(n % 2 == 0 for n in nums)
+        
+    def is_odd_sequence(nums):
+        return all(n % 2 == 1 for n in nums)
+        
+    def is_consecutive(nums):
+        return all(nums[i] + 1 == nums[i+1] for i in range(len(nums)-1))
+        
+    def get_pattern_description(nums):
+        if is_even_sequence(nums):
+            return "even numbers"
+        elif is_odd_sequence(nums):
+            return "odd numbers"
+        elif is_consecutive(nums):
+            return "consecutive"
+        return None
+    
+    current_range = [start]
+    
+    for curr in indices[1:]:
+        # Check if current number continues the pattern
+        if is_even_sequence(current_range) and curr == prev + 2:
+            current_range.append(curr)
+        elif is_odd_sequence(current_range) and curr == prev + 2:
+            current_range.append(curr)
+        elif is_consecutive(current_range) and curr == prev + 1:
+            current_range.append(curr)
+        else:
+            # End of a range - check what pattern it had
+            if len(current_range) > 1:
+                pattern = get_pattern_description(current_range)
+                if pattern:
+                    ranges.append(f"{start}-{prev} ({pattern})")
+                else:
+                    ranges.append(f"{start}-{prev}")
+            else:
+                ranges.append(str(start))
+            
+            # Start new range
+            start = curr
+            current_range = [curr]
+        prev = curr
+    
+    # Handle the last range
+    if len(current_range) > 1:
+        pattern = get_pattern_description(current_range)
+        if pattern:
+            ranges.append(f"{start}-{prev} ({pattern})")
+        else:
+            ranges.append(f"{start}-{prev}")
+    else:
+        ranges.append(str(start))
+        
+    return ", ".join(ranges)
