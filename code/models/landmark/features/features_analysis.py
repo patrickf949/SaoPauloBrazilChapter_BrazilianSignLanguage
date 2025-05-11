@@ -1,6 +1,8 @@
 """Utilities for analyzing datasets and their features."""
 import time
 
+verbose = False
+
 def analyze_dataset_features(dataset):
     """Perform comprehensive analysis of the dataset features.
     
@@ -41,19 +43,31 @@ def analyze_dataset_features(dataset):
     
     n_features = feature_dims.pop()
 
-    in_range_0_1_indices = [i for i, range_info in feature_ranges.items() 
-                            if range_info['min'] >= 0 and range_info['max'] <= 1]
-    in_range_neg1_1_indices = [i for i, range_info in feature_ranges.items() 
-                              if range_info['min'] >= -1 and range_info['max'] <= 1]
-    in_range_neg1_1_only_indices = [i for i in in_range_neg1_1_indices 
-                                   if i not in in_range_0_1_indices]
-    other_ranges_indices = [i for i, _range_info_ in feature_ranges.items() 
-                           if i not in in_range_neg1_1_indices]
+    # Identify constant features (always 0 or always 1)
+    const_0_idx = [i for i, range_info in feature_ranges.items() 
+                   if range_info['min'] == 0 and range_info['max'] == 0]
+    const_1_idx = [i for i, range_info in feature_ranges.items() 
+                   if range_info['min'] == 1 and range_info['max'] == 1]
+    
+    # Identify variable features in different ranges
+    var_0_1_idx = [i for i, range_info in feature_ranges.items() 
+                   if range_info['min'] >= 0 and range_info['max'] <= 1 
+                   and i not in const_0_idx and i not in const_1_idx]
+    var_neg1_1_idx = [i for i, range_info in feature_ranges.items() 
+                      if range_info['min'] >= -1 and range_info['max'] <= 1
+                      and i not in const_0_idx and i not in const_1_idx]
+    var_neg1_1_only_idx = [i for i in var_neg1_1_idx 
+                          if i not in var_0_1_idx]
+    other_idx = [i for i, _range_info_ in feature_ranges.items() 
+                 if i not in var_neg1_1_idx 
+                 and i not in const_0_idx and i not in const_1_idx]
 
-    in_range_0_1_n = len(in_range_0_1_indices)
-    in_range_neg1_1_n = len(in_range_neg1_1_indices)
-    in_range_neg1_1_only_n = len(in_range_neg1_1_only_indices)
-    other_ranges_n = len(other_ranges_indices)
+    n_const_0 = len(const_0_idx)
+    n_const_1 = len(const_1_idx)
+    n_var_0_1 = len(var_0_1_idx)
+    n_var_neg1_1 = len(var_neg1_1_idx)
+    n_var_neg1_1_only = len(var_neg1_1_only_idx)
+    n_other = len(other_idx)
 
     print("\nDataset Features Analysis:")
     print(f"- feature dimensions: {n_features} (consistent across all samples)")
@@ -61,31 +75,47 @@ def analyze_dataset_features(dataset):
     
     # Print results
     print("\nFeature Range Analysis:")
-    print(f"- total features: {n_features}")
-    print(f"- features in range [0,1]: {in_range_0_1_n}")
-    print(f"- features in range [-1,1]: {in_range_neg1_1_only_n}")
-    print(f"- features in other ranges: {other_ranges_n}")
+    print(f"total features: {n_features}")
+    print(f"- features with constant value 0: {n_const_0}")
+    print(f"- features with constant value 1: {n_const_1}")
+    print(f"- features in range [0,1]: {n_var_0_1}")
+    print(f"- features in range [-1,1]: {n_var_neg1_1_only}")
+    print(f"- features in other ranges: {n_other}")
     
     # check
-    if not in_range_0_1_n + in_range_neg1_1_only_n + other_ranges_n == n_features:
-        raise ValueError(f"Inconsistent number of features: {in_range_0_1_n} + {in_range_neg1_1_only_n} + {other_ranges_n} != {n_features}")
-    if not in_range_0_1_n + in_range_neg1_1_only_n == in_range_neg1_1_n:
-        raise ValueError(f"Inconsistent number of features: {in_range_0_1_n} + {in_range_neg1_1_only_n} != {in_range_neg1_1_n}")
+    if not (n_const_0 + n_const_1 + n_var_0_1 + n_var_neg1_1_only + n_other == n_features):
+        raise ValueError(f"Inconsistent number of features: {n_const_0} + {n_const_1} + {n_var_0_1} + {n_var_neg1_1_only} + {n_other} != {n_features}")
+    if not (n_const_0 + n_const_1 + n_var_0_1 + n_var_neg1_1_only == n_var_neg1_1):
+        raise ValueError(f"Inconsistent number of features: {n_const_0} + {n_const_1} + {n_var_0_1} + {n_var_neg1_1_only} != {n_var_neg1_1}")
 
+
+
+    print("\nFeature Index Details:")
+    print(f"- features in range [0,0]: {indices_info_string_basic(const_0_idx)}")
+    print(f"- features in range [1,1]: {indices_info_string_basic(const_1_idx)}")
+    print(f"- features in range [0,1]: {indices_info_string_patterns(var_0_1_idx)}")
+    print(f"- features in range [-1,1]: {indices_info_string_patterns(var_neg1_1_only_idx)}")
+    print(f"- features in other ranges: {indices_info_string_patterns(other_idx)}")
+    
     # Print details of features not in standard ranges
-    print("\nFeatures outside standard ranges:")
-    if other_ranges_n > 0:
-        print(f"- {other_ranges_n} features in other ranges:")
-        for i in other_ranges_indices:
+    print("\nFeature Range Details:")
+    if n_other > 0:
+        print(f"- {n_other} features in other ranges:")
+        for i in other_idx:
             print(f"- feature {i}: [{feature_ranges[i]['min']:.3f}, {feature_ranges[i]['max']:.3f}]")
     else:
         print("- none (all features in standard ranges)")
 
-    print("\nFeature Index Details:")
-    print(f"- features in range [0,1]: {indices_info_string_patterns(in_range_0_1_indices)}")
-    print(f"- features in range [-1,1]: {indices_info_string_patterns(in_range_neg1_1_only_indices)}")
-    print(f"- features in other ranges: {indices_info_string_patterns(other_ranges_indices)}")
-
+    if verbose:
+        print(f"- features in range [0,1]:")
+        for i in var_0_1_idx:
+            print(f"\t- feature {i}: [{feature_ranges[i]['min']:.3f}, {feature_ranges[i]['max']:.3f}]")
+        print(f"- features in range [-1,1]:")
+        for i in var_neg1_1_only_idx:
+            print(f"\t- feature {i}: [{feature_ranges[i]['min']:.3f}, {feature_ranges[i]['max']:.3f}]")
+        print(f"- features in other ranges:")
+        for i in other_idx:
+            print(f"\t- feature {i}: [{feature_ranges[i]['min']:.3f}, {feature_ranges[i]['max']:.3f}]")
     return n_features
 
 def indices_info_string_basic(indices):
