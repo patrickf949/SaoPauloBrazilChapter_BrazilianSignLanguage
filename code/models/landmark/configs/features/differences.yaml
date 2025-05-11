@@ -32,4 +32,4 @@ differences:
     right_thumb: 22
 
   computation_type: normalized_diff
-  mode: 3D
+  mode: 2D

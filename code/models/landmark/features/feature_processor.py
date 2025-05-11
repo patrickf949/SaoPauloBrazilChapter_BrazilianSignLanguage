@@ -191,6 +191,14 @@ class FeatureProcessor:
                             "computation_type"
                         ],
                     )
+                elif feature_type == "positions":
+                    features[f"{feature_type}/{landmark_type}"] = self.estimators[
+                        feature_type
+                    ]["estimator"].compute_annotated(
+                        frame[f"{landmark_type}_landmarks"],
+                        landmark_type=landmark_type.split("_")[-1],
+                        mode=self.estimators[feature_type]["mode"],
+                    )
                 else:
                     features[f"{feature_type}/{landmark_type}"] = self.estimators[
                         feature_type
