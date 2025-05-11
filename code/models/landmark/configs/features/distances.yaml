@@ -1,5 +1,5 @@
 distances:
-  class_name: models.landmark.dataset.distances_estimator.DistancesEstimator 
+  class_name: models.landmark.features.distances_estimator.DistancesEstimator 
   hand:
     thumb_index_tip: [4, 8]
     thumb_middle_tip: [4, 12]
@@ -32,4 +32,4 @@ distances:
     right_hand_to_left_shoulder: [16, 11]
 
   computation_type: shifted_dist
-  mode: 3D
+  mode: 2D

@@ -56,10 +56,12 @@ class LandmarkEstimator(BaseEstimator):
         super().__init__(hand_landmarks, pose_landmarks, config_type="landmarks")
 
     def __unpack_landmark(self, landmark, mode: str) -> List[float]:
+        if landmark is None:
+            return [0.0, 0.0, 0.0] if mode == "3D" else [0.0, 0.0]
         return (
-            [landmark.x, landmark.y, landmark.z]
+            [float(landmark.x), float(landmark.y), float(landmark.z)]
             if mode == "3D"
-            else [landmark.x, landmark.y]
+            else [float(landmark.x), float(landmark.y)]
         )
 
     def __compute(
@@ -67,16 +69,23 @@ class LandmarkEstimator(BaseEstimator):
     ) -> List[List[float]]:
         if landmarks is None:
             if mode == "2D":
-                return np.zeros(shape=2 * len(landmarks_positions))
+                return np.zeros(shape=2 * len(landmarks_positions), dtype=np.float32)
             else:
-                return np.zeros(shape=3 * len(landmarks_positions))
-        return [
-            self.__unpack_landmark(landmarks[position], mode)
-            for position in landmarks_positions
-        ]
+                return np.zeros(shape=3 * len(landmarks_positions), dtype=np.float32)
+        
+        # Initialize result list with zeros
+        result = []
+        for position in landmarks_positions:
+            if position < len(landmarks) and landmarks[position] is not None:
+                result.append(self.__unpack_landmark(landmarks[position], mode))
+            else:
+                # If landmark is missing, add zeros
+                result.append([0.0, 0.0, 0.0] if mode == "3D" else [0.0, 0.0])
+        
+        return result
 
     def __convert_to_numpy(self, features: List) -> np.ndarray:
-        return np.array(features).flatten()
+        return np.array(features, dtype=np.float32).flatten()
 
     def compute(self, landmarks: Iterable, landmark_type: str, mode: str) -> np.ndarray:
         """

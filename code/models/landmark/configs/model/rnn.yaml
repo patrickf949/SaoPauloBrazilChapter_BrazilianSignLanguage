@@ -1,6 +1,6 @@
-class_name: models.rnn_classifiers.LSTMClassifier
+class_name: models.landmark.models.rnn_classifiers.RNNClassifier
 params:
-  input_size: 212
+  # input_size: 212 # Calculated automatically in trainer.py
   hidden_size: 256
   num_layers: 2
   num_classes: 25
