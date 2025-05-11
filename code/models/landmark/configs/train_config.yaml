@@ -6,6 +6,7 @@ defaults:
   - dataset: dataset
   - training: training
   - features: 
+    - positions
     - angles
     - differences
     - distances

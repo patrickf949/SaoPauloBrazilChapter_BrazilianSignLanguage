@@ -32,4 +32,4 @@ distances:
     right_hand_to_left_shoulder: [16, 11]
 
   computation_type: shifted_dist
-  mode: 3D
+  mode: 2D
