@@ -1,6 +1,7 @@
 positions:
-  class_name: models.landmark.dataset.LandmarkEstimator
-  pose: 
+  class_name: models.landmark.features.base_estimator.LandmarkEstimator
+  pose:
+    # face 0-10
     nose: 0
     left_eye_inner: 1
     left_eye: 2
@@ -12,6 +13,7 @@ positions:
     right_ear: 8
     mouth_left: 9
     mouth_right: 10
+    # --- upper body 11-22 ---
     left_shoulder: 11
     right_shoulder: 12
     left_elbow: 13
@@ -24,18 +26,26 @@ positions:
     right_index: 20
     left_thumb: 21
     right_thumb: 22
-    left_hip: 23
-    right_hip: 24
-    left_knee: 25
-    right_knee: 26
-    left_ankle: 27
-    right_ankle: 28
-    left_heel: 29
-    right_heel: 30
-    left_foot_index: 31
-    right_foot_index: 32
+    # --- lower body 23-32 ---
+    # left_hip: 23
+    # right_hip: 24
+    # left_knee: 25
+    # right_knee: 26
+    # left_ankle: 27
+    # right_ankle: 28
+    # left_heel: 29
+    # right_heel: 30
+    # left_foot_index: 31
+    # right_foot_index: 32
 
   hand:
+    # --- hand info ---
+    # - cmc is the thumb joint in your palm to the wrist
+    # - mcp is the finger/thumb joint connecting a finger/thumb to the palm
+    # - ip is the thumb joint in the middle of the thumb
+    # - pip is the joint in the middle of the finger closest to the palm
+    # - dip is the joint in the middle of the finger closest to the tip
+    # - tip is the tip of the finger
     wrist: 0
     thumb_cmc: 1
     thumb_mcp: 2
@@ -56,4 +66,5 @@ positions:
     pinky_dip: 19
     pinky_tip: 20 
 
-  mode: 3D
+  computation_type: null
+  mode: 2D

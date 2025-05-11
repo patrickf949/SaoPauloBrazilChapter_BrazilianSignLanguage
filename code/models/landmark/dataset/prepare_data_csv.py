@@ -1,11 +1,40 @@
 import pandas as pd
+import os
+from omegaconf import OmegaConf
 
+def load_base_paths():
+    """
+    Load base paths from dataset config.
+    
+    Returns:
+        DictConfig containing base paths
+    """
+    config_path = os.path.join(os.path.dirname(__file__), "..", "configs", "dataset", "dataset.yaml")
+    config = OmegaConf.load(config_path)
+    return config.paths
+
+def validate_filename_column(df: pd.DataFrame) -> pd.DataFrame:
+    # Check if 'filename' column exists
+    if 'filename' not in df.columns:
+        raise ValueError("'filename' column not found in the DataFrame")
+    
+    # Make sure the filenames end with .npy
+    df['filename'] = df['filename'].apply(lambda x: x.split('.')[0] + '.npy' if not x.endswith('.npy') else x)
+    
+    # Check if 'filename' column is unique
+    if df['filename'].duplicated().any():
+        raise ValueError("'filename' column contains duplicate values")
+    
+    # Make sure the filenames end with .npy
+    if not all(filename.endswith('.npy') for filename in df['filename']):
+        raise ValueError("All filenames must end with '.npy'")
+    
+    return df
 
 def encode_label(df: pd.DataFrame) -> pd.DataFrame:
     label_mapping = {label: idx for idx, label in enumerate(set(df["label"]))}
     df["label_encoded"] = df["label"].map(label_mapping)
     return df
-
 
 def train_test_split(df: pd.DataFrame) -> pd.DataFrame:
     # should already be sorted, but just in case
@@ -42,3 +71,31 @@ def train_test_split(df: pd.DataFrame) -> pd.DataFrame:
     # Map the split groups to the dataset splits
     df["dataset_split"] = df["dataset_split_group"].map(dataset_split_dict)
     return df.drop(columns=["dataset_split_group"])
+
+def prepare_training_metadata(data_version: str) -> None:
+    """
+    Read the preprocessed metadata file, add training-specific columns (label encoding and dataset splits),
+    and save to the training metadata location.
+    
+    Args:
+        data_version: Version string (e.g. 'v2')
+    """
+    paths = load_base_paths()
+    
+    # Construct paths
+    preprocessed_metadata_path = os.path.join(paths.preprocessed_base, f"landmarks_metadata_{data_version}.csv")
+    training_metadata_path = os.path.join(paths.metadata_base, f"landmarks_metadata_{data_version}_training.csv")
+    
+    # Ensure metadata directory exists
+    os.makedirs(os.path.dirname(training_metadata_path), exist_ok=True)
+    
+    # Read preprocessed metadata
+    df = pd.read_csv(preprocessed_metadata_path)
+    df = validate_filename_column(df)
+    # Add training-specific columns
+    df = encode_label(df)
+    df = train_test_split(df)
+    
+    # Save to training location
+    df.to_csv(training_metadata_path, index=False)
+    print(f"Training metadata saved to: {training_metadata_path}")

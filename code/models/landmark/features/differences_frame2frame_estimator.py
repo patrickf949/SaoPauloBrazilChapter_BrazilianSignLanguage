@@ -5,7 +5,7 @@ from models.landmark.utils.utils import (
     check_landmark_type,
 )
 import numpy as np
-from models.landmark.dataset.base_estimator import BaseEstimator
+from models.landmark.features.base_estimator import BaseEstimator
 
 from omegaconf import DictConfig
 

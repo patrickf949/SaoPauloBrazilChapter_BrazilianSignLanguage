@@ -21,7 +21,7 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 │   │   ├── RawCleanVideos/ # The raw video files after some initial cleaning before the preprocessing pipeline
 │   │   ├── RawMotionMeasurements/ # Raw motion measurements
 │   │   └── RawPoseLandmarks/      # Raw pose landmarks
-│   ├── processed/           # Final datasets
+│   ├── preprocessed/           # Final datasets
 │   │   ├── metadata_v*.csv # Metadata for each preprocessing version
 │   │   ├── videos/      # Preprocessed videos
 │   │   │   └── v*/      # Version-specific processed videos (e.g., v1, v2, v3...)
@@ -34,6 +34,10 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 ├── code/                    # Source code
 │   ├── data/               # Data processing
 │   ├── models/             # Model implementations
+│
+├── modelling/          # Model training and evaluation
+│   ├── logs/           # Logs
+│   └── model_files/    # Model files
 │
 ├── tests/                  # Unit tests
 │   ├── data/              # Data processing tests
@@ -56,7 +60,7 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
 
 ### Data Files
 - Small files like CSV files, labels, and metadata are tracked in Git
-- Processed data (features, embeddings) stored in `processed/`
+- Processed data (features, embeddings) stored in `preprocessed/`
 - Document data formats in respective directories
 - Metadata files track preprocessing steps and configurations
 
@@ -77,15 +81,19 @@ SaoPauloBrazilChapter_BrazilianSignLanguage/
   - `RawMotionMeasurements/`: Raw motion detection results
   - `RawPoseLandmarks/`: Raw pose detection results
   - `Videos/`: Preprocessed video files
-- `processed/`: Final, model input datasets
+- `preprocessed/`: Final, model input datasets
   - Version-specific directories (v1, v2, v3...)
   - Separate directories for videos and landmarks
   - Metadata files for each version
   - Individual metadata files for each processed file
 
 ### `code/`
-- `data/`: Data processing scripts
+- `data/`: Data processing
 - `models/`: Model implementations
+
+### `modelling/`
+- `logs/`: Logs
+- `model_files/`: Model files
 
 ### `tests/`
 - `data/`: Data processing tests

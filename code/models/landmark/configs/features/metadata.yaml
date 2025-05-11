@@ -1,0 +1,32 @@
+metadata:
+  scale_range: [-1, 1]
+  metadata_row_features:
+    - column: original_fps
+      max_for_scaling: 60.0
+    - column: processed_frame_count
+      max_for_scaling: 350.0
+    - column: processed_duration_sec
+      max_for_scaling: 7.0
+    - column: relative_frame_position
+      max_for_scaling: null
+  metadata_json_features:
+    - path: 
+        - landmark_none_mask_arrays
+        - left_hand_landmarks
+        - interpolation_binary_array
+      max_for_scaling: 1.0
+    - path:
+        - landmark_none_mask_arrays
+        - left_hand_landmarks
+        - interpolation_sequence_length_array_no_trailing_values
+      max_for_scaling: 15.0
+    - path:
+        - landmark_none_mask_arrays
+        - right_hand_landmarks
+        - interpolation_binary_array
+      max_for_scaling: 1.0
+    - path:
+        - landmark_none_mask_arrays
+        - right_hand_landmarks
+        - interpolation_sequence_length_array_no_trailing_values
+      max_for_scaling: 15.0

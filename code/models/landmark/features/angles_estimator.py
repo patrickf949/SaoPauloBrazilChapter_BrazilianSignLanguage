@@ -5,7 +5,7 @@ from models.landmark.utils.utils import (
     check_landmark_type,
     check_angle_type,
 )
-from models.landmark.dataset.base_estimator import BaseEstimator
+from models.landmark.features.base_estimator import BaseEstimator
 from omegaconf import DictConfig
 
 
@@ -26,11 +26,16 @@ def angle(
 
     angle_type : str, optional (default='func')
         Output format of the angle. Supported options:
-        - 'rad'            : Returns the angle in radians [0, π].
-        - 'grad'           : Returns the angle in degrees [0, 180].
-        - 'normalized_rad' : Returns the angle normalized to [0, 1] as angle_rad / π.
-        - 'shifted_rad'    : Returns the angle normalized to [-1, 1] as (angle_rad / π) * 2 - 1.
-        - 'func'           : Returns a tuple of (sin(angle_rad), cos(angle_rad)), both ∈ [-1, 1].
+        - 'rad'                    : Returns the angle in radians [0, π].
+        - 'grad'                   : Returns the angle in degrees [0, 180].
+        - 'normalized_rad'         : Returns the angle normalized to [0, 1] as angle_rad / π.
+        - 'shifted_rad'           : Returns the angle normalized to [-1, 1] as (angle_rad / π) * 2 - 1.
+        - 'func'                  : Returns a tuple of (sin(angle_rad), cos(angle_rad)), both ∈ [-1, 1].
+        - 'clockwise_rad'         : Returns the clockwise angle in radians [0, 2π].
+        - 'clockwise_grad'        : Returns the clockwise angle in degrees [0, 360].
+        - 'clockwise_normalized_rad': Returns the clockwise angle normalized to [0, 1] as angle_rad / (2π).
+        - 'clockwise_shifted_rad' : Returns the clockwise angle normalized to [-1, 1] as (angle_rad / π) - 1.
+        - 'clockwise_func'        : Returns a tuple of (sin(angle_rad), cos(angle_rad)) for clockwise angle.
 
     Returns:
     -------
@@ -40,11 +45,13 @@ def angle(
     Notes:
     -----
     - If the magnitude of either vector AB or CB is zero, returns 0 (or (0, 1) for 'func') to avoid division by zero
+    - For clockwise variants, the angle is measured clockwise from AB to CB
 
     Examples:
     --------
     angle(a, b, c, mode='2D', angle_type='normalized_rad')  # → 0.5 for 90 degrees
     angle(a, b, c, angle_type='func')                       # → (0.707, 0.707) for 45 degrees
+    angle(a, b, c, angle_type='clockwise_rad')              # → 1.57 for 90 degrees clockwise
     """
 
     check_mode(mode)
@@ -62,22 +69,42 @@ def angle(
     norm_cb = np.linalg.norm(cb)
 
     if norm_ab * norm_cb == 0:
-        return 0.0 if angle_type != "func" else (0.0, 1.0)  # avoid division by zero
+        return 0.0 if "func" not in angle_type else (0.0, 1.0)  # avoid division by zero
 
     cos_theta = dot_product / (norm_ab * norm_cb)
     cos_theta = max(min(cos_theta, 1), -1)  # clamp for stability
     angle_rad = np.arccos(cos_theta)
 
-    if angle_type == "rad":
-        return angle_rad
-    elif angle_type == "grad":
-        return np.degrees(angle_rad)
-    elif angle_type == "normalized_rad":
-        return angle_rad / np.pi  # [0, 1]
-    elif angle_type == "shifted_rad":
-        return (angle_rad / np.pi) * 2 - 1  # [-1, 1]
-    elif angle_type == "func":
+    # Calculate cross product to determine sign for clockwise angles
+    is_clockwise = angle_type.startswith("clockwise_")
+    if is_clockwise:
+        if mode == "3D":
+            cross_product = np.cross(ab, cb)
+            sign = np.sign(cross_product[2])
+        else:
+            cross_product = ab[0] * cb[1] - ab[1] * cb[0]
+            sign = np.sign(cross_product)
+        if sign < 0:
+            angle_rad = 2 * np.pi - angle_rad
+
+    # Handle func types
+    if "func" in angle_type:
         return np.sin(angle_rad), np.cos(angle_rad)
+
+    # Handle grad types
+    if "grad" in angle_type:
+        return np.degrees(angle_rad)
+
+    # Handle normalized types
+    if "normalized_rad" in angle_type:
+        return angle_rad / (2 * np.pi if is_clockwise else np.pi)
+
+    # Handle shifted types
+    if "shifted_rad" in angle_type:
+        return (angle_rad / np.pi) - 1 if is_clockwise else (angle_rad / np.pi) * 2 - 1
+
+    # Default to radians
+    return angle_rad
 
 
 class AnglesEstimator(BaseEstimator):
@@ -100,7 +127,7 @@ class AnglesEstimator(BaseEstimator):
         angle_type: str,
     ) -> List[float]:
         if landmarks is None:
-            if angle_type == "func":  # sin, cos
+            if angle_type == "func" or angle_type == "clockwise_func":  # sin, cos
                 return np.zeros(shape=2 * len(landmark_triplets))
             else:
                 return np.zeros(shape=len(landmark_triplets))

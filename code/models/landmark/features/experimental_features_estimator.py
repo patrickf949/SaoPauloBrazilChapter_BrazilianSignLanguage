@@ -1,4 +1,4 @@
-from models.landmark.dataset.base_estimator import BaseEstimator
+from models.landmark.features.base_estimator import BaseEstimator
 
 
 class ExperimentFeatureEstimator(BaseEstimator):
