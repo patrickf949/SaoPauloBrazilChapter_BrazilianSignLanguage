@@ -329,31 +329,37 @@ class Preprocessor:
                 
                 # Create interpolated frames
                 for frame_idx in range(seq_start, seq_end + 1):
-                    # Create new frame by deep copying the before frame
-                    new_frame = self._deep_copy_landmarks_frame(before_frame)
-                    if landmark_type not in new_frame or new_frame[landmark_type] is None:
-                        new_frame[landmark_type] = copy.deepcopy(before_frame[landmark_type])
+                    # Ensure the target frame dictionary exists.
+                    # This prevents clobbering other landmark types that might already be
+                    # valid or previously interpolated in this frame.
+                    if landmarks[frame_idx] is None:
+                        landmarks[frame_idx] = {} # Initialize if the whole frame was None
+                    
+                    # Create a deep copy of the landmark_type structure from the 'before_frame'.
+                    # This will be populated with interpolated values and ensures we maintain
+                    # the correct MediaPipe landmark object structure.
+                    interpolated_landmark_group = copy.deepcopy(before_frame[landmark_type])
                     
                     # Calculate interpolation factor (0 to 1)
                     t = (frame_idx - before_frame_idx) / (after_frame_idx - before_frame_idx)
                     
-                    # Interpolate each landmark
-                    for j in range(len(before_landmarks)):
+                    # Interpolate each landmark point
+                    for j in range(len(before_landmarks)): # Assumes before_landmarks and after_landmarks have the same length
                         # Linear interpolation for x, y, z coordinates
                         x = before_landmarks[j].x + t * (after_landmarks[j].x - before_landmarks[j].x)
                         y = before_landmarks[j].y + t * (after_landmarks[j].y - before_landmarks[j].y)
                         z = before_landmarks[j].z + t * (after_landmarks[j].z - before_landmarks[j].z)
                         
-                        new_frame[landmark_type].landmark[j].x = x
-                        new_frame[landmark_type].landmark[j].y = y
-                        new_frame[landmark_type].landmark[j].z = z
+                        interpolated_landmark_group.landmark[j].x = x
+                        interpolated_landmark_group.landmark[j].y = y
+                        interpolated_landmark_group.landmark[j].z = z
                         
                         # Debug output for first landmark point after interpolation
                         if j == 0 and self.verbose:
-                            print(f"Interpolated frame {frame_idx}: x={x:.4f}, y={y:.4f}, z={z:.4f}")
+                            print(f"Interpolated frame {frame_idx} for {landmark_type}: x={x:.4f}, y={y:.4f}, z={z:.4f}")
                     
-                    # Store the interpolated frame
-                    landmarks[frame_idx] = new_frame
+                    # Store the newly interpolated landmark group into the correct frame and landmark_type
+                    landmarks[frame_idx][landmark_type] = interpolated_landmark_group
                     
                     # Track this successful interpolation
                     interpolation_info[landmark_type]['total_interpolated_frames'] += 1
@@ -1104,7 +1110,8 @@ class Preprocessor:
                 "none_analysis": self.trimmed_none_analysis
             },
             "interpolated": {
-                "none_analysis": {"overall": self.interpolated_none_analysis['overall']},
+                # "none_analysis": {"overall": self.interpolated_none_analysis['overall']},
+                "none_analysis": self.interpolated_none_analysis,
                 "interpolation_info": self.interpolation_info,
             },
             "landmark_none_mask_arrays": landmark_arrays
