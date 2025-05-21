@@ -11,4 +11,3 @@ const getInterpretation = async (data)=>{
 }
 
 export { getInterpretation };
-
