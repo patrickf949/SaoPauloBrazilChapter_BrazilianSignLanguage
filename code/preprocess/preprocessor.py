@@ -182,6 +182,9 @@ class Preprocessor:
         For None frames at start/end:
         - Repeats the nearest valid frame
         
+        For all-None frames:
+        - Imputes default values based on landmark type
+        
         Args:
             landmarks: Array of landmarks to process
             
@@ -194,22 +197,26 @@ class Preprocessor:
             'pose_landmarks': {
                 'total_interpolated_frames': 0,
                 'interpolated_frame_indices': [],  # List of all interpolated frame indices
-                'interpolated_sequences_start_end_length': []  # List of (start_idx, end_idx, sequence_length) tuples
+                'interpolated_sequences_start_end_length': [],  # List of (start_idx, end_idx, sequence_length) tuples
+                'all_frames_imputed': False  # Flag to track if all frames were imputed
             },
             'face_landmarks': {
                 'total_interpolated_frames': 0,
                 'interpolated_frame_indices': [],
-                'interpolated_sequences_start_end_length': []
+                'interpolated_sequences_start_end_length': [],
+                'all_frames_imputed': False
             },
             'left_hand_landmarks': {
                 'total_interpolated_frames': 0,
                 'interpolated_frame_indices': [],
-                'interpolated_sequences_start_end_length': []
+                'interpolated_sequences_start_end_length': [],
+                'all_frames_imputed': False
             },
             'right_hand_landmarks': {
                 'total_interpolated_frames': 0,
                 'interpolated_frame_indices': [],
-                'interpolated_sequences_start_end_length': []
+                'interpolated_sequences_start_end_length': [],
+                'all_frames_imputed': False
             }
         }
         
@@ -228,6 +235,38 @@ class Preprocessor:
             if self.verbose:
                 print(f"\nProcessing {landmark_type}")
                 print(f"Found None frames: {none_frames}")
+            
+            # Check if all frames are None for this landmark type
+            if len(none_frames) == len(landmarks):
+                if self.verbose:
+                    print(f"All frames are None for {landmark_type}, imputing default values")
+                
+                # Create default landmarks based on type
+                if landmark_type == 'pose_landmarks':
+                    # Default pose: standing straight, arms at sides
+                    # default_landmarks = self._create_default_pose_landmarks()
+                    continue
+                elif landmark_type == 'face_landmarks':
+                    # Default face: centered, neutral expression
+                    default_landmarks = self._create_default_face_landmarks()
+                    continue
+                elif landmark_type in ['left_hand_landmarks', 'right_hand_landmarks']:
+                    # Default hand: Average positions from the dataset
+                    default_landmarks = self._create_default_hand_landmarks(landmark_type)
+                else:
+                    raise ValueError(f"Unknown landmark type: {landmark_type}")
+                
+                # Apply default landmarks to all frames
+                for frame_idx in range(len(landmarks)):
+                    if landmarks[frame_idx] is None:
+                        landmarks[frame_idx] = {}
+                    landmarks[frame_idx][landmark_type] = copy.deepcopy(default_landmarks)
+                    interpolation_info[landmark_type]['total_interpolated_frames'] += 1
+                    interpolation_info[landmark_type]['interpolated_frame_indices'].append(frame_idx)
+                
+                interpolation_info[landmark_type]['all_frames_imputed'] = True
+                interpolation_info[landmark_type]['interpolated_sequences_start_end_length'].append((0, len(landmarks)-1, len(landmarks)))
+                continue
             
             if not none_frames:
                 continue
@@ -380,8 +419,52 @@ class Preprocessor:
                 print(f"\n{landmark_type} interpolation summary:")
                 print(f"Total frames interpolated: {interpolation_info[landmark_type]['total_interpolated_frames']}")
                 print(f"Sequences interpolated: {interpolation_info[landmark_type]['interpolated_sequences_start_end_length']}")
+                if interpolation_info[landmark_type]['all_frames_imputed']:
+                    print("All frames were imputed with default values")
             
         return landmarks, interpolation_info
+
+    def _create_default_pose_landmarks(self):
+        """Create default pose landmarks for a standing position."""
+        from mediapipe.framework.formats import landmark_pb2
+        pass
+
+    def _create_default_face_landmarks(self):
+        """Create default face landmarks for a neutral expression."""
+        from mediapipe.framework.formats import landmark_pb2
+        pass
+
+    def _create_default_hand_landmarks(self, landmark_type):
+        """Create default hand landmarks using average positions from the dataset."""
+        from mediapipe.framework.formats import landmark_pb2
+        import json
+        import os
+        
+        # Load average hand positions
+        json_path = os.path.join(self.path_to_root, "data", "interim", "average_hands.json")
+        with open(json_path, 'r') as f:
+            average_hands = json.load(f)
+        
+        # Create a new HandLandmarks object
+        hand_landmarks = landmark_pb2.NormalizedLandmarkList()
+        
+        # Choose the appropriate set of positions based on hand type
+        if landmark_type == 'left_hand_landmarks':
+            # Use first frame positions for left hand
+            positions = average_hands['first_non_none_left']
+        else:  # right_hand_landmarks
+            # Use last frame positions for right hand
+            positions = average_hands['first_non_none_right']
+        
+        # Create landmarks using the average positions
+        for i in range(21):
+            landmark = hand_landmarks.landmark.add()
+            pos = positions[str(i)]
+            landmark.x = pos[0]
+            landmark.y = pos[1]
+            landmark.z = pos[2]
+        
+        return hand_landmarks
 
     def preprocess_landmarks(self) -> str:
         """
