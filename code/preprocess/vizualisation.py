@@ -766,15 +766,28 @@ def generate_paired_sample_data(series_count=50, min_length=50, max_length=500,
     
     return series_dict
 
-def series_none_frame_visualization(series_dict, max_display_pairs=None, figsize=(18, 12), 
+def series_none_frame_visualization(series_dict, max_display_pairs=None, figsize=(18, 12), line_width=8,
                                      background_alpha=0.1, streak_length_cap=10, bar_spacing=0.0, cbar_spacing=0.25,
-                                     left_cmap=plt.cm.Blues, right_cmap=plt.cm.Reds):
+                                     left_cmap=plt.cm.Blues, right_cmap=plt.cm.Reds, sort_length=False):
     """
     Visualize paired series (left/right channels) with streaks colored by length (capped at 10).
     Left and right channels use truncated colormaps (Blues, Reds) for better visibility of short streaks.
     Color intensity increases with streak length. Separate colorbars are shown for each channel.
     The space between the main plot and error bar, and between the error bar and each colorbar, is adjustable.
     Colormaps for left and right channels can be specified.
+    
+    Args:
+        series_dict: Dictionary containing the series data
+        max_display_pairs: Maximum number of pairs to display
+        figsize: Figure size
+        line_width: Width of the lines
+        background_alpha: Alpha value for background shading
+        streak_length_cap: Maximum streak length for color mapping
+        bar_spacing: Spacing between main plot and error bar
+        cbar_spacing: Spacing for colorbars
+        left_cmap: Colormap for left channel
+        right_cmap: Colormap for right channel
+        sort_length: If True, sort pairs by their series length
     """
     import matplotlib.pyplot as plt
     import numpy as np
@@ -804,10 +817,19 @@ def series_none_frame_visualization(series_dict, max_display_pairs=None, figsize
         if series_num not in series_pairs:
             series_pairs[series_num] = {}
         series_pairs[series_num][channel] = key
-    
-    # Sort series pairs by series number
-    sorted_pair_keys = sorted(series_pairs.keys(), 
-                             key=lambda x: int(x.split("_")[1]) if "_" in x and x.split("_")[1].isdigit() else 0)
+
+    # Calculate series length for each pair if sorting is requested
+    if sort_length:
+        pair_lengths = {}
+        for pair_key, channels in series_pairs.items():
+            # Get the length of the series (both left and right have same length)
+            series_length = len(series_dict[channels["Left"]])
+            pair_lengths[pair_key] = series_length
+        
+        # Sort pairs by series length
+        sorted_pair_keys = sorted(series_pairs.keys(), key=lambda x: pair_lengths[x], reverse=True)
+    else:
+        sorted_pair_keys = list(series_pairs.keys())
     
     # Limit the number of pairs to display if specified
     if max_display_pairs is not None and max_display_pairs < len(sorted_pair_keys):
@@ -859,7 +881,7 @@ def series_none_frame_visualization(series_dict, max_display_pairs=None, figsize
         if "_Right" in series_name:
             pair_shift *= -1
         error_counts[i] = len(error_positions)/len(series) * 100
-        main_ax.plot(range(len(series)), [i+pair_shift]*len(series), color=left_base_color if "_Left" in series_name else right_base_color, linewidth=8, solid_capstyle='butt', markersize=4, )
+        main_ax.plot(range(len(series)), [i+pair_shift]*len(series), color=left_base_color if "_Left" in series_name else right_base_color, linewidth=line_width, solid_capstyle='butt',)
         if len(error_positions) == 0:
             continue
         # plot line for full series with base_color
@@ -877,18 +899,17 @@ def series_none_frame_visualization(series_dict, max_display_pairs=None, figsize
         for streak in streaks:
             streak_len = min(len(streak), streak_length_cap)
             color = left_cmap_trunc(norm(streak_len)) if is_left_channel else right_cmap_trunc(norm(streak_len))
-            main_ax.plot(streak, [i+pair_shift]*len(streak), color=color, linewidth=8, solid_capstyle='butt', markersize=4,)
+            main_ax.plot(streak, [i+pair_shift]*len(streak), color=color, linewidth=line_width, solid_capstyle='butt',)
     # Y labels
     series_ids = []
     for key in display_keys:
         if "_Left" in key:
             series_ids.append(f"{key.split('_Left')[0]}")
-    print(len(series_ids), len(display_keys))
     main_ax.set_yticks(np.arange(0.5, len(display_keys)+0.5, 2))
     main_ax.set_yticklabels(series_ids)
-    main_ax.set_xlabel('Position/Time')
-    main_ax.set_ylabel('Series ID')
-    main_ax.set_title('Error Visualization - Streak Color by Length')
+    main_ax.set_xlabel('Frame Number')
+    main_ax.set_ylabel('Filename')
+    main_ax.set_title('Visualization of Frames with None Landmarks')
     main_ax.set_xlim(-1, max_time + 0)
     main_ax.grid(True, axis='x', alpha=0.3, linestyle='--')
     # main_ax.grid(True, axis='y', alpha=0.3, linestyle='--')
@@ -896,7 +917,6 @@ def series_none_frame_visualization(series_dict, max_display_pairs=None, figsize
     grey_color = (0.65,0.65,0.65)
     white_color = (1,1,1)
     bar_colors = [grey_color, grey_color, white_color, white_color] * (len(display_keys) //4) + [white_color, white_color] * int(len(display_keys)%4/2)
-    print(len(bar_colors) == len(display_keys), len(bar_colors), len(display_keys))
     barh_positions = []
     for barh_position in range(len(display_keys)):
         if barh_position % 2 == 1:
@@ -905,15 +925,15 @@ def series_none_frame_visualization(series_dict, max_display_pairs=None, figsize
             barh_positions.append(barh_position-pair_shift)
     barh = right_ax.barh(barh_positions, error_counts, color=bar_colors, edgecolor='black', alpha=0.5, height=.5)
     # right_ax.set_yticks([])
-    right_ax.set_xlabel('None %')
+    right_ax.set_xlabel('% of Frame with None Landmarks')
     # right_ax.spines['top'].set_visible(False)
     right_ax.spines['right'].set_visible(False)
     right_ax.grid(True, axis='x', alpha=0.3, linestyle='--')
     # right_ax.set_xlim(0, 100)
     plt.setp(right_ax.get_yticklabels(), visible=False)
     # Separate colorbars for left and right
-    left_cbar = mpl.colorbar.ColorbarBase(cbar_ax_left, cmap=left_cmap_trunc, norm=norm, orientation='vertical', label='Streak Length (Left)')
-    right_cbar = mpl.colorbar.ColorbarBase(cbar_ax_right, cmap=right_cmap_trunc, norm=norm, orientation='vertical', label='Streak Length (Right)')
+    left_cbar = mpl.colorbar.ColorbarBase(cbar_ax_left, cmap=left_cmap_trunc, norm=norm, orientation='vertical', label='None Frame Streak Length (Left Hand Landmarks)')
+    right_cbar = mpl.colorbar.ColorbarBase(cbar_ax_right, cmap=right_cmap_trunc, norm=norm, orientation='vertical', label='None Frame Streak Length (Right Hand Landmarks)')
     cbar_ax_left.yaxis.set_ticks_position('left')
     cbar_ax_right.yaxis.set_ticks_position('right')
     plt.tight_layout()
