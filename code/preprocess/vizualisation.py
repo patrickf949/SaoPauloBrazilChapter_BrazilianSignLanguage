@@ -9,6 +9,7 @@ import seaborn as sns
 import mediapipe as mp
 from typing import Dict, List, Optional, Tuple
 import copy
+import matplotlib as mpl
 
 def get_frame(frame_index, video_path):
     cap = cv2.VideoCapture(video_path)
@@ -698,3 +699,243 @@ def plot_video_frames_with_fps(video_path: str, duration_seconds: int = 1, frame
     #     current_x += frame_width + spacing
 
     return plot_image
+
+def generate_paired_sample_data(series_count=50, min_length=50, max_length=500, 
+                              correlation=0.7, seed=42):
+    """
+    Generate sample data for paired series (left and right channels).
+    
+    Parameters:
+    - series_count: Number of series pairs to generate
+    - min_length: Minimum length of each series
+    - max_length: Maximum length of each series
+    - correlation: How correlated the errors should be between left and right channels (0-1)
+    - seed: Random seed for reproducibility
+    
+    Returns:
+    - Dictionary with series data
+    """
+    import numpy as np
+    
+    np.random.seed(seed)
+    series_dict = {}
+
+    for i in range(series_count):
+        # Generate random length between min and max - same for both channels
+        length = np.random.randint(min_length, max_length)
+        
+        # Generate left channel
+        left_series = np.zeros(length)
+        
+        # Add isolated errors (1% chance)
+        error_mask_left = np.random.random(length) < 0.01
+        left_series[error_mask_left] = 1
+        
+        # Add some error sequences in random locations for left channel
+        if np.random.random() < 0.3:  # 30% of series have error sequences
+            seq_start = np.random.randint(0, length - 10)
+            seq_length = np.random.randint(3, 10)
+            left_series[seq_start:seq_start+seq_length] = 1
+        
+        # Add some periodic errors in some series for left channel
+        if i % 7 == 0:  # Every 7th series has periodic errors
+            period = np.random.randint(20, 50)
+            left_series[::period] = 1
+        
+        # Generate right channel with correlation to left
+        right_series = np.zeros(length)
+        
+        # Copy some errors from left channel based on correlation
+        for j in range(length):
+            if left_series[j] == 1 and np.random.random() < correlation:
+                right_series[j] = 1
+        
+        # Add some unique errors to right channel
+        unique_error_mask = np.logical_and(left_series == 0, np.random.random(length) < 0.01)
+        right_series[unique_error_mask] = 1
+        
+        # Add some unique streaks to right channel
+        if np.random.random() < 0.2:  # 20% chance of unique streak in right
+            seq_start = np.random.randint(0, length - 8)
+            seq_length = np.random.randint(3, 8)
+            right_series[seq_start:seq_start+seq_length] = 1
+        
+        # Store both channels in the dictionary
+        series_dict[f"Series_{i}_Left"] = left_series
+        series_dict[f"Series_{i}_Right"] = right_series
+    
+    return series_dict
+
+def series_none_frame_visualization(series_dict, max_display_pairs=None, figsize=(18, 12), line_width=8,
+                                     background_alpha=0.1, streak_length_cap=10, bar_spacing=0.0, cbar_spacing=0.25,
+                                     left_cmap=plt.cm.Blues, right_cmap=plt.cm.Reds, sort_length=False):
+    """
+    Visualize paired series (left/right channels) with streaks colored by length (capped at 10).
+    Left and right channels use truncated colormaps (Blues, Reds) for better visibility of short streaks.
+    Color intensity increases with streak length. Separate colorbars are shown for each channel.
+    The space between the main plot and error bar, and between the error bar and each colorbar, is adjustable.
+    Colormaps for left and right channels can be specified.
+    
+    Args:
+        series_dict: Dictionary containing the series data
+        max_display_pairs: Maximum number of pairs to display
+        figsize: Figure size
+        line_width: Width of the lines
+        background_alpha: Alpha value for background shading
+        streak_length_cap: Maximum streak length for color mapping
+        bar_spacing: Spacing between main plot and error bar
+        cbar_spacing: Spacing for colorbars
+        left_cmap: Colormap for left channel
+        right_cmap: Colormap for right channel
+        sort_length: If True, sort pairs by their series length
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import matplotlib as mpl
+    
+    def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+        new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+            f'trunc({cmap.name},{minval:.2f},{maxval:.2f})',
+            cmap(np.linspace(minval, maxval, n))
+        )
+        return new_cmap
+    
+    # Get all series keys and separate into left and right channels
+    all_keys = list(series_dict.keys())
+    
+    # Group keys into pairs based on series number
+    series_pairs = {}
+    for key in all_keys:
+        if "_Left" in key:
+            series_num = key.split("_Left")[0]
+            channel = "Left"
+        elif "_Right" in key:
+            series_num = key.split("_Right")[0]
+            channel = "Right"
+        else:
+            continue
+        if series_num not in series_pairs:
+            series_pairs[series_num] = {}
+        series_pairs[series_num][channel] = key
+
+    # Calculate series length for each pair if sorting is requested
+    if sort_length:
+        pair_lengths = {}
+        for pair_key, channels in series_pairs.items():
+            # Get the length of the series (both left and right have same length)
+            series_length = len(series_dict[channels["Left"]])
+            pair_lengths[pair_key] = series_length
+        
+        # Sort pairs by series length
+        sorted_pair_keys = sorted(series_pairs.keys(), key=lambda x: pair_lengths[x], reverse=True)
+    else:
+        sorted_pair_keys = list(series_pairs.keys())
+    
+    # Limit the number of pairs to display if specified
+    if max_display_pairs is not None and max_display_pairs < len(sorted_pair_keys):
+        sorted_pair_keys = sorted_pair_keys[:max_display_pairs]
+    
+    # Flatten the pairs into a display order (left then right for each pair)
+    display_keys = []
+    for pair_key in sorted_pair_keys:
+        if "Left" in series_pairs[pair_key]:
+            display_keys.append(series_pairs[pair_key]["Left"])
+        if "Right" in series_pairs[pair_key]:
+            display_keys.append(series_pairs[pair_key]["Right"])
+    
+    # Create the figure with a grid layout for the main plot, bar spacer, error bar, cbar spacers, and colorbars
+    fig = plt.figure(figsize=figsize)
+    gs = fig.add_gridspec(1, 7, width_ratios=[4, bar_spacing, 1, cbar_spacing, 0.1, cbar_spacing, 0.1],
+                          left=0.1, right=0.98, bottom=0.1, top=0.9,
+                          wspace=0.0)
+    main_ax = fig.add_subplot(gs[0, 0])
+    # gs[0, 1] is the spacer between main_ax and right_ax
+    right_ax = fig.add_subplot(gs[0, 2], sharey=main_ax)
+    # gs[0, 3] and gs[0, 5] are spacers for colorbars
+    cbar_ax_left = fig.add_subplot(gs[0, 4])
+    cbar_ax_right = fig.add_subplot(gs[0, 6])
+    
+    # Prepare truncated colormaps
+    left_base_color = left_cmap(0.2)
+    right_base_color = right_cmap(0.1)
+    left_cmap_trunc = truncate_colormap(left_cmap, 0.5, 1.0)
+    right_cmap_trunc = truncate_colormap(right_cmap, 0.5, 1.0)
+    norm = mpl.colors.Normalize(vmin=1, vmax=streak_length_cap)
+    
+    # Track maximum time index for x-axis limits
+    max_time = 0
+    error_counts = np.zeros(len(display_keys))
+    
+    # For colorbar legend
+    streak_lengths = np.arange(1, streak_length_cap+1)
+    
+    for i, series_name in enumerate(display_keys):
+        series = series_dict[series_name]
+        max_time = max(max_time, len(series))
+        error_positions = np.where(series == 1)[0]
+        pair_idx = i // 2
+        if pair_idx % 2 == 0:
+            if i % 2 == 0:
+                main_ax.axhspan(i-0.4, i+1.4, color='gray', alpha=background_alpha)
+        pair_shift = 0.125
+        if "_Right" in series_name:
+            pair_shift *= -1
+        error_counts[i] = len(error_positions)/len(series) * 100
+        main_ax.plot(range(len(series)), [i+pair_shift]*len(series), color=left_base_color if "_Left" in series_name else right_base_color, linewidth=line_width, solid_capstyle='butt',)
+        if len(error_positions) == 0:
+            continue
+        # plot line for full series with base_color
+        # Group consecutive positions into streaks
+        streaks = []
+        current_streak = [error_positions[0]]
+        for j in range(1, len(error_positions)):
+            if error_positions[j] == error_positions[j-1] + 1:
+                current_streak.append(error_positions[j])
+            else:
+                streaks.append(current_streak)
+                current_streak = [error_positions[j]]
+        streaks.append(current_streak)
+        is_left_channel = "_Left" in series_name
+        for streak in streaks:
+            streak_len = min(len(streak), streak_length_cap)
+            color = left_cmap_trunc(norm(streak_len)) if is_left_channel else right_cmap_trunc(norm(streak_len))
+            main_ax.plot(streak, [i+pair_shift]*len(streak), color=color, linewidth=line_width, solid_capstyle='butt',)
+    # Y labels
+    series_ids = []
+    for key in display_keys:
+        if "_Left" in key:
+            series_ids.append(f"{key.split('_Left')[0]}")
+    main_ax.set_yticks(np.arange(0.5, len(display_keys)+0.5, 2))
+    main_ax.set_yticklabels(series_ids)
+    main_ax.set_xlabel('Frame Number')
+    main_ax.set_ylabel('Filename')
+    main_ax.set_title('Visualization of Frames with None Landmarks')
+    main_ax.set_xlim(-1, max_time + 0)
+    main_ax.grid(True, axis='x', alpha=0.3, linestyle='--')
+    # main_ax.grid(True, axis='y', alpha=0.3, linestyle='--')
+    # Right margin: error counts
+    grey_color = (0.65,0.65,0.65)
+    white_color = (1,1,1)
+    bar_colors = [grey_color, grey_color, white_color, white_color] * (len(display_keys) //4) + [white_color, white_color] * int(len(display_keys)%4/2)
+    barh_positions = []
+    for barh_position in range(len(display_keys)):
+        if barh_position % 2 == 1:
+            barh_positions.append(barh_position+pair_shift)
+        else:
+            barh_positions.append(barh_position-pair_shift)
+    barh = right_ax.barh(barh_positions, error_counts, color=bar_colors, edgecolor='black', alpha=0.5, height=.5)
+    # right_ax.set_yticks([])
+    right_ax.set_xlabel('% of Frame with None Landmarks')
+    # right_ax.spines['top'].set_visible(False)
+    right_ax.spines['right'].set_visible(False)
+    right_ax.grid(True, axis='x', alpha=0.3, linestyle='--')
+    # right_ax.set_xlim(0, 100)
+    plt.setp(right_ax.get_yticklabels(), visible=False)
+    # Separate colorbars for left and right
+    left_cbar = mpl.colorbar.ColorbarBase(cbar_ax_left, cmap=left_cmap_trunc, norm=norm, orientation='vertical', label='None Frame Streak Length (Left Hand Landmarks)')
+    right_cbar = mpl.colorbar.ColorbarBase(cbar_ax_right, cmap=right_cmap_trunc, norm=norm, orientation='vertical', label='None Frame Streak Length (Right Hand Landmarks)')
+    cbar_ax_left.yaxis.set_ticks_position('left')
+    cbar_ax_right.yaxis.set_ticks_position('right')
+    plt.tight_layout()
+    plt.close('all')
+    return fig

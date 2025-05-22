@@ -219,7 +219,8 @@ def _init_landmark_stats() -> Dict:
         'valid_range_total_frames': 0,
         'valid_range_none_frames': 0,
         'valid_range_frame_percentage': 0.0,
-        'valid_range_none_details': []  # List of frame indices that are None in valid range
+        'valid_range_none_details': [],  # List of frame indices that are None in valid range
+        'none_details': []  # List of all frame indices that are None
     }
 
 def analyze_none_landmarks(landmarks_data: np.ndarray) -> Dict:
@@ -236,7 +237,7 @@ def analyze_none_landmarks(landmarks_data: np.ndarray) -> Dict:
           * Total frames where the group is None
           * Percentage of frames where the group is None
           * Continuity analysis
-          * Frame indices where the group is None within valid range
+          * Frame indices where the group is None (both within valid range and overall)
     """
     # Initialize stats dictionary
     stats = {
@@ -244,7 +245,8 @@ def analyze_none_landmarks(landmarks_data: np.ndarray) -> Dict:
             'total_frames': len(landmarks_data),
             'total_landmark_frames': len(landmarks_data) * 4,  # 4 landmark groups per frame
             'none_landmark_frames': 0,  # Total None landmarks across all groups
-            'landmark_frame_percentage': 0.0  # Percentage of None landmarks
+            'landmark_frame_percentage': 0.0,  # Percentage of None landmarks
+            'none_details': []  # List of frame indices where any landmark group is None
         }
     }
     
@@ -266,11 +268,15 @@ def analyze_none_landmarks(landmarks_data: np.ndarray) -> Dict:
     
     # Process each frame
     for frame_idx, frame_landmarks in enumerate(landmarks_data):
+        frame_has_none = False
+        
         if frame_landmarks is None:
             # If entire frame is None, all landmark groups are None
             stats['overall']['none_landmark_frames'] += 4  # All 4 groups are None
+            frame_has_none = True
             for key in landmark_groups:
                 stats[key]['none_frames'] += 1
+                stats[key]['none_details'].append(frame_idx)
             continue
             
         # Process each landmark group
@@ -278,14 +284,21 @@ def analyze_none_landmarks(landmarks_data: np.ndarray) -> Dict:
             if key not in frame_landmarks:
                 stats[key]['none_frames'] += 1
                 stats['overall']['none_landmark_frames'] += 1
+                stats[key]['none_details'].append(frame_idx)
+                frame_has_none = True
                 continue
                 
             group = frame_landmarks[key]
             if group is None:
                 stats[key]['none_frames'] += 1
                 stats['overall']['none_landmark_frames'] += 1
+                stats[key]['none_details'].append(frame_idx)
+                frame_has_none = True
             else:
                 presence_by_type[key][frame_idx] = True
+        
+        if frame_has_none:
+            stats['overall']['none_details'].append(frame_idx)
     
     # Calculate valid range statistics for each group
     for key in landmark_groups:
@@ -313,11 +326,17 @@ def analyze_none_landmarks(landmarks_data: np.ndarray) -> Dict:
         
         # Calculate overall percentage
         stats[key]['frame_percentage'] = (stats[key]['none_frames'] / stats[key]['total_frames']) * 100
+        
+        # Sort none_details for consistency
+        stats[key]['none_details'].sort()
     
     # Calculate overall landmark frame percentage
     stats['overall']['landmark_frame_percentage'] = (
         stats['overall']['none_landmark_frames'] / stats['overall']['total_landmark_frames']
     ) * 100
+    
+    # Sort overall none_details for consistency
+    stats['overall']['none_details'].sort()
     
     return stats
 
