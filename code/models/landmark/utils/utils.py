@@ -145,6 +145,8 @@ def minmax_scale_series(
     
     Args:
         values: Input array or tensor to scale
+        input_max: Maximum value of the input data range
+        input_min: Minimum value of the input data range, default 0
         output_range: List of [min, max] values for output range, default [0,1]
         
     Returns:
@@ -153,6 +155,8 @@ def minmax_scale_series(
     if len(output_range) != 2:
         raise ValueError("output_range must be a list of two integers [min, max]")
         
+    min_val, max_val = output_range
+    
     # Convert to numpy for processing
     if isinstance(values, torch.Tensor):
         values_np = values.detach().cpu().numpy()
@@ -160,15 +164,15 @@ def minmax_scale_series(
     else:
         values_np = values
         is_tensor = False
-        
-    # Apply scaling to each value
-    scaled = np.array([
-        minmax_scale_single(
-            float(x), input_max, input_min,
-            output_range
-        )
-        for x in values_np.flatten()
-    ]).reshape(values_np.shape)
+    
+    # Ensure values is a numpy array with float64 dtype
+    values_np = np.asarray(values_np, dtype=np.float64)
+    
+    # Scale values using vectorized operations
+    scaled = (values_np - input_min) / (input_max - input_min) * (max_val - min_val) + min_val
+    
+    # Clip to output range
+    scaled = np.clip(scaled, min_val, max_val)
     
     # Convert back to tensor if input was tensor
     if is_tensor:
