@@ -1,6 +1,8 @@
 import pandas as pd
+import numpy as np
 import os
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
+from utils.utils import minmax_scale_series
 
 def load_base_paths():
     """
@@ -99,3 +101,51 @@ def prepare_training_metadata(data_version: str) -> None:
     # Save to training location
     df.to_csv(training_metadata_path, index=False)
     print(f"Training metadata saved to: {training_metadata_path}")
+
+def prepare_landmark_arrays(load_landmarks_dir: str, positions_config: DictConfig) -> None:
+
+    landmark_series_fns = [fn for fn in os.listdir(load_landmarks_dir) if fn.endswith('.npy')]
+
+    paths = load_base_paths()
+    save_landmarks_dir = paths.landmark_arrays_base
+    if not os.path.exists(save_landmarks_dir):
+        os.makedirs(save_landmarks_dir, exist_ok=True)
+
+    landmark_keys = [
+        "pose_landmarks",
+        "left_hand_landmarks",
+        "right_hand_landmarks",
+        # "face_landmarks",
+    ]
+
+    scaling_info = positions_config.scaling_info
+
+    for series_fn in landmark_series_fns:
+        series_fp = os.path.join(load_landmarks_dir, series_fn)
+        series = np.load(series_fp, allow_pickle=True)
+
+        for landmark_key in landmark_keys:
+            series_xyz = []
+            for frame in series:
+                xyz = [[lm.x, lm.y, lm.z] for lm in frame[landmark_key].landmark]
+                xyz = np.array(xyz)
+                series_xyz.append(xyz)
+            series_xyz = np.array(series_xyz)
+
+            if positions_config.computation_type == "scaled":
+                # scale x
+                series_xyz[:,:,0] = minmax_scale_series(
+                    series_xyz[:,:,0],
+                    scaling_info[landmark_key]['input_max_x'],
+                    scaling_info[landmark_key]['input_min_x'],
+                    scaling_info['scale_range']
+                )
+                # scale y
+                series_xyz[:,:,1] = minmax_scale_series(
+                    series_xyz[:,:,1],
+                    scaling_info[landmark_key]['input_max_y'],
+                    scaling_info[landmark_key]['input_min_y'],
+                    scaling_info['scale_range'])
+                
+            save_fp = os.path.join(save_landmarks_dir, series_fn.replace('.npy', f'_{landmark_key}.npy'))
+            np.save(save_fp, series_xyz)
