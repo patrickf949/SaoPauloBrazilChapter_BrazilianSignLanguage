@@ -151,7 +151,7 @@ def visualize_landmark_features(
     # Draw main skeleton
     if landmark_type == "pose":
         connections = POSE_CONNECTIONS
-        radius = 0.015
+        radius = 0.05
     else:
         connections = HAND_CONNECTIONS
         radius = 0.005
