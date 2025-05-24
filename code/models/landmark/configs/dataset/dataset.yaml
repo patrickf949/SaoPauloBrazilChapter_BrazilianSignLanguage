@@ -34,3 +34,4 @@ paths:
   metadata_base: "modelling/metadata"
   models_base: "modelling/models"
   logs_base: "modelling/logs"
+  landmark_arrays_base: "modelling/landmark_arrays"

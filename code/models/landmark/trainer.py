@@ -12,7 +12,7 @@ from models.landmark.utils.evaluate import evaluate
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_func_pad
 from models.landmark.utils.path_utils import get_save_paths, get_data_paths, load_base_paths
-from models.landmark.dataset.prepare_data_csv import prepare_training_metadata
+from models.landmark.dataset.prepare_data_csv import prepare_training_metadata, prepare_landmark_arrays
 from models.landmark.utils.logging import TrainingLogger
 import torch
 from omegaconf import DictConfig
@@ -27,9 +27,11 @@ os.makedirs(os.path.join(paths.logs_base, "runs"), exist_ok=True)
 
 def get_dataset(config: DictConfig):
     # Always generate fresh training metadata
-    _, metadata_path = get_data_paths(config.dataset.data_version)
+    landmarks_dir, metadata_path = get_data_paths(config.dataset.data_version)
     print(f"Generating training metadata at {metadata_path}...")
     prepare_training_metadata(config.dataset.data_version)
+    print(f"Generating landmark arrays from {landmarks_dir}...")
+    prepare_landmark_arrays(landmarks_dir, config.features.positions)
 
     if config.training.type == "cross_validation":
         # Create datasets for just train and test
