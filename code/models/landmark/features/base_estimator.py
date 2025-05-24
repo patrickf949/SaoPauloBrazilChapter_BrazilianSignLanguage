@@ -1,6 +1,6 @@
 from typing import Union, Dict, List, Iterable
 from abc import ABC, abstractmethod
-from models.landmark.utils.utils import load_config, check_landmark_type, check_mode
+from models.landmark.utils.utils import load_config, check_landmark_type, check_mode, minmax_scale_series, minmax_scale_single
 from omegaconf import DictConfig
 import numpy as np
 
@@ -65,9 +65,10 @@ class LandmarkEstimator(BaseEstimator):
         )
 
     def __compute(
-        self, landmarks_positions: List[int], landmarks: Iterable, mode: str
+        self, landmarks_positions: List[int], landmarks: Iterable, mode: str, computation_type: str, scaling_info: Dict
     ) -> List[List[float]]:
         if landmarks is None:
+            print("Landmark PositionEstimator: None landmarks") 
             if mode == "2D":
                 return np.zeros(shape=2 * len(landmarks_positions), dtype=np.float32)
             else:
@@ -77,17 +78,27 @@ class LandmarkEstimator(BaseEstimator):
         result = []
         for position in landmarks_positions:
             if position < len(landmarks) and landmarks[position] is not None:
-                result.append(self.__unpack_landmark(landmarks[position], mode))
+                if mode == "2D":
+                    x, y = self.__unpack_landmark(landmarks[position], mode)
+                else:
+                    x, y, z = self.__unpack_landmark(landmarks[position], mode)
+                if computation_type == "scaled":
+                    x = minmax_scale_single(x, scaling_info["max_for_scaling_x"], scaling_info["min_for_scaling_x"], scaling_info["scale_range"])
+                    y = minmax_scale_single(y, scaling_info["max_for_scaling_y"], scaling_info["min_for_scaling_y"], scaling_info["scale_range"])
+                if mode == "2D":
+                    result.append([x, y])
+                else:
+                    result.append([x, y, z])
             else:
+                print(f"Landmark PositionEstimator: Landmark {position} is missing or invalid")
                 # If landmark is missing, add zeros
                 result.append([0.0, 0.0, 0.0] if mode == "3D" else [0.0, 0.0])
-        
         return result
 
     def __convert_to_numpy(self, features: List) -> np.ndarray:
         return np.array(features, dtype=np.float32).flatten()
 
-    def compute(self, landmarks: Iterable, landmark_type: str, mode: str) -> np.ndarray:
+    def compute(self, landmarks: Iterable, landmark_type: str, mode: str, computation_type: str, scaling_info: Dict) -> np.ndarray:
         """
         Extracts selected landmark coordinates as a flat feature array.
 
@@ -99,6 +110,10 @@ class LandmarkEstimator(BaseEstimator):
             Either 'pose' or 'hand'.
         mode : str
             '2D' or '3D'
+        computation_type : str
+            'raw' or 'scaled'
+        scaling_info : Dict
+            Dictionary containing scaling information.
 
         """
         check_landmark_type(landmark_type)
@@ -107,8 +122,9 @@ class LandmarkEstimator(BaseEstimator):
         landmark_positions = (
             self.pose_values if landmark_type == "pose" else self.hand_values
         )
+        # print(landmark_type, mode, computation_type, len(landmark_positions))
         return self.__convert_to_numpy(
-            self.__compute(landmark_positions, landmarks, mode)
+            self.__compute(landmark_positions, landmarks, mode, computation_type, scaling_info)
         )
 
     def compute_annotated(

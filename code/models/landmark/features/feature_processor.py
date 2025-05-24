@@ -45,6 +45,7 @@ class FeatureProcessor:
                 ),
                 "mode": estimator_params["mode"],
                 "computation_type": estimator_params["computation_type"],
+                "scaling_info": estimator_params.get("scaling_info", None),
             }
             for name, estimator_params in features_config.items()
             if name != "metadata"  # Skip metadata as it's not an estimator
@@ -194,10 +195,14 @@ class FeatureProcessor:
                 elif feature_type == "positions":
                     features[f"{feature_type}/{landmark_type}"] = self.estimators[
                         feature_type
-                    ]["estimator"].compute_annotated(
+                    ]["estimator"].compute(
                         frame[f"{landmark_type}_landmarks"],
                         landmark_type=landmark_type.split("_")[-1],
                         mode=self.estimators[feature_type]["mode"],
+                        computation_type=self.estimators[feature_type][
+                            "computation_type"
+                        ],
+                        scaling_info=self.estimators[feature_type]["scaling_info"],
                     )
                 else:
                     features[f"{feature_type}/{landmark_type}"] = self.estimators[
