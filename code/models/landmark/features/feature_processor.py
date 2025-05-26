@@ -28,6 +28,8 @@ class FeatureProcessor:
         # Extract metadata configuration from features config
         metadata_config = features_config.get("metadata", {})
         self.scale_range = metadata_config.get("scale_range", [-1, 1])
+        self.positions_computation_type = features_config.get("positions", {}).get("computation_type", None)
+        self.positions_scaling_info = features_config.get("positions", {}).get("scaling_info", None)
         self.metadata_row_features = metadata_config.get("metadata_row_features", [])
         self.metadata_json_features = metadata_config.get("metadata_json_features", [])
 
@@ -45,7 +47,6 @@ class FeatureProcessor:
                 ),
                 "mode": estimator_params["mode"],
                 "computation_type": estimator_params["computation_type"],
-                "scaling_info": estimator_params.get("scaling_info", None),
             }
             for name, estimator_params in features_config.items()
             if name != "metadata" and name != "positions"  # Skip metadata and positions as they're not estimators
@@ -81,6 +82,39 @@ class FeatureProcessor:
         Returns:
             torch.Tensor: Processed features for the sequence
         """
+        # make pure numpy array of frames
+        landmark_arrays = {
+            "pose_landmarks": None,
+            "left_hand_landmarks": None,
+            "right_hand_landmarks": None,
+            # "face_landmarks": None,
+        }
+        for landmark_key in landmark_arrays.keys():
+            series_xyz = []
+            for frame in frames:
+                xyz = [[lm.x, lm.y, lm.z] for lm in frame[landmark_key].landmark]
+                xyz = np.array(xyz)
+                series_xyz.append(xyz)
+            series_xyz = np.array(series_xyz)
+
+            if self.positions_computation_type == "scaled":
+                # scale x
+                series_xyz[:,:,0] = minmax_scale_series(
+                    series_xyz[:,:,0],
+                    self.positions_scaling_info[landmark_key]['input_max_x'],
+                    self.positions_scaling_info[landmark_key]['input_min_x'],
+                    self.scale_range
+                )
+                # scale y
+                series_xyz[:,:,1] = minmax_scale_series(
+                    series_xyz[:,:,1],
+                    self.positions_scaling_info[landmark_key]['input_max_y'],
+                    self.positions_scaling_info[landmark_key]['input_min_y'],
+                    self.scale_range)
+            print(series_xyz.shape)
+            landmark_arrays[landmark_key] = series_xyz
+
+        # Initialise list for appending features
         all_features = []
         
         # Select data augmentations once for the entire sequence
