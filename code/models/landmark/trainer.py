@@ -30,8 +30,9 @@ def get_dataset(config: DictConfig):
     landmarks_dir, metadata_path = get_data_paths(config.dataset.data_version)
     print(f"Generating training metadata at {metadata_path}...")
     prepare_training_metadata(config.dataset.data_version)
-    print(f"Generating landmark arrays from {landmarks_dir}...")
-    prepare_landmark_arrays(landmarks_dir, config.features.positions)
+    # Prepare pure numpy arrays of landmark data to be used for faster feature processing
+    # print(f"Generating landmark arrays from {landmarks_dir}...")
+    # prepare_landmark_arrays(landmarks_dir, config.features.positions)
 
     if config.training.type == "cross_validation":
         # Create datasets for just train and test
