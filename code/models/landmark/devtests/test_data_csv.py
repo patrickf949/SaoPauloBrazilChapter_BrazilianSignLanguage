@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from models.landmark.dataset.prepare_data_csv import encode_label, train_test_split
+from models.landmark.dataset.prepare_data import encode_label, train_test_split
 
 
 class TestLabelEncodingAndSplit(unittest.TestCase):
