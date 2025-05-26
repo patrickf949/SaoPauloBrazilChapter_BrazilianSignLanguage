@@ -34,30 +34,21 @@ def get_dataset(config: DictConfig):
     # print(f"Generating landmark arrays from {landmarks_dir}...")
     # prepare_landmark_arrays(landmarks_dir, config.features.positions)
 
-    if config.training.type == "cross_validation":
-        # Create datasets for just train and test
-        # val will be created from train in each fold in the cross validation loop
-        datasets = {
-            "train_dataset": LandmarkDataset(
-                config.dataset, config.features, config.augmentation, "train"
-            ),
-            "test_dataset": LandmarkDataset(
-                config.dataset, config.features, config.augmentation, "test"
-            ),
-        }
-    else:
-        # Create datasets for all splits
-        datasets = {
-            "train_dataset": LandmarkDataset(
-                config.dataset, config.features, config.augmentation, "train"
-            ),
-            "val_dataset": LandmarkDataset(
-                config.dataset, config.features, config.augmentation, "val"
-            ),
-            "test_dataset": LandmarkDataset(
-                config.dataset, config.features, config.augmentation, "test"
-            ),
-        }
+    # Create datasets for all splits
+    # The only difference between each is the augmentation step
+    # If you use the val_dataset or test_dataset, augmentation is not applied because dataset_split is not "train"
+    # Currently the logic of the training process with cross validation doesn't use the val_dataset, just the train_dataset, which could be improved
+    datasets = {
+        "train_dataset": LandmarkDataset(
+            config.dataset, config.features, config.augmentation, "train"
+        ),
+        "val_dataset": LandmarkDataset(
+            config.dataset, config.features, config.augmentation, "val"
+        ),
+        "test_dataset": LandmarkDataset(
+            config.dataset, config.features, config.augmentation, "test"
+        ),
+    }
 
     return datasets
 
