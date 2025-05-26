@@ -48,7 +48,7 @@ class FeatureProcessor:
                 "scaling_info": estimator_params.get("scaling_info", None),
             }
             for name, estimator_params in features_config.items()
-            if name != "metadata"  # Skip metadata as it's not an estimator
+            if name != "metadata" and name != "positions"  # Skip metadata and positions as they're not estimators
         }
         
         augmentations = (
@@ -141,7 +141,7 @@ class FeatureProcessor:
     def _compute_estimator_features(
         self, 
         frame: Dict[str, Any], 
-        frames: List[Any],
+        frames: List[Any], 
         selected_indices: List[int],
         current_index: int
     ) -> Dict[str, np.ndarray]:
@@ -191,18 +191,6 @@ class FeatureProcessor:
                         computation_type=self.estimators[feature_type][
                             "computation_type"
                         ],
-                    )
-                elif feature_type == "positions":
-                    features[f"{feature_type}/{landmark_type}"] = self.estimators[
-                        feature_type
-                    ]["estimator"].compute(
-                        frame[f"{landmark_type}_landmarks"],
-                        landmark_type=landmark_type.split("_")[-1],
-                        mode=self.estimators[feature_type]["mode"],
-                        computation_type=self.estimators[feature_type][
-                            "computation_type"
-                        ],
-                        scaling_info=self.estimators[feature_type]["scaling_info"],
                     )
                 else:
                     features[f"{feature_type}/{landmark_type}"] = self.estimators[
