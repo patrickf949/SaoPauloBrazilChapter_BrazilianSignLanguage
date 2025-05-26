@@ -30,12 +30,13 @@ class FeatureProcessor:
         self.scale_range = metadata_config.get("scale_range", [-1, 1])
         self.positions_computation_type = features_config.get("positions", {}).get("computation_type", None)
         self.positions_scaling_info = features_config.get("positions", {}).get("scaling_info", None)
+        self.positions_mode = features_config.get("positions", {}).get("mode", None)
         self.metadata_row_features = metadata_config.get("metadata_row_features", [])
         self.metadata_json_features = metadata_config.get("metadata_json_features", [])
 
         configuration = {
             "landmark_types": dataset_config["landmark_types"],
-            "features": [name for name in features_config.keys() if name != "metadata"],  # Exclude metadata from features
+            "features": [name for name in features_config.keys() if name != "metadata" and name != "positions"],  # Exclude metadata and positions from features
             "ordering": dataset_config["ordering"],
         }
 
@@ -107,43 +108,11 @@ class FeatureProcessor:
             # if i in selected_indices:
             #     for augmentation in selected_augmentations:
             #         processed_frame = augmentation(processed_frame)
-            
             augmented_frames.append(processed_frame)
-
-        # make pure numpy array of frames
-        landmark_arrays = {
-            "pose_landmarks": None,
-            "left_hand_landmarks": None,
-            "right_hand_landmarks": None,
-            # "face_landmarks": None,
-        }
-        for landmark_key in landmark_arrays.keys():
-            series_xyz = []
-            for frame in frames:
-                xyz = [[lm.x, lm.y, lm.z] for lm in frame[landmark_key].landmark]
-                xyz = np.array(xyz)
-                series_xyz.append(xyz)
-            series_xyz = np.array(series_xyz)
-
-            if self.positions_computation_type == "scaled":
-                # scale x
-                series_xyz[:,:,0] = minmax_scale_series(
-                    series_xyz[:,:,0],
-                    self.positions_scaling_info[landmark_key]['input_max_x'],
-                    self.positions_scaling_info[landmark_key]['input_min_x'],
-                    self.scale_range
-                )
-                # scale y
-                series_xyz[:,:,1] = minmax_scale_series(
-                    series_xyz[:,:,1],
-                    self.positions_scaling_info[landmark_key]['input_max_y'],
-                    self.positions_scaling_info[landmark_key]['input_min_y'],
-                    self.scale_range)
-            print(series_xyz.shape)
-            landmark_arrays[landmark_key] = series_xyz
 
         # Initialise list for appending feature vectors
         all_features = []
+        position_features = {f"{key}_landmarks": [] for key in self.configuration["landmark_types"]}
         
         for i, frame_idx in enumerate(selected_indices):
             # Use augmented frame
@@ -155,6 +124,51 @@ class FeatureProcessor:
             # Concatenate all features into a single vector
             feature_vector = np.concatenate(list(features.values()), axis=None)
             all_features.append(torch.tensor(feature_vector, dtype=torch.float))
+
+            # Get positions of augmented frames from selected indices
+            for key in self.configuration["landmark_types"]:
+                xyz = [[lm.x, lm.y, lm.z] for lm in frame[f"{key}_landmarks"]]
+                xyz = np.array(xyz)
+                position_features[f"{key}_landmarks"].append(xyz)
+        
+        if 'positions' in self.configuration["features"]:
+            # Now we have a dict of lists of the landmarks for each frame, for each landmark type
+            # We need to stack them into a single array, and scale them if needed
+            for key in position_features.keys():
+                # Stack the landmarks for each frame into a single array
+                position_features[key] = np.array(position_features[key])
+                # Scale the landmarks if needed
+                if self.positions_computation_type == "scaled":
+                    position_features[key][:,:,0] = minmax_scale_series(
+                        position_features[key][:,:,0],
+                        self.positions_scaling_info[key]['input_max_x'],
+                        self.positions_scaling_info[key]['input_min_x'],
+                        self.scale_range
+                    )
+                    position_features[key][:,:,1] = minmax_scale_series(
+                        position_features[key][:,:,1],
+                        self.positions_scaling_info[key]['input_max_y'],
+                        self.positions_scaling_info[key]['input_min_y'],
+                        self.scale_range)
+                
+                # Convert position features to tensors
+                x_positions = torch.tensor(position_features[key][:,:,0], dtype=torch.float)  # shape: [20, 21]
+                y_positions = torch.tensor(position_features[key][:,:,1], dtype=torch.float)  # shape: [20, 21]
+                
+                # Reshape position features to match frame features
+                x_positions = x_positions.reshape(x_positions.shape[0], -1)  # shape: [20, 21]
+                y_positions = y_positions.reshape(y_positions.shape[0], -1)  # shape: [20, 21]
+                
+                # Add position features to each frame's feature vector
+                for i in range(len(all_features)):
+                    all_features[i] = torch.cat([all_features[i], x_positions[i], y_positions[i]])
+                
+                if self.positions_mode == '3D':
+                    z_positions = torch.tensor(position_features[key][:,:,2], dtype=torch.float)  # shape: [20, 21]
+                    z_positions = z_positions.reshape(z_positions.shape[0], -1)  # shape: [20, 21]
+                    # Add z positions to each frame's feature vector
+                    for i in range(len(all_features)):
+                        all_features[i] = torch.cat([all_features[i], z_positions[i]])
 
         # Stack all frame features
         frame_features = torch.stack(all_features)  # shape: (sequence_length, n_landmark_features)
@@ -181,7 +195,6 @@ class FeatureProcessor:
             metadata_row_features,
             metadata_json_features
         ], dim=1)  # shape: (sequence_length, n_landmark_features + n_metadata_row_features + n_metadata_json_features)
-
         return all_features
 
     def _compute_estimator_features(
@@ -213,7 +226,7 @@ class FeatureProcessor:
             prev_frame_idx = selected_indices[current_index - 1]
             prev_frame = frames[prev_frame_idx]
             prev_frame = {
-                f"{key}_landmarks": prev_frame[f"{key}_landmarks"].landmark
+                f"{key}_landmarks": prev_frame[f"{key}_landmarks"]
                 if prev_frame[f"{key}_landmarks"] is not None
                 else None
                 for key in self.configuration["landmark_types"]
