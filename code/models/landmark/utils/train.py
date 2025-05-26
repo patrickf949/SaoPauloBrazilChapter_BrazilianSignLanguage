@@ -6,7 +6,7 @@ from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_func_pad
 from typing import Dict, Tuple, List
 import numpy as np
-
+import copy
 
 def training_step(
     model: nn.Module,
@@ -98,22 +98,29 @@ def train_epoch_fold(
             - List of (train_loss, val_loss) tuples for each fold
             - List of statistics for each fold
     """
-    dataset = datasets["train_dataset"]
+    train_dataset = datasets["train_dataset"]
+    # val_dataset is a copy of train_dataset, but with augmentation disabled
+    val_dataset = copy.deepcopy(train_dataset)
+    val_dataset.dataset_split = "val"
     
-    if len(dataset) == 0:
+    if len(train_dataset) == 0:
         raise ValueError("Training dataset is empty")
+    if len(val_dataset) == 0:
+        raise ValueError("Validation dataset is empty")
+    if len(train_dataset) != len(val_dataset):
+        raise ValueError("Training and validation datasets don't have the same length")
     
     # Create groups array where each sample from the same video gets the same group number
     groups = []
     labels = []
-    for video_idx in range(len(dataset.metadata)):
-        video_label = dataset.metadata.iloc[video_idx]["label_encoded"]
-        groups.extend([video_idx] * dataset.samples_per_video[video_idx])
-        labels.extend([video_label] * dataset.samples_per_video[video_idx])
+    for video_idx in range(len(train_dataset.metadata)):
+        video_label = train_dataset.metadata.iloc[video_idx]["label_encoded"]
+        groups.extend([video_idx] * train_dataset.samples_per_video[video_idx])
+        labels.extend([video_label] * train_dataset.samples_per_video[video_idx])
     
     groups = np.array(groups)
     stratified_group_kfold = StratifiedGroupKFold(n_splits=k_folds, shuffle=True, random_state=42 + epoch)
-    fold_indices = list(stratified_group_kfold.split(range(len(dataset)), labels, groups=groups))
+    fold_indices = list(stratified_group_kfold.split(range(len(train_dataset)), labels, groups=groups))
 
     total_train_loss = 0
     total_val_loss = 0
@@ -139,13 +146,13 @@ def train_epoch_fold(
         fold_stats.append(fold_k_stats)
 
         train_loader = DataLoader(
-            Subset(dataset, train_ids),
+            Subset(train_dataset, train_ids),
             batch_size=batch_size,
             shuffle=True,
             collate_fn=collate_func_pad,
         )
         val_loader = DataLoader(
-            Subset(dataset, val_ids),
+            Subset(val_dataset, val_ids),
             batch_size=batch_size,
             shuffle=False,
             collate_fn=collate_func_pad,
@@ -233,6 +240,7 @@ def train_epoch(
         collate_fn=collate_func_pad,
     )
 
+    # ----- training step -----
     model.train()
     total_loss = 0
     for idx, batch in enumerate(train_loader):

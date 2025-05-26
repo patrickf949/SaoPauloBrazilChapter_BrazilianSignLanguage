@@ -7,6 +7,12 @@ import json
 import os
 
 class FeatureProcessor:
+    """Processes landmark data into feature vectors.
+    
+    Note: Data augmentations are only applied during training.
+    Validation and test data should be processed without augmentations
+    to ensure consistent evaluation.
+    """
     def __init__(
         self,
         dataset_split: str,
@@ -53,6 +59,8 @@ class FeatureProcessor:
             if name != "metadata" and name != "positions"  # Skip metadata and positions as they're not estimators
         }
         
+        # augmentation_config[dataset_split] should be None for val and test splits
+        # But the option exists if you want to add some augmentations to val or test splits
         augmentations = (
             [
                 {
@@ -72,7 +80,7 @@ class FeatureProcessor:
         self.augmentations = augmentations or []
         self.landmarks_dir = landmarks_dir
 
-    def process_frames(self, frames: List[Any], selected_indices: List[int], metadata_row: Dict[str, Any]) -> torch.Tensor:
+    def process_frames(self, frames: List[Any], selected_indices: List[int], metadata_row: Dict[str, Any], dataset_split: str) -> torch.Tensor:
         """
         Process a sequence of frames to generate feature vectors.
         
@@ -85,9 +93,10 @@ class FeatureProcessor:
         """
         # Select data augmentations once for the entire sequence
         selected_augmentations = []
-        for aug in self.augmentations:
-            if np.random.uniform() <= aug["p"]:
-                selected_augmentations.append(aug["augmentation"])
+        if dataset_split == "train":
+            for aug in self.augmentations:
+                if np.random.uniform() <= aug["p"]:
+                    selected_augmentations.append(aug["augmentation"])
         
         # Apply augmentations to all frames
         augmented_frames = []

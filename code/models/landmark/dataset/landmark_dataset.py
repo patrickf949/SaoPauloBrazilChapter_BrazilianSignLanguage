@@ -91,6 +91,7 @@ class LandmarkDataset(Dataset):
         # these configs should already be DictConfig objects, load_config is just for safety
         dataset_config = load_config(dataset_config, "dataset_config")
         features_config = load_config(features_config, "features_config")
+        self.dataset_split = dataset_split
 
         # Get standardized paths based on data version
         self.data_dir, metadata_path = get_data_paths(dataset_config["data_version"])
@@ -100,7 +101,7 @@ class LandmarkDataset(Dataset):
         self.metadata = self.metadata[self.metadata["dataset_split"] == dataset_split]
         
         # Frame sampling configuration
-        if dataset_split == "train":
+        if self.dataset_split == "train":
             sampling_config = dataset_config["frame_sampling_train"]
             self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
             self.sampling_params = sampling_config["params"]
@@ -127,7 +128,7 @@ class LandmarkDataset(Dataset):
 
         # Initialize feature processor
         self.feature_processor = FeatureProcessor(
-            dataset_split=dataset_split,
+            dataset_split=self.dataset_split,
             dataset_config=dataset_config,
             features_config=features_config,
             augmentation_config=augmentation_config,
@@ -173,7 +174,7 @@ class LandmarkDataset(Dataset):
         metadata_row = self.metadata.iloc[video_idx]
         
         # Process frames using feature processor
-        features = self.feature_processor.process_frames(frames, selected_indices, metadata_row)
+        features = self.feature_processor.process_frames(frames, selected_indices, metadata_row, self.dataset_split)
 
         # Get label
         video_idx = self.metadata.index[video_idx]
