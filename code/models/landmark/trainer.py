@@ -12,7 +12,7 @@ from models.landmark.utils.evaluate import evaluate
 from models.landmark.dataset.landmark_dataset import LandmarkDataset
 from models.landmark.dataset.dataloader_functions import collate_func_pad
 from models.landmark.utils.path_utils import get_save_paths, get_data_paths, load_base_paths
-from models.landmark.dataset.prepare_data_csv import prepare_training_metadata, prepare_landmark_arrays
+from models.landmark.dataset.prepare_data import prepare_training_metadata, prepare_landmark_arrays
 from models.landmark.utils.logging import TrainingLogger
 import torch
 from omegaconf import DictConfig
