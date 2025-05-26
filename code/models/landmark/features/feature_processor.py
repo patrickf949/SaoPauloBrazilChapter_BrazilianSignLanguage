@@ -82,6 +82,34 @@ class FeatureProcessor:
         Returns:
             torch.Tensor: Processed features for the sequence
         """
+        # Select data augmentations once for the entire sequence
+        selected_augmentations = []
+        for aug in self.augmentations:
+            if np.random.uniform() <= aug["p"]:
+                selected_augmentations.append(aug["augmentation"])
+        
+        # Apply augmentations to all frames
+        augmented_frames = []
+        for i, frame in enumerate(frames):
+            # Extract landmarks
+            processed_frame = {
+                f"{key}_landmarks": frame[f"{key}_landmarks"].landmark
+                if frame[f"{key}_landmarks"] is not None
+                else None
+                for key in self.configuration["landmark_types"]
+            }
+            
+            # Apply augmentations
+            for augmentation in selected_augmentations:
+                processed_frame = augmentation(processed_frame)
+            
+            # # Apply augmentations
+            # if i in selected_indices:
+            #     for augmentation in selected_augmentations:
+            #         processed_frame = augmentation(processed_frame)
+            
+            augmented_frames.append(processed_frame)
+
         # make pure numpy array of frames
         landmark_arrays = {
             "pose_landmarks": None,
@@ -114,31 +142,15 @@ class FeatureProcessor:
             print(series_xyz.shape)
             landmark_arrays[landmark_key] = series_xyz
 
-        # Initialise list for appending features
+        # Initialise list for appending feature vectors
         all_features = []
         
-        # Select data augmentations once for the entire sequence
-        selected_augmentations = []
-        for aug in self.augmentations:
-            if np.random.uniform() <= aug["p"]:
-                selected_augmentations.append(aug["augmentation"])
-        
         for i, frame_idx in enumerate(selected_indices):
-            frame = frames[frame_idx]
-            # Extract landmarks
-            frame = {
-                f"{key}_landmarks": frame[f"{key}_landmarks"].landmark
-                if frame[f"{key}_landmarks"] is not None
-                else None
-                for key in self.configuration["landmark_types"]
-            }
-
-            # Apply the same data augmentations to all frames
-            for augmentation in selected_augmentations:
-                frame = augmentation(frame)
-
+            # Use augmented frame
+            frame = augmented_frames[frame_idx]
+            
             # Generate features
-            features = self._compute_estimator_features(frame, frames, selected_indices, i)
+            features = self._compute_estimator_features(frame, augmented_frames, selected_indices, i)
             
             # Concatenate all features into a single vector
             feature_vector = np.concatenate(list(features.values()), axis=None)
