@@ -1,0 +1,15 @@
+train: 
+  rotate: 
+    class_name: model.dataset.augmentations.RotateLandmarks
+    p: 0.5
+    params:
+      angle_range: 10
+
+  noise:
+    class_name: model.dataset.augmentations.LandmarksNoise
+    p: 0.5
+    params:
+      noise_std: 0.01
+
+val:
+test: 
