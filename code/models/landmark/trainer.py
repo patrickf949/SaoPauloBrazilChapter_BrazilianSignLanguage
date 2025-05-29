@@ -17,7 +17,7 @@ from models.landmark.utils.logging import TrainingLogger
 import torch
 from omegaconf import DictConfig
 import hydra
-from utils.utils import set_config_param
+from models.landmark.utils.utils import set_config_param
 from datetime import datetime
 
 # Ensure base output directories exist

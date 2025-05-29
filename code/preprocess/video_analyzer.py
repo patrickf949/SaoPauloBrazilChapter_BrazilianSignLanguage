@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Tuple, Any, Union
 import datetime
 import copy
 
-import motion_detection as md
+from preprocess import motion_detection as md
 
 try:
     import mediapipe_holistic as mph

@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple, Any, Union
 import pandas as pd
 import shutil
 import copy
-from video_analyzer import validate_landmarks_format, hide_lower_body_landmarks, analyze_none_landmarks
+from preprocess.video_analyzer import validate_landmarks_format, hide_lower_body_landmarks, analyze_none_landmarks
 
 class Preprocessor:
     """
