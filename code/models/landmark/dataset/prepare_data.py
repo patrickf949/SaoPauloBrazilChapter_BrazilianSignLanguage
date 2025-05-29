@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 from omegaconf import OmegaConf, DictConfig
-from utils.utils import minmax_scale_series
+from models.landmark.utils.utils import minmax_scale_series
 
 def load_base_paths():
     """
