@@ -66,4 +66,4 @@ all = [
 
 [tool.setuptools]
 package-dir = {"" = "code"}
-packages = ["models"]
+packages = ["model"]
