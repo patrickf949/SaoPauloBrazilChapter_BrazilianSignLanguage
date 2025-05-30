@@ -21,32 +21,14 @@ beautifulsoup4==4.13.4
     # via nbconvert
 bleach==6.2.0
     # via nbconvert
-certifi==2025.4.26
-    # via
-    #   httpcore
-    #   httpx
-    #   requests
-    #   selenium
 cffi==1.17.1
     # via
     #   argon2-cffi-bindings
     #   sounddevice
-charset-normalizer==3.4.2
-    # via requests
-comm==0.2.2
-    # via
-    #   ipykernel
-    #   ipywidgets
 contourpy==1.3.2
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-debugpy==1.8.14
-    # via ipykernel
-decorator==5.2.1
-    # via ipython
-defusedxml==0.7.1
-    # via nbconvert
 executing==2.2.0
     # via stack-data
 fastjsonschema==2.21.1
@@ -55,24 +37,6 @@ flatbuffers==25.2.10
     # via mediapipe
 fonttools==4.58.1
     # via matplotlib
-fqdn==1.5.1
-    # via jsonschema
-h11==0.16.0
-    # via
-    #   httpcore
-    #   wsproto
-idna==3.10
-    # via
-    #   anyio
-    #   httpx
-    #   jsonschema
-    #   requests
-    #   trio
-    #   yarl
-ipython-pygments-lexers==1.1.1
-    # via ipython
-isoduration==20.11.0
-    # via jsonschema
 jax==0.4.38
     # via mediapipe
 jaxlib==0.4.38
@@ -91,10 +55,6 @@ matplotlib==3.10.3
     #   saopaulobrazilchapter-braziliansignlanguage (pyproject.toml)
     #   mediapipe
     #   seaborn
-matplotlib-inline==0.1.7
-    # via
-    #   ipykernel
-    #   ipython
 mediapipe==0.10.21
     # via saopaulobrazilchapter-braziliansignlanguage (pyproject.toml)
 mistune==3.1.3
@@ -138,8 +98,6 @@ pandocfilters==1.5.1
     # via nbconvert
 parso==0.8.4
     # via jedi
-pexpect==4.9.0
-    # via ipython
 pillow==11.2.1
     # via matplotlib
 protobuf==4.25.8
@@ -154,8 +112,6 @@ pycparser==2.22
     # via cffie
 pyparsing==3.2.3
     # via matplotlib
-pysocks==1.7.1
-    # via urllib3
 python-dateutil==2.9.0.post0
     # via
     #   arrow
@@ -164,6 +120,7 @@ python-dateutil==2.9.0.post0
     #   pandas
 pytz==2025.2
     # via pandas
+pyyaml==6.0.2
 scipy==1.15.3
     # via
     #   jax
@@ -190,41 +147,15 @@ stack-data==0.6.3
     # via ipython
 tinycss2==1.4.0
     # via bleach
+torch==2.5.1
 tqdm==4.67.1
     # via saopaulobrazilchapter-braziliansignlanguage (pyproject.toml)
-traitlets==5.14.3
-    # via
-    #   comm
-    #   ipykernel
-    #   ipython
-    #   ipywidgets
-    #   jupyter-client
-    #   jupyter-console
-    #   jupyter-core
-    #   jupyter-events
-    #   jupyter-server
-    #   jupyterlab
-    #   matplotlib-inline
-    #   nbclient
-    #   nbconvert
-    #   nbformat
 types-python-dateutil==2.9.0.20250516
     # via arrow
-typing-extensions==4.13.2
-    # via
-    #   anyio
-    #   beautifulsoup4
-    #   ipython
-    #   referencing
-    #   selenium
 tzdata==2025.2
     # via pandas
 unidecode==1.4.0
     # via saopaulobrazilchapter-braziliansignlanguage (pyproject.toml)
-urllib3==2.4.0
-    # via
-    #   requests
-    #   selenium
 wcwidth==0.2.13
     # via prompt-toolkit
 webencodings==0.5.1
