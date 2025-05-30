@@ -10,7 +10,7 @@ import copy
 from preprocess import motion_detection as md
 
 try:
-    import mediapipe_holistic as mph
+    from preprocess import mediapipe_holistic as mph
 except ImportError:
     print("MediaPipeHolistic not available. Pose estimation functions will not work.")
 
