@@ -7,6 +7,7 @@ from model.dataset.dataloader_functions import collate_func_pad
 from typing import Dict, Tuple, List
 import numpy as np
 import copy
+import time
 
 def training_step(
     model: nn.Module,
@@ -25,7 +26,8 @@ def training_step(
         criterion: Loss function
         
     Returns:
-        float: The loss value for this step
+        Tuple containing:
+            - float: The loss value for this step
     """
     features, labels, attention_mask = batch
     y = labels.squeeze().to(device)
@@ -54,9 +56,12 @@ def validation_step(
         batch: Tuple of (features, labels, attention_mask)
         device: Device to run the model on
         criterion: Loss function
+        dataset_timings: Optional dictionary of dataset timing statistics
         
     Returns:
-        float: The loss value for this step
+        Tuple containing:
+            - float: The loss value for this step
+            - Dict[str, float]: Timing measurements for different operations
     """
     features, labels, attention_mask = batch
     y = labels.squeeze().to(device)
@@ -74,7 +79,8 @@ def train_epoch_fold(
     k_folds: int,
     model: nn.Module,
     datasets: Dict[str, LandmarkDataset],
-    batch_size: int,
+    train_batch_size: int,
+    val_batch_size: int,
     device: str,
     optimizer: torch.optim.Optimizer,
     criterion,
@@ -86,7 +92,8 @@ def train_epoch_fold(
         k_folds: Number of folds for cross-validation
         model: The neural network model
         datasets: Dictionary containing train dataset
-        batch_size: Batch size for training
+        train_batch_size: Batch size for training
+        val_batch_size: Batch size for validation
         device: Device to run the model on
         optimizer: Optimizer for updating model parameters
         criterion: Loss function
@@ -131,7 +138,7 @@ def train_epoch_fold(
     # Iterate through all folds for this epoch
     for fold, (train_ids, val_ids) in enumerate(fold_indices):
         print(f"- Fold {fold + 1} -")
-
+        fold_start_time = time.time()
         # Calculate fold statistics
         train_groups = np.unique(groups[train_ids])
         val_groups = np.unique(groups[val_ids])
@@ -144,16 +151,20 @@ def train_epoch_fold(
             'val_samples_per_group': len(val_ids) / len(val_groups)
         }
         fold_stats.append(fold_k_stats)
+        if len(train_ids) < train_batch_size:
+            print(f"Warning: Train batch size is larger than the number of samples in the fold.")
+        if len(val_ids) < val_batch_size:
+            print(f"Warning: Validation batch size is larger than the number of samples in the fold.")
 
         train_loader = DataLoader(
             Subset(train_dataset, train_ids),
-            batch_size=batch_size,
+            batch_size=train_batch_size,
             shuffle=True,
             collate_fn=collate_func_pad,
         )
         val_loader = DataLoader(
             Subset(val_dataset, val_ids),
-            batch_size=batch_size,
+            batch_size=val_batch_size,
             shuffle=False,
             collate_fn=collate_func_pad,
         )
@@ -161,24 +172,41 @@ def train_epoch_fold(
         # ----- training step -----
         model.train()
         fold_train_loss = 0
-        for idx, batch in enumerate(train_loader):
-            fold_train_loss += training_step(model, batch, device, optimizer, criterion)
+        total_train_step_time = 0.0
 
+        train_start_time = time.time()
+        for idx, batch in enumerate(train_loader):
+            one_train_step_start_time = time.time()
+            loss = training_step(model, batch, device, optimizer, criterion)
+            total_train_step_time += time.time() - one_train_step_start_time
+            fold_train_loss += loss
+        train_time = time.time() - train_start_time
+        
         avg_fold_train_loss = fold_train_loss / len(train_loader)
         total_train_loss += avg_fold_train_loss
+
 
         # ----- validation step -----
         model.eval()
         fold_val_loss = 0
+        total_val_step_time = 0.0
+        
+        val_start_time = time.time()
         with torch.no_grad():
             for idx, batch in enumerate(val_loader):
-                fold_val_loss += validation_step(model, batch, device, criterion)
-
+                one_val_step_start_time = time.time()
+                loss = validation_step(model, batch, device, criterion)
+                total_val_step_time += time.time() - one_val_step_start_time
+                fold_val_loss += loss
+        val_time = time.time() - val_start_time
+        
         avg_fold_val_loss = fold_val_loss / len(val_loader)
         total_val_loss += avg_fold_val_loss
 
         # Store per-fold metrics
         fold_metrics.append((avg_fold_train_loss, avg_fold_val_loss))
+
+        fold_time = time.time() - fold_start_time
 
         print(
             f"\tTrain Loss: {avg_fold_train_loss:.4f} | "
@@ -190,6 +218,15 @@ def train_epoch_fold(
             f"{fold_k_stats['val_samples']} samples from {fold_k_stats['val_groups']} groups "
             f"({fold_k_stats['val_samples_per_group']:.1f} per)"
         )
+        # Print detailed timing information
+        print(f"\tTotal Fold time: {fold_time:.2f}s")
+        print(f"\t  Train time: {train_time:.2f}s ({train_time / fold_time * 100:.1f}%)")
+        print(f"\t    Training step time: {total_train_step_time:.2f}s ({total_train_step_time / fold_time * 100:.1f}%)")
+        print(f"\t    Remaining time is mostly just the _getitem_ for each batch: {train_time - total_train_step_time:.2f}s ({(train_time - total_train_step_time) / fold_time * 100:.1f}%)")
+        print(f"\t  Val time: {val_time:.2f}s ({val_time / fold_time * 100:.1f}%)")
+        print(f"\t    Validation step time: {total_val_step_time:.2f}s ({total_val_step_time / fold_time * 100:.1f}%)")
+        print(f"\t    Remaining time is mostly just the _getitem_ for each batch: {val_time - total_val_step_time:.2f}s ({(val_time - total_val_step_time) / fold_time * 100:.1f}%)")
+
 
     # Return average losses across all folds and per-fold metrics
     avg_train_loss = total_train_loss / k_folds
@@ -204,7 +241,8 @@ def train_epoch(
     datasets: Dict[str, LandmarkDataset],
     optimizer: torch.optim.Optimizer,
     criterion,
-    batch_size: int,
+    train_batch_size: int,
+    val_batch_size: int,
 ) -> Tuple[float, float]:
     """Train the model for one epoch using standard train/val split.
     
@@ -214,7 +252,8 @@ def train_epoch(
         datasets: Dictionary containing train and validation datasets
         optimizer: Optimizer for updating model parameters
         criterion: Loss function
-        batch_size: Batch size for training
+        train_batch_size: Batch size for training
+        val_batch_size: Batch size for validation
         
     Returns:
         Tuple containing:
@@ -229,13 +268,13 @@ def train_epoch(
     # Create DataLoaders from datasets
     train_loader = DataLoader(
         datasets["train_dataset"],
-        batch_size=batch_size,
+        batch_size=train_batch_size,
         shuffle=True,
         collate_fn=collate_func_pad,
     )
     val_loader = DataLoader(
         datasets["val_dataset"],
-        batch_size=batch_size,
+        batch_size=val_batch_size,
         shuffle=False,
         collate_fn=collate_func_pad,
     )
