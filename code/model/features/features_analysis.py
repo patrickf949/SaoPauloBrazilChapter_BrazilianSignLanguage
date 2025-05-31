@@ -17,9 +17,19 @@ def analyze_dataset_features(dataset):
     # Initialize analysis variables
     feature_dims = set()
     feature_ranges = {}
+    timing_stats = {
+            'index_calculation': 0.0,
+            'frame_loading': 0.0,
+            'sample_selection': 0.0,
+            'metadata_lookup': 0.0,
+            'feature_processing': 0.0,
+            'label_creation': 0.0,
+            'analysis_time': 0.0,
+        }
     
     # Single pass through all samples in the dataset for all analysis
-    for sample_idx, (features, _) in enumerate(dataset):
+    for sample_idx, (features, _, timing) in enumerate(dataset):
+        analysis_start_time = time.time()
         # Check dimensions
         feature_dims.add(features.shape[1])
         if len(feature_dims) > 1:
@@ -38,6 +48,10 @@ def analyze_dataset_features(dataset):
             # Update global min/max for this feature
             feature_ranges[feature_idx]['min'] = min(feature_ranges[feature_idx]['min'], feature_min)
             feature_ranges[feature_idx]['max'] = max(feature_ranges[feature_idx]['max'], feature_max)
+
+        # for key, value in timing.items(): 
+        #     timing_stats[key] += value
+        timing_stats['analysis_time'] += time.time() - analysis_start_time
     
     analysis_time = time.time() - start_time
     n_features = feature_dims.pop()
@@ -88,6 +102,10 @@ def analyze_dataset_features(dataset):
     print("\nDataset Features Analysis:")
     print(f"- feature dimensions: {n_features} (consistent across all samples)")
     print(f"- pass through dataset completed in {analysis_time:.2f} seconds ({sample_idx} samples, at {analysis_time/sample_idx:.2f} seconds/sample)")
+    print(f"- timing breakdown (with % of total time):")
+    timing_stats['total'] = sum(timing_stats.values())
+    for key, value in timing_stats.items():
+        print(f"\t- {key}: {value:.2f}s ({value/analysis_time*100:.1f}%)")
     
     # Print results
     print("\nFeature Range Analysis:")
