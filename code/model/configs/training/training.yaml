@@ -1,5 +1,6 @@
 num_epochs: 300
-batch_size: 256
+train_batch_size: 256
+val_batch_size: 64
 patience: 50
 lr: 1e-4
 
