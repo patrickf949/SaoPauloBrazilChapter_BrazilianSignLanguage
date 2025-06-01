@@ -49,8 +49,8 @@ def analyze_dataset_features(dataset):
             feature_ranges[feature_idx]['min'] = min(feature_ranges[feature_idx]['min'], feature_min)
             feature_ranges[feature_idx]['max'] = max(feature_ranges[feature_idx]['max'], feature_max)
 
-        # for key, value in timing.items(): 
-        #     timing_stats[key] += value
+        for key, value in timing.items(): 
+            timing_stats[key] += value
         timing_stats['analysis_time'] += time.time() - analysis_start_time
     
     analysis_time = time.time() - start_time
