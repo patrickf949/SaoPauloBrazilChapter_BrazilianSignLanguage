@@ -140,6 +140,11 @@ def train_epoch_fold(
     fold_metrics = []  # Store per-fold metrics
     fold_stats = []    # Store fold statistics
 
+    use_gpu = device.startswith("cuda") or device == "gpu"
+    num_workers = 2 if use_gpu else 0
+    pin_memory = True if use_gpu else False
+    persistent_workers = True if use_gpu and num_workers > 0 else False
+
     print(f"{k_folds}-fold Cross-Validation Results (using StratifiedGroupKFold):")
     # Iterate through all folds for this epoch
     for fold, (train_ids, val_ids) in enumerate(fold_indices):
@@ -163,12 +168,18 @@ def train_epoch_fold(
             batch_size=train_batch_size,
             shuffle=True,
             collate_fn=collate_func_pad,
+            num_workers=num_workers,
+            pin_memory=pin_memory,
+            persistent_workers=persistent_workers,
         )
         val_loader = DataLoader(
             Subset(val_dataset, val_ids),
             batch_size=val_batch_size,
             shuffle=False,
             collate_fn=collate_func_pad,
+            num_workers=num_workers,
+            pin_memory=pin_memory,
+            persistent_workers=persistent_workers,
         )
 
         # ----- training step -----
