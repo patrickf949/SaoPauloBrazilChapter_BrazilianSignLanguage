@@ -24,7 +24,8 @@ class TestEstimators(unittest.TestCase):
         assert isinstance(self.config.dataset.data_dir, str)
         assert isinstance(self.config.dataset.data_path, str)
         assert isinstance(self.config.training.num_epochs, int)
-        assert isinstance(self.config.training.batch_size, int)
+        assert isinstance(self.config.training.train_batch_size, int)
+        assert isinstance(self.config.training.val_batch_size, int)
         assert isinstance(self.config.optimizer.params.momentum, float)
         assert (
             "cuda" in self.config.training.device
