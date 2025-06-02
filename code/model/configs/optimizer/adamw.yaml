@@ -1,4 +1,7 @@
 class_name: torch.optim.AdamW
 params:
   lr: ${training.lr}
+  # higher weight decay results in higher regularization, less chance to overfit, more chance to underfit
+  # lower weight decay results in less regularization, more chance to overfit, less chance to underfit
+  # weight decay should be balanced with the learning rate, higher wd might need higher lr, and vice versa
   weight_decay: 0.001
