@@ -5,8 +5,10 @@ verbose = True
 
 
 def collate_func_pad(batch):
-    features, labels = zip(*batch)  # Each feature is [T, D]
-
+    if len(batch) == 0:
+        raise ValueError("Received an empty batch. This might happen if the batch size is larger than the dataset size or if all samples in a batch were dropped.")
+        
+    features, labels, _ = zip(*batch)  # Each feature is [T, D]
     lengths = [x.shape[0] for x in features]
     padded_features = pad_sequence(features, batch_first=True)  # Shape: [B, T_max, D]
 

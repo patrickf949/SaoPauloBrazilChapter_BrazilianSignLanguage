@@ -123,7 +123,8 @@ def train(config: DictConfig):
                 config.training.k_folds,
                 model,
                 datasets,
-                config.training.batch_size,
+                config.training.train_batch_size,
+                config.training.val_batch_size,
                 device,
                 optimizer,
                 criterion,
@@ -133,7 +134,7 @@ def train(config: DictConfig):
             logger.log_fold_training(epoch, fold_metrics, fold_stats, avg_train_loss, avg_val_loss)
         else:
             avg_train_loss, avg_val_loss = train_epoch(
-                model, device, datasets, optimizer, criterion, config.training.batch_size
+                model, device, datasets, optimizer, criterion, config.training.train_batch_size, config.training.val_batch_size
             )
             
             # Log metrics

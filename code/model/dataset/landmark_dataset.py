@@ -11,7 +11,7 @@ from omegaconf import DictConfig
 import os
 from . import frame_sampling
 from model.features.feature_processor import FeatureProcessor
-
+import time
 
 def uniform_intervals(start: int, end: int, interval: int):
     return list(range(start, end + 1, interval))
@@ -159,25 +159,49 @@ class LandmarkDataset(Dataset):
         )
 
     def __getitem__(self, idx: int):
+        get_item_timing = {
+            'index_calculation': 0.0,
+            'frame_loading': 0.0,
+            'sample_selection': 0.0,
+            'metadata_lookup': 0.0,
+            'feature_processing': 0.0,
+            'label_creation': 0.0,
+        }
+        ic_start_time = time.time()
         # Find which video this index belongs to
-        video_idx = np.searchsorted(self.cumsum_samples, idx, side='right') - 1
+        ## idx_position is the raw index, and can be used with df.iloc to get the ith row
+        ## idx_number is the row's actual number in the index column of the df
+        ## the self.metadata df is a subset of the full metadata df, but still retains the original index numbers
+        ## so the index used for df.iloc and df.loc usually differ
+        video_idx_position = np.searchsorted(self.cumsum_samples, idx, side='right') - 1
+        video_idx_number = self.metadata.index[video_idx_position]
         # Calculate which sample number this is for this video
-        sample_idx = idx - self.cumsum_samples[video_idx]
+        sample_idx = idx - self.cumsum_samples[video_idx_position]
+        get_item_timing['index_calculation'] = time.time() - ic_start_time
         
         # Load the frames
-        frames = self._load_frames(video_idx)
+        fl_start_time = time.time()
+        frames = self._load_frames(video_idx_position)
+        get_item_timing['frame_loading'] = time.time() - fl_start_time
         
         # Get the pre-calculated sample for this index
-        selected_indices = self.all_samples[video_idx][sample_idx]
+        ss_start_time = time.time()
+        selected_indices = self.all_samples[video_idx_position][sample_idx]
+        get_item_timing['sample_selection'] = time.time() - ss_start_time
 
         # Get the metadata row
-        metadata_row = self.metadata.iloc[video_idx]
-        
+        ml_start_time = time.time()
+        metadata_row = self.metadata.iloc[video_idx_position]
+        get_item_timing['metadata_lookup'] = time.time() - ml_start_time
+
         # Process frames using feature processor
+        fp_start_time = time.time()
         features = self.feature_processor.process_frames(frames, selected_indices, metadata_row, self.dataset_split)
+        get_item_timing['feature_processing'] = time.time() - fp_start_time
 
         # Get label
-        video_idx = self.metadata.index[video_idx]
-        label = torch.tensor([self.metadata.loc[video_idx, "label_encoded"]], dtype=torch.int64)
+        lc_start_time = time.time()
+        label = torch.tensor([self.metadata.loc[video_idx_number, "label_encoded"]], dtype=torch.int64)
+        get_item_timing['label_creation'] = time.time() - lc_start_time
 
-        return features, label
+        return features, label, get_item_timing
