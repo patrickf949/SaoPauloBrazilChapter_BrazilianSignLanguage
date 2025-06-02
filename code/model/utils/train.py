@@ -30,12 +30,15 @@ def training_step(
             - float: The loss value for this step
     """
     features, labels, attention_mask = batch
-    y = labels.squeeze().to(device)
+    y = labels.to(device)
     features = features.to(device)
     attention_mask = attention_mask.to(device)
 
     optimizer.zero_grad()
     logits = model(features, attention_mask=attention_mask)
+    if logits.size(0) != y.size(0):
+        print(f"❌ Batch size mismatch: logits {logits.size(0)} vs labels {y.size(0)}")
+        return 0.0
     loss = criterion(logits, y)
     loss.backward()
     optimizer.step()
@@ -64,11 +67,14 @@ def validation_step(
             - Dict[str, float]: Timing measurements for different operations
     """
     features, labels, attention_mask = batch
-    y = labels.squeeze().to(device)
+    y = labels.to(device)
     features = features.to(device)
     attention_mask = attention_mask.to(device)
 
     logits = model(features, attention_mask=attention_mask)
+    if logits.size(0) != y.size(0):
+        print(f"❌ Batch size mismatch: logits {logits.size(0)} vs labels {y.size(0)}")
+        return 0.0
     loss = criterion(logits, y)
 
     return loss.item()
@@ -151,10 +157,6 @@ def train_epoch_fold(
             'val_samples_per_group': len(val_ids) / len(val_groups)
         }
         fold_stats.append(fold_k_stats)
-        if len(train_ids) < train_batch_size:
-            print(f"Warning: Train batch size is larger than the number of samples in the fold.")
-        if len(val_ids) < val_batch_size:
-            print(f"Warning: Validation batch size is larger than the number of samples in the fold.")
 
         train_loader = DataLoader(
             Subset(train_dataset, train_ids),
@@ -208,6 +210,7 @@ def train_epoch_fold(
 
         fold_time = time.time() - fold_start_time
 
+        print(f"\tTotal Fold time: {fold_time:.2f}s")
         print(
             f"\tTrain Loss: {avg_fold_train_loss:.4f} | "
             f"{fold_k_stats['train_samples']} samples from {fold_k_stats['train_groups']} groups "
@@ -219,13 +222,12 @@ def train_epoch_fold(
             f"({fold_k_stats['val_samples_per_group']:.1f} per)"
         )
         # Print detailed timing information
-        print(f"\tTotal Fold time: {fold_time:.2f}s")
-        print(f"\t  Train time: {train_time:.2f}s ({train_time / fold_time * 100:.1f}%)")
-        print(f"\t    Training step time: {total_train_step_time:.2f}s ({total_train_step_time / fold_time * 100:.1f}%)")
-        print(f"\t    Remaining time is mostly just the _getitem_ for each batch: {train_time - total_train_step_time:.2f}s ({(train_time - total_train_step_time) / fold_time * 100:.1f}%)")
-        print(f"\t  Val time: {val_time:.2f}s ({val_time / fold_time * 100:.1f}%)")
-        print(f"\t    Validation step time: {total_val_step_time:.2f}s ({total_val_step_time / fold_time * 100:.1f}%)")
-        print(f"\t    Remaining time is mostly just the _getitem_ for each batch: {val_time - total_val_step_time:.2f}s ({(val_time - total_val_step_time) / fold_time * 100:.1f}%)")
+        # print(f"\t  Train time: {train_time:.2f}s ({train_time / fold_time * 100:.1f}%)")
+        # print(f"\t    Training step time: {total_train_step_time:.2f}s ({total_train_step_time / fold_time * 100:.1f}%)")
+        # print(f"\t    Remaining time is mostly just the _getitem_ for each batch: {train_time - total_train_step_time:.2f}s ({(train_time - total_train_step_time) / fold_time * 100:.1f}%)")
+        # print(f"\t  Val time: {val_time:.2f}s ({val_time / fold_time * 100:.1f}%)")
+        # print(f"\t    Validation step time: {total_val_step_time:.2f}s ({total_val_step_time / fold_time * 100:.1f}%)")
+        # print(f"\t    Remaining time is mostly just the _getitem_ for each batch: {val_time - total_val_step_time:.2f}s ({(val_time - total_val_step_time) / fold_time * 100:.1f}%)")
 
 
     # Return average losses across all folds and per-fold metrics
