@@ -34,6 +34,7 @@ class FeatureProcessor:
         # Extract metadata configuration from features config
         metadata_config = features_config.get("metadata", {})
         self.scale_range = metadata_config.get("scale_range", [-1, 1])
+        self.include_positions = "positions" in features_config.keys()
         self.positions_computation_type = features_config.get("positions", {}).get("computation_type", None)
         self.positions_scaling_info = features_config.get("positions", {}).get("scaling_info", None)
         self.positions_mode = features_config.get("positions", {}).get("mode", None)
@@ -42,7 +43,7 @@ class FeatureProcessor:
 
         configuration = {
             "landmark_types": dataset_config["landmark_types"],
-            "features": [name for name in features_config.keys() if name != "metadata" and name != "positions"],  # Exclude metadata and positions from features
+            "features": [name for name in features_config.keys() if name != "metadata" and name != "positions"],  # Exclude metadata and positions from estimator features
             "ordering": dataset_config["ordering"],
         }
 
@@ -139,8 +140,7 @@ class FeatureProcessor:
                 xyz = [[lm.x, lm.y, lm.z] for lm in frame[f"{key}_landmarks"]]
                 xyz = np.array(xyz)
                 position_features[f"{key}_landmarks"].append(xyz)
-        
-        if 'positions' in self.configuration["features"]:
+        if self.include_positions:
             # Now we have a dict of lists of the landmarks for each frame, for each landmark type
             # We need to stack them into a single array, and scale them if needed
             for key in position_features.keys():
@@ -178,7 +178,6 @@ class FeatureProcessor:
                     # Add z positions to each frame's feature vector
                     for i in range(len(all_features)):
                         all_features[i] = torch.cat([all_features[i], z_positions[i]])
-
         # Stack all frame features
         frame_features = torch.stack(all_features)  # shape: (sequence_length, n_landmark_features)
         
