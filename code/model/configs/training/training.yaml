@@ -8,3 +8,7 @@ device: cuda
 
 type: cross_validation
 k_folds: 5
+
+# Resume training parameters
+resume: false  # Whether to resume training from checkpoint
+checkpoint_dir: null  # Directory containing checkpoint to resume from
