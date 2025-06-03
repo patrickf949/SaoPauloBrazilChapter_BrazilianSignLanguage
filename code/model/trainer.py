@@ -15,7 +15,7 @@ from model.utils.path_utils import get_save_paths, get_data_paths, load_base_pat
 from model.dataset.prepare_data import prepare_training_metadata, prepare_landmark_arrays
 from model.utils.logging import TrainingLogger
 import torch
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 import hydra
 from model.utils.utils import set_config_param
 from datetime import datetime
@@ -24,6 +24,35 @@ from datetime import datetime
 paths = load_base_paths()
 os.makedirs(paths.logs_base, exist_ok=True)
 os.makedirs(os.path.join(paths.logs_base, "runs"), exist_ok=True)
+
+def save_checkpoint(state: dict, filepath: str, config: DictConfig) -> None:
+    """Save training checkpoint to file.
+    
+    Args:
+        state: Dictionary containing checkpoint data
+        filepath: Path to save checkpoint to
+        config: Current training configuration
+    """
+    # Convert config to dict and add to state
+    state['config'] = OmegaConf.to_container(config, resolve=True)
+    torch.save(state, filepath)
+    print(f"Saved checkpoint to: {filepath}")
+
+def load_checkpoint(filepath: str) -> dict:
+    """Load training checkpoint from file.
+    
+    Args:
+        filepath: Path to checkpoint file
+        
+    Returns:
+        Dictionary containing checkpoint data
+    """
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"No checkpoint found at {filepath}")
+    
+    checkpoint = torch.load(filepath)
+    print(f"Loaded checkpoint from: {filepath}")
+    return checkpoint
 
 def get_dataset(config: DictConfig):
     # Always generate fresh training metadata
@@ -58,6 +87,38 @@ def get_dataset(config: DictConfig):
     config_name="train_config",
 )
 def train(config: DictConfig):
+    # Check if resuming training
+    resume = config.training.get('resume', False)
+    checkpoint_dir = config.training.get('checkpoint_dir', None)
+    
+    if resume and checkpoint_dir:
+        # Load checkpoint
+        checkpoint_path = os.path.join(checkpoint_dir, "latest_checkpoint.pt")
+        checkpoint = load_checkpoint(checkpoint_path)
+        
+        # Use the saved config
+        config = OmegaConf.create(checkpoint['config'])
+        
+        # Keep the resume settings from current config
+        config.training.resume = True
+        config.training.checkpoint_dir = checkpoint_dir
+        
+        current_time = checkpoint['timestamp']  # Use original timestamp
+        log_dir = os.path.join(paths.logs_base, "runs", current_time)
+        start_epoch = checkpoint['epoch']
+        best_loss = checkpoint['best_loss']
+        patience_counter = checkpoint['patience_counter']
+        best_epoch = checkpoint['best_epoch']
+        best_model_state = checkpoint['best_model_state']
+    else:
+        current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
+        log_dir = os.path.join(paths.logs_base, "runs", current_time)
+        start_epoch = 0
+        best_loss = float("inf")
+        patience_counter = 0
+        best_model_state = None
+        best_epoch = 0
+
     device = config.training.device
     num_epochs = config.training.num_epochs
 
@@ -84,37 +145,24 @@ def train(config: DictConfig):
 
     criterion = nn.CrossEntropyLoss()
 
-    best_loss = float("inf")
-    patience_counter = 0
-    best_model_state = None
-    best_epoch = 0
-
-    log_data = []
+    # Load model and optimizer states if resuming
+    if resume and checkpoint_dir:
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
 
     # Get save paths
     log_path, best_model_path, final_model_path = get_save_paths(config)
 
     # Initialize logger
-    current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
-    log_dir = os.path.join(paths.logs_base, "runs", current_time)
     k_folds = config.training.k_folds if config.training.type == "cross_validation" else None
     logger = TrainingLogger(log_dir, log_path, k_folds)
 
-    # Remove model graph logging - causing tracing issues
-    # try:
-    #     if isinstance(datasets["train_dataset"], DataLoader):
-    #         sample_input = next(iter(datasets["train_dataset"]))[0]
-    #     else:
-    #         sample_input = next(iter(datasets["train_dataset"]))[0]
-    #     
-    #     if not isinstance(sample_input, torch.Tensor):
-    #         sample_input = torch.tensor(sample_input)
-    #     sample_input = sample_input.unsqueeze(0).to(device)
-    #     logger.writer.add_graph(model, sample_input)
-    # except Exception as e:
-    #     print(f"Could not add model graph to TensorBoard: {e}")
+    checkpoint_path = os.path.join(log_dir, "latest_checkpoint.pt")
+    
+    log_data = []
 
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         print(f"\n--- Epoch {epoch + 1}/{num_epochs} ---")
         if config.training.type == "cross_validation":
             # Modified to get per-fold metrics
@@ -157,6 +205,17 @@ def train(config: DictConfig):
             best_model_state = model.state_dict()
             best_epoch = epoch + 1
             patience_counter = 0
+            
+            # Save best model checkpoint when we find a new best
+            if best_model_path is not None:
+                torch.save({
+                    'epoch': best_epoch,
+                    'model_state_dict': best_model_state,
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'scheduler_state_dict': scheduler.state_dict(),
+                    'loss': best_loss,
+                }, best_model_path)
+                print(f"Saved new best model checkpoint to: {best_model_path}")
         else:
             patience_counter += 1
             print(f"Patience: {patience_counter}/{config.training.patience}")
@@ -171,30 +230,24 @@ def train(config: DictConfig):
             else:
                 scheduler.step()
 
-    # Load the best model state before final evaluation
-    if best_model_state:
-        model.load_state_dict(best_model_state)
-        # Save best model checkpoint if enabled
-        if best_model_path is not None:
-            torch.save({
-                'epoch': best_epoch,
-                'model_state_dict': best_model_state,
-                'optimizer_state_dict': optimizer.state_dict(),
-                'scheduler_state_dict': scheduler.state_dict(),
-                'loss': best_loss,
-            }, best_model_path)
-            print(f"Saved best model checkpoint to: {best_model_path}")
-
-    # Save final model state if enabled
-    if final_model_path is not None:
-        torch.save({
-            'epoch': epoch + 1,
+        # Save checkpoint at the end of each epoch
+        checkpoint = {
+            'epoch': epoch + 1,  # Save next epoch to resume from
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'scheduler_state_dict': scheduler.state_dict(),
             'loss': avg_val_loss,
-        }, final_model_path)
-        print(f"Saved final model checkpoint to: {final_model_path}")
+            'best_loss': best_loss,
+            'patience_counter': patience_counter,
+            'best_epoch': best_epoch,
+            'best_model_state': best_model_state,
+            'timestamp': current_time
+        }
+        save_checkpoint(checkpoint, checkpoint_path, config)
+
+    # Load the best model state before final evaluation
+    if best_model_state:
+        model.load_state_dict(best_model_state)
 
     # ----- evaluate -----
     # Final evaluation (optional - could be on last fold or an extra hold-out set)
