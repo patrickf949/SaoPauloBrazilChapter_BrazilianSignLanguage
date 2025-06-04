@@ -15,9 +15,14 @@ class TrainingLogger:
             resume: Whether training is being resumed from checkpoint
         """
         # Initialize TensorBoard writer
-        os.makedirs(log_dir, exist_ok=True)
-        self.writer = SummaryWriter(log_dir)
-        print(f"TensorBoard logs will be saved to: {log_dir}")
+        tensorboard_dir = os.path.join(log_dir, "tensorboard")
+        os.makedirs(tensorboard_dir, exist_ok=True)
+        self.writer = SummaryWriter(tensorboard_dir)
+        print(f"TensorBoard logs will be saved to: {tensorboard_dir}")
+        
+        # Write a test scalar to verify TensorBoard is working
+        self.writer.add_scalar('test/initialization', 0.0, 0)
+        self.writer.flush()
         
         # Initialize CSV writer if path provided
         self.csv_writer = None
@@ -27,7 +32,7 @@ class TrainingLogger:
             
             # Define CSV headers based on training type
             if k_folds:
-                fieldnames = ["epoch", "avg_train_loss", "avg_val_loss"]
+                fieldnames = ["epoch", "avg_train_loss", "avg_val_loss", "learning_rate"]
                 # Add per-fold metrics
                 for fold in range(k_folds):
                     fieldnames.extend([
@@ -50,7 +55,7 @@ class TrainingLogger:
                     "avg_val_samples_per_group"
                 ])
             else:
-                fieldnames = ["epoch", "train_loss", "val_loss"]
+                fieldnames = ["epoch", "train_loss", "val_loss", "learning_rate"]
             
             # Open file in append mode if resuming, write mode if new training
             mode = 'a' if resume else 'w'
@@ -69,7 +74,8 @@ class TrainingLogger:
         fold_metrics: List[Tuple[float, float]],
         fold_stats: List[Dict],
         avg_train_loss: float,
-        avg_val_loss: float
+        avg_val_loss: float,
+        learning_rate: float = None
     ) -> None:
         """Log metrics for cross-validation training."""
         # Calculate average statistics across folds
@@ -82,26 +88,25 @@ class TrainingLogger:
 
         # Log to TensorBoard
         # Log average losses
-        self.writer.add_scalar('Loss/train', avg_train_loss, epoch)
-        self.writer.add_scalar('Loss/val', avg_val_loss, epoch)
+        self.writer.add_scalars('epoch_loss', {
+            'train': avg_train_loss,
+            'val': avg_val_loss
+        }, epoch)
         
-        # Log per-fold metrics
-        for fold_idx, ((fold_train_loss, fold_val_loss), fold_stat) in enumerate(zip(fold_metrics, fold_stats)):
-            # Log fold losses
-            self.writer.add_scalar(f'Loss/train/fold_{fold_idx}', fold_train_loss, epoch)
-            self.writer.add_scalar(f'Loss/val/fold_{fold_idx}', fold_val_loss, epoch)
-            
-            # Log fold statistics
-            self.writer.add_scalar(f'FoldStats/train_samples/fold_{fold_idx}', fold_stat['train_samples'], epoch)
-            self.writer.add_scalar(f'FoldStats/val_samples/fold_{fold_idx}', fold_stat['val_samples'], epoch)
-            self.writer.add_scalar(f'FoldStats/train_groups/fold_{fold_idx}', fold_stat['train_groups'], epoch)
-            self.writer.add_scalar(f'FoldStats/val_groups/fold_{fold_idx}', fold_stat['val_groups'], epoch)
-            self.writer.add_scalar(f'FoldStats/train_samples_per_group/fold_{fold_idx}', fold_stat['train_samples_per_group'], epoch)
-            self.writer.add_scalar(f'FoldStats/val_samples_per_group/fold_{fold_idx}', fold_stat['val_samples_per_group'], epoch)
+        # Log learning rate if provided
+        if learning_rate is not None:
+            self.writer.add_scalar('learning_rate', learning_rate, epoch)
+        
+        # Log all fold train losses on same plot
+        fold_train_dict = {f'fold_{idx}': loss for idx, (loss, _) in enumerate(fold_metrics)}
+        self.writer.add_scalars('fold_loss/train', fold_train_dict, epoch)
+        
+        # Log all fold validation losses on same plot
+        fold_val_dict = {f'fold_{idx}': loss for idx, (_, loss) in enumerate(fold_metrics)}
+        self.writer.add_scalars('fold_loss/val', fold_val_dict, epoch)
 
-        # Log average statistics to TensorBoard
-        self.writer.add_scalar('FoldStats/train_samples_per_group/average', avg_train_samples_per_group, epoch)
-        self.writer.add_scalar('FoldStats/val_samples_per_group/average', avg_val_samples_per_group, epoch)
+        # Force write to disk
+        self.writer.flush()
 
         # Log to CSV if enabled - write once per epoch with all fold information
         if self.csv_writer:
@@ -109,6 +114,7 @@ class TrainingLogger:
                 "epoch": epoch + 1,
                 "avg_train_loss": avg_train_loss,
                 "avg_val_loss": avg_val_loss,
+                "learning_rate": learning_rate,
                 "avg_train_samples": avg_train_samples,
                 "avg_val_samples": avg_val_samples,
                 "avg_train_groups": avg_train_groups,
@@ -137,19 +143,28 @@ class TrainingLogger:
         self,
         epoch: int,
         train_loss: float,
-        val_loss: float
+        val_loss: float,
+        learning_rate: float = None
     ) -> None:
         """Log metrics for standard training."""
         # Log to TensorBoard
         self.writer.add_scalar('Loss/train', train_loss, epoch)
         self.writer.add_scalar('Loss/val', val_loss, epoch)
         
+        # Log learning rate if provided
+        if learning_rate is not None:
+            self.writer.add_scalar('learning_rate', learning_rate, epoch)
+        
+        # Force write to disk
+        self.writer.flush()
+        
         # Log to CSV if enabled
         if self.csv_writer:
             self.csv_writer.writerow({
                 "epoch": epoch + 1,
                 "train_loss": train_loss,
-                "val_loss": val_loss
+                "val_loss": val_loss,
+                "learning_rate": learning_rate
             })
             # Ensure the CSV is written to disk after each epoch
             self.log_file.flush()
