@@ -8,7 +8,7 @@ from model.utils.train import (
     train_epoch,
     train_epoch_fold,
 )
-from model.utils.evaluate import evaluate
+from model.utils.evaluate import evaluate, evaluate_detailed, print_evaluation_results
 from model.dataset.landmark_dataset import LandmarkDataset
 from model.dataset.dataloader_functions import collate_func_pad
 from model.utils.path_utils import get_save_paths, get_data_paths, load_base_paths
@@ -19,6 +19,7 @@ from omegaconf import DictConfig, OmegaConf
 import hydra
 from model.utils.utils import set_config_param
 from datetime import datetime
+import numpy as np
 
 # Ensure base output directories exist
 paths = load_base_paths()
@@ -244,17 +245,73 @@ def train(config: DictConfig):
         model.load_state_dict(best_model_state)
 
     # ----- evaluate -----
-    # Final evaluation (optional - could be on last fold or an extra hold-out set)
-    test_loader = DataLoader(datasets["test_dataset"], batch_size=1)
-    top1_acc, topk_acc, test_loss = evaluate(model, test_loader, device, criterion=criterion)
-    print(
-        f"\nBest Epoch: {best_epoch} | Final Val Accuracy (Top-1): {top1_acc:.4f} | Top-K Accuracy: {topk_acc:.4f} | Test Loss: {test_loss:.4f}"
+    # Final evaluation using inference engine with detailed metrics
+    # Use a reasonable batch size for testing:
+    # - Large enough for efficient processing
+    # - Small enough to avoid memory issues
+    # - If using ensemble prediction, samples from the same video will be automatically grouped
+    test_batch_size = config.training.val_batch_size
+    test_loader = DataLoader(
+        datasets["test_dataset"],
+        batch_size=test_batch_size,
+        shuffle=False,  # Keep order for reproducibility
+        collate_fn=collate_func_pad,  # Use same collate function as training
     )
+    
+    # Get class names from dataset
+    class_names = {
+        label: name for label, name in 
+        zip(datasets["test_dataset"].metadata["label_encoded"], 
+            datasets["test_dataset"].metadata["label"])
+    }
+    
+    # Run detailed evaluation with confidence scores
+    metrics, confusion_matrix_df, confidences = evaluate_detailed(
+        model=model,
+        test_loader=test_loader,
+        device=device,
+        class_names=class_names,
+        save_confusion_matrix=os.path.join(os.path.dirname(log_path), "confusion_matrix.png"),
+        criterion=criterion,
+        return_confidence=True
+    )
+    
+    # Print results
+    print("\n=== Evaluation Results (best model) ===")
+    print_evaluation_results(metrics, confusion_matrix_df, confidences, class_names)
+    
+    # Save detailed results
+    results_path = os.path.join(os.path.dirname(log_path), "evaluation_results.txt")
+    with open(results_path, "w") as f:
+        f.write("=== Evaluation Results ===\n\n")
+        f.write("Overall Metrics:\n")
+        for metric, value in metrics.items():
+            if value is not None:
+                f.write(f"{metric.capitalize()}: {value:.4f}\n")
+        
+        f.write("\nConfusion Matrix:\n")
+        f.write(confusion_matrix_df.to_string())
+        
+        if confidences:
+            f.write("\n\nConfidence Statistics:\n")
+            conf_values = list(confidences.values())
+            f.write(f"Mean confidence: {np.mean(conf_values):.4f}\n")
+            f.write(f"Std confidence: {np.std(conf_values):.4f}\n")
+            f.write(f"Min confidence: {np.min(conf_values):.4f}\n")
+            f.write(f"Max confidence: {np.max(conf_values):.4f}\n")
+            
+            # Write samples with lowest confidence
+            f.write("\nLowest Confidence Predictions:\n")
+            n_lowest = min(5, len(confidences))
+            lowest_conf = sorted(confidences.items(), key=lambda x: x[1])[:n_lowest]
+            for idx, conf in lowest_conf:
+                sample_name = f"Sample {idx}"
+                f.write(f"{sample_name}: {conf:.4f}\n")
 
     # Close logger
     logger.close()
 
-    return top1_acc, topk_acc, test_loss, best_epoch
+    return metrics["accuracy"], metrics.get("loss", 0.0), best_epoch
 
 
 if __name__ == "__main__":
