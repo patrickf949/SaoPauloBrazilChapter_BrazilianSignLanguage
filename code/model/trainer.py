@@ -84,12 +84,12 @@ def get_dataset(config: DictConfig):
     config_name="train_config",
 )
 def train(config: DictConfig):
-    # Check if resuming training
+    # ----- Setup paths and resume state -----
     resume = config.training.get('resume', False)
     run_dir = config.training.get('run_dir', None)
     
     if resume and run_dir:
-        # Load checkpoint
+        # Load checkpoint and config from previous run
         checkpoint_path = os.path.join(run_dir, "checkpoint.pt")
         checkpoint = load_checkpoint(checkpoint_path)
         
@@ -100,13 +100,18 @@ def train(config: DictConfig):
         saved_config.training.run_dir = run_dir
         config = saved_config
         
-        current_time = checkpoint['timestamp']  # Use original timestamp
+        # Restore training state
+        current_time = checkpoint['timestamp']
         start_epoch = checkpoint['epoch']
         best_loss = checkpoint['best_loss']
         patience_counter = checkpoint['patience_counter']
         best_epoch = checkpoint['best_epoch']
         best_model_state = checkpoint['best_model_state']
+
+        print(f"Resuming training using files in {run_dir}")
+        print(f"\t Starting from epoch {start_epoch}, with patience counter at {patience_counter}")
     else:
+        # Initialize new training state
         current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
         start_epoch = 0
         best_loss = float("inf")
@@ -114,51 +119,47 @@ def train(config: DictConfig):
         best_model_state = None
         best_epoch = 0
 
+    # Get paths for saving artifacts
+    log_path, checkpoint_path, best_model_path, config_path = get_save_paths(config)
+
+    # ----- Data preparation -----
+    # Get dataset
+    datasets = get_dataset(config)
+
+    # For new training runs, analyze features and update config with actual input size
+    if not resume:
+        n_features = analyze_dataset_features(datasets["train_dataset"])
+        set_config_param(config.model.params, "input_size", n_features)
+        OmegaConf.save(config, config_path)
+
+    # ----- Model initialization -----
     device = config.training.device
     num_epochs = config.training.num_epochs
-
-    # Get dataset first
-    datasets = get_dataset(config)
     
-    # Analyze dataset and get feature dimensions
-    n_features = analyze_dataset_features(datasets["train_dataset"])
-    
-    # Update model config with actual input size
-    set_config_param(config.model.params, "input_size", n_features)
-    
-    # Initialize model with updated config
+    # Initialize model
     model = load_obj(config.model.class_name)(**config.model.params)
     model.to(device)
 
+    # Initialize training components
     optimizer = load_obj(config.optimizer.class_name)(
         model.parameters(), **config.optimizer.params
     )
-
     scheduler = load_obj(config.scheduler.class_name)(
         optimizer, **config.scheduler.params
     )
-
     criterion = nn.CrossEntropyLoss()
 
-    # Load model and optimizer states if resuming
+    # Restore model state if resuming
     if resume and run_dir:
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
 
-    # Get save paths
-    log_path, checkpoint_path, best_model_path, config_path = get_save_paths(config)
-
-    # Save config to file if not resuming
-    if not resume:
-        OmegaConf.save(config, config_path)
-
-    # Initialize logger
+    # ----- Logging setup -----
     k_folds = config.training.k_folds if config.training.type == "cross_validation" else None
     logger = TrainingLogger(os.path.dirname(log_path), log_path, k_folds, resume)
-    
-    log_data = []
 
+    # ----- Training loop -----
     for epoch in range(start_epoch, num_epochs):
         print(f"\n--- Epoch {epoch + 1}/{num_epochs} ---")
         if config.training.type == "cross_validation":
@@ -187,14 +188,6 @@ def train(config: DictConfig):
 
         print(
             f"Epoch Average Results:\n\tTrain Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}"
-        )
-
-        log_data.append(
-            {
-                "epoch": epoch + 1,
-                "train_loss": avg_train_loss,
-                "val_loss": avg_val_loss,
-            }
         )
 
         if avg_val_loss < best_loss:
@@ -257,7 +250,7 @@ def train(config: DictConfig):
     # Close logger
     logger.close()
 
-    return top1_acc, topk_acc, test_loss, best_epoch, log_data
+    return top1_acc, topk_acc, test_loss, best_epoch
 
 
 if __name__ == "__main__":
