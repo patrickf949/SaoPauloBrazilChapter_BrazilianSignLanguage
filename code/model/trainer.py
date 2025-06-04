@@ -25,16 +25,13 @@ paths = load_base_paths()
 os.makedirs(paths.logs_base, exist_ok=True)
 os.makedirs(os.path.join(paths.logs_base, "runs"), exist_ok=True)
 
-def save_checkpoint(state: dict, filepath: str, config: DictConfig) -> None:
+def save_checkpoint(state: dict, filepath: str) -> None:
     """Save training checkpoint to file.
     
     Args:
         state: Dictionary containing checkpoint data
         filepath: Path to save checkpoint to
-        config: Current training configuration
     """
-    # Convert config to dict and add to state
-    state['config'] = OmegaConf.to_container(config, resolve=True)
     torch.save(state, filepath)
     print(f"Saved checkpoint to: {filepath}")
 
@@ -89,22 +86,21 @@ def get_dataset(config: DictConfig):
 def train(config: DictConfig):
     # Check if resuming training
     resume = config.training.get('resume', False)
-    checkpoint_dir = config.training.get('checkpoint_dir', None)
+    run_dir = config.training.get('run_dir', None)
     
-    if resume and checkpoint_dir:
+    if resume and run_dir:
         # Load checkpoint
-        checkpoint_path = os.path.join(checkpoint_dir, "latest_checkpoint.pt")
+        checkpoint_path = os.path.join(run_dir, "checkpoint.pt")
         checkpoint = load_checkpoint(checkpoint_path)
         
-        # Use the saved config
-        config = OmegaConf.create(checkpoint['config'])
-        
-        # Keep the resume settings from current config
-        config.training.resume = True
-        config.training.checkpoint_dir = checkpoint_dir
+        # Load saved config but preserve resume settings
+        config_path = os.path.join(run_dir, "config.yaml")
+        saved_config = OmegaConf.load(config_path)
+        saved_config.training.resume = resume
+        saved_config.training.run_dir = run_dir
+        config = saved_config
         
         current_time = checkpoint['timestamp']  # Use original timestamp
-        log_dir = os.path.join(paths.logs_base, "runs", current_time)
         start_epoch = checkpoint['epoch']
         best_loss = checkpoint['best_loss']
         patience_counter = checkpoint['patience_counter']
@@ -112,7 +108,6 @@ def train(config: DictConfig):
         best_model_state = checkpoint['best_model_state']
     else:
         current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_dir = os.path.join(paths.logs_base, "runs", current_time)
         start_epoch = 0
         best_loss = float("inf")
         patience_counter = 0
@@ -146,19 +141,21 @@ def train(config: DictConfig):
     criterion = nn.CrossEntropyLoss()
 
     # Load model and optimizer states if resuming
-    if resume and checkpoint_dir:
+    if resume and run_dir:
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
 
     # Get save paths
-    log_path, best_model_path, final_model_path = get_save_paths(config)
+    log_path, checkpoint_path, best_model_path, config_path = get_save_paths(config)
+
+    # Save config to file if not resuming
+    if not resume:
+        OmegaConf.save(config, config_path)
 
     # Initialize logger
     k_folds = config.training.k_folds if config.training.type == "cross_validation" else None
-    logger = TrainingLogger(log_dir, log_path, k_folds)
-
-    checkpoint_path = os.path.join(log_dir, "latest_checkpoint.pt")
+    logger = TrainingLogger(os.path.dirname(log_path), log_path, k_folds, resume)
     
     log_data = []
 
@@ -243,7 +240,7 @@ def train(config: DictConfig):
             'best_model_state': best_model_state,
             'timestamp': current_time
         }
-        save_checkpoint(checkpoint, checkpoint_path, config)
+        save_checkpoint(checkpoint, checkpoint_path)
 
     # Load the best model state before final evaluation
     if best_model_state:
