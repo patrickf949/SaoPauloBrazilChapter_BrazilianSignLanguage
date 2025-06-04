@@ -205,3 +205,35 @@ class LandmarkDataset(Dataset):
         get_item_timing['label_creation'] = time.time() - lc_start_time
 
         return features, label, get_item_timing
+
+    def get_video_idx(self, idx: int) -> int:
+        """
+        Get the video index for a given sample index.
+        
+        Args:
+            idx: Sample index
+            
+        Returns:
+            Original video index from metadata
+        """
+        # Find which video this index belongs to
+        video_idx_position = np.searchsorted(self.cumsum_samples, idx, side='right') - 1
+        # Return the actual index number from metadata
+        return self.metadata.index[video_idx_position]
+
+    def get_samples_for_video(self, video_idx: int) -> List[int]:
+        """
+        Get all sample indices for a given video.
+        
+        Args:
+            video_idx: Video index from metadata
+            
+        Returns:
+            List of sample indices for this video
+        """
+        # Find position of video in metadata
+        video_position = self.metadata.index.get_loc(video_idx)
+        # Get start and end indices for this video's samples
+        start_idx = self.cumsum_samples[video_position]
+        end_idx = self.cumsum_samples[video_position + 1]
+        return list(range(start_idx, end_idx))
