@@ -12,11 +12,12 @@ frame_sampling_train:
     include_remaining: True
 
 # Frame sampling for validation/test splits
+# -- currently, the code in train.py means that the frame_sampling_train settings are used for validation as well --
 frame_sampling_test:
   method: multiple_uniform  # Deterministic sampling for consistent evaluation
   params:
     frames_per_sample: 20
-    num_samples_limit: 2
+    num_samples_limit: 5 
     replacement_rate: 0.2
     include_remaining: True
 
@@ -32,6 +33,5 @@ ordering: [features, landmark_types]
 paths:
   preprocessed_base: "data/preprocessed"
   metadata_base: "modelling/metadata"
-  models_base: "modelling/models"
-  logs_base: "modelling/logs"
+  logs_base: "modelling/runs"  # New consolidated location for all run artifacts
   landmark_arrays_base: "modelling/landmark_arrays"

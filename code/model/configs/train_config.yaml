@@ -15,12 +15,8 @@ defaults:
 
 # Hydra configuration
 hydra:
-  run:
-    dir: modelling/outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
-  job:
-    chdir: false
+  output_subdir: null  # Disable saving Hydra config files
 
 general: 
-  enable_saving: true  # Set to false to disable all saving
   experiment_name: null  # Optional name to include in filenames
   author: null  # Optional metadata

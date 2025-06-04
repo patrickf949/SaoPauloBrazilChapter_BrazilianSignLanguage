@@ -11,8 +11,8 @@ def load_base_paths() -> DictConfig:
         DictConfig containing base paths with the following structure:
         - preprocessed_base: "data/preprocessed"
         - metadata_base: "modelling/metadata"
-        - models_base: "modelling/models"
-        - logs_base: "modelling/logs"
+        - logs_base: "modelling/runs"
+        - landmark_arrays_base: "modelling/landmark_arrays"
     """
     config_path = os.path.join(os.path.dirname(__file__), "..", "configs", "dataset", "dataset.yaml")
     config = OmegaConf.load(config_path)
@@ -41,43 +41,33 @@ def get_data_paths(data_version: str) -> tuple[str, str]:
     
     return landmarks_dir, metadata_path
 
-def generate_experiment_filename(config: DictConfig, prefix: str = "", suffix: str = "") -> str:
+def generate_run_name(config: DictConfig) -> str:
     """
-    Generate a standardized filename for experiment artifacts.
-    This function can be modified to change how filenames are structured.
+    Generate a descriptive run name including timestamp and relevant config info.
     
     Args:
         config: The experiment configuration
-        prefix: Optional prefix to add before the timestamp
-        suffix: Optional suffix to add after the metadata
     
     Returns:
-        A filename string in the format: [prefix]_timestamp_[metadata]_[suffix]
+        A string in format: YYYYMMDD_HHMMSS_[model]_[experiment_name]
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    # Add metadata components - modify this section to change what goes into the filename
-    metadata_parts = []
+    # Get model name without full path
+    model_name = config.model.class_name.split('.')[-1].replace('Classifier', '')
+    
+    # Build name components
+    name_parts = [timestamp, model_name]
+    
+    # Add experiment name if provided
     if config.general.experiment_name:
-        metadata_parts.append(config.general.experiment_name)
-    if config.model.class_name.split('.')[-1]:  # Get the model class name without the full path
-        metadata_parts.append(config.model.class_name.split('.')[-1])
-    
-    # Combine all parts
-    filename_parts = [timestamp]
-    if metadata_parts:
-        filename_parts.append('_'.join(metadata_parts))
-    if suffix:
-        filename_parts.append(suffix)
-    
-    # Combine with prefix if provided
-    final_name = '_'.join(part for part in filename_parts if part)
-    if prefix:
-        final_name = f"{prefix}_{final_name}"
-    
-    return final_name
+        name_parts.append(config.general.experiment_name)
+    if config.general.author:
+        name_parts.append(config.general.author)
+        
+    return '_'.join(name_parts)
 
-def get_save_paths(config: DictConfig) -> tuple[Optional[str], Optional[str], Optional[str]]:
+def get_save_paths(config: DictConfig) -> tuple[str, str, str, str]:
     """
     Generate paths for saving experiment artifacts.
     
@@ -85,28 +75,25 @@ def get_save_paths(config: DictConfig) -> tuple[Optional[str], Optional[str], Op
         config: The experiment configuration
         
     Returns:
-        Tuple of (log_path, best_model_path, final_model_path)
-        - log_path: logs_base/experiment_name.csv
-        - best_model_path: models_base/experiment_name_best.pt
-        - final_model_path: models_base/experiment_name_final.pt
-        Returns None for each path if saving is disabled
+        Tuple of (log_path, checkpoint_path, best_model_path, config_path)
     """
-    # If saving is disabled, return None for all paths
-    if not config.general.enable_saving:
-        return None, None, None
-        
     paths = load_base_paths()
     
-    # Generate base filename
-    base_filename = generate_experiment_filename(config)
+    # If resuming, use the existing run directory
+    if config.training.get('resume', False) and config.training.get('run_dir'):
+        run_dir = config.training.run_dir
+    else:
+        # Generate new run directory with descriptive name
+        run_name = generate_run_name(config)
+        run_dir = os.path.join(paths.logs_base, run_name)
     
-    # Create full paths
-    log_path = os.path.join(paths.logs_base, f"{base_filename}.csv")
-    best_model_path = os.path.join(paths.models_base, f"{base_filename}_best.pt")
-    final_model_path = os.path.join(paths.models_base, f"{base_filename}_final.pt")
+    # Create run directory
+    os.makedirs(run_dir, exist_ok=True)
     
-    # Ensure directories exist
-    os.makedirs(paths.logs_base, exist_ok=True)
-    os.makedirs(paths.models_base, exist_ok=True)
+    # Define paths for artifacts
+    log_path = os.path.join(run_dir, "training_log.csv")
+    checkpoint_path = os.path.join(run_dir, "checkpoint.pt")
+    best_model_path = os.path.join(run_dir, "best_model.pt")
+    config_path = os.path.join(run_dir, "config.yaml")
     
-    return log_path, best_model_path, final_model_path 
+    return log_path, checkpoint_path, best_model_path, config_path 

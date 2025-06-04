@@ -5,13 +5,14 @@ from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 
 class TrainingLogger:
-    def __init__(self, log_dir: str, log_path: Optional[str] = None, k_folds: Optional[int] = None):
+    def __init__(self, log_dir: str, log_path: Optional[str] = None, k_folds: Optional[int] = None, resume: bool = False):
         """Initialize the training logger.
         
         Args:
             log_dir: Directory for TensorBoard logs, should be under logs_base/runs/timestamp
             log_path: Path for CSV logs (optional), should be under logs_base/experiment_name.csv
             k_folds: Number of folds for cross-validation (optional)
+            resume: Whether training is being resumed from checkpoint
         """
         # Initialize TensorBoard writer
         os.makedirs(log_dir, exist_ok=True)
@@ -23,7 +24,6 @@ class TrainingLogger:
         self.log_file = None
         if log_path:
             os.makedirs(os.path.dirname(log_path), exist_ok=True)
-            self.log_file = open(log_path, "w", newline="")
             
             # Define CSV headers based on training type
             if k_folds:
@@ -52,9 +52,16 @@ class TrainingLogger:
             else:
                 fieldnames = ["epoch", "train_loss", "val_loss"]
             
+            # Open file in append mode if resuming, write mode if new training
+            mode = 'a' if resume else 'w'
+            self.log_file = open(log_path, mode, newline="")
             self.csv_writer = csv.DictWriter(self.log_file, fieldnames=fieldnames)
-            self.csv_writer.writeheader()
-            print(f"CSV logs will be saved to: {log_path}")
+            
+            # Only write header if this is a new file
+            if not resume:
+                self.csv_writer.writeheader()
+            
+            print(f"CSV logs will be {'appended to' if resume else 'saved to'}: {log_path}")
 
     def log_fold_training(
         self,
