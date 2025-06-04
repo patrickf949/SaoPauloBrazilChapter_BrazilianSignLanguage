@@ -1,3 +1,4 @@
+ # Training & Model Configuration
 defaults:
   - _self_
   - optimizer: adamw
@@ -13,10 +14,19 @@ defaults:
     - metadata
   - augmentation: base_augs
 
-# Hydra configuration
-hydra:
-  output_subdir: null  # Disable saving Hydra config files
-
+# Training Run Folder Name
 general: 
-  experiment_name: null  # Optional name to include in filenames
-  author: null  # Optional metadata
+  experiment_name: null  # Optional text to include in run folder name
+  author: null  # Optional text to include in run folder name
+
+# Hydra configuration: These are all to disable Hydra's default logging setup
+hydra:
+  run:
+    dir: .
+  output_subdir: null  # Disable saving Hydra config files
+  job:
+    chdir: false  # Prevent changing working directory
+  job_logging:
+    disabled: true  # Disable Hydra's automatic logging setup
+  hydra_logging:
+    disabled: true  # Disable Hydra's automatic logging setup

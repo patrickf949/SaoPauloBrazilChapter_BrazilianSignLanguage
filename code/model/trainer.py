@@ -162,6 +162,10 @@ def train(config: DictConfig):
     # ----- Training loop -----
     for epoch in range(start_epoch, num_epochs):
         print(f"\n--- Epoch {epoch + 1}/{num_epochs} ---")
+        
+        # Get current learning rate
+        current_lr = optimizer.param_groups[0]['lr']
+        
         if config.training.type == "cross_validation":
             # Modified to get per-fold metrics
             avg_train_loss, avg_val_loss, fold_metrics, fold_stats = train_epoch_fold(
@@ -177,15 +181,15 @@ def train(config: DictConfig):
             )
             
             # Log metrics
-            logger.log_fold_training(epoch, fold_metrics, fold_stats, avg_train_loss, avg_val_loss)
+            logger.log_fold_training(epoch, fold_metrics, fold_stats, avg_train_loss, avg_val_loss, current_lr)
         else:
             avg_train_loss, avg_val_loss = train_epoch(
                 model, device, datasets, optimizer, criterion, config.training.train_batch_size, config.training.val_batch_size
             )
             
             # Log metrics
-            logger.log_standard_training(epoch, avg_train_loss, avg_val_loss)
-
+            logger.log_standard_training(epoch, avg_train_loss, avg_val_loss, current_lr)
+ 
         print(
             f"Epoch Average Results:\n\tTrain Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}"
         )
