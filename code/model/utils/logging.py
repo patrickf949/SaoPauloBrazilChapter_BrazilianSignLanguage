@@ -32,7 +32,7 @@ class TrainingLogger:
             
             # Define CSV headers based on training type
             if k_folds:
-                fieldnames = ["epoch", "avg_train_loss", "avg_val_loss", "learning_rate"]
+                fieldnames = ["timestamp", "epoch", "avg_train_loss", "avg_val_loss", "learning_rate"]
                 # Add per-fold metrics
                 for fold in range(k_folds):
                     fieldnames.extend([
@@ -55,7 +55,7 @@ class TrainingLogger:
                     "avg_val_samples_per_group"
                 ])
             else:
-                fieldnames = ["epoch", "train_loss", "val_loss", "learning_rate"]
+                fieldnames = ["timestamp", "epoch", "train_loss", "val_loss", "learning_rate"]
             
             # Open file in append mode if resuming, write mode if new training
             mode = 'a' if resume else 'w'
@@ -111,6 +111,7 @@ class TrainingLogger:
         # Log to CSV if enabled - write once per epoch with all fold information
         if self.csv_writer:
             log_row = {
+                "timestamp": datetime.now().strftime("%m-%d %H:%M"),
                 "epoch": epoch + 1,
                 "avg_train_loss": avg_train_loss,
                 "avg_val_loss": avg_val_loss,
@@ -161,6 +162,7 @@ class TrainingLogger:
         # Log to CSV if enabled
         if self.csv_writer:
             self.csv_writer.writerow({
+                "timestamp": datetime.now().strftime("%m-%d %H:%M"),
                 "epoch": epoch + 1,
                 "train_loss": train_loss,
                 "val_loss": val_loss,
