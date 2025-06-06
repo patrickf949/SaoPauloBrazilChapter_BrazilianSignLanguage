@@ -32,36 +32,41 @@ class InferenceEngine:
     @torch.no_grad()
     def predict(
         self,
-        inputs: Union[torch.Tensor, List[torch.Tensor], DataLoader],
+        inputs: Union[torch.Tensor, List[torch.Tensor], DataLoader, torch.utils.data.Dataset],
         return_logits: bool = False,
         attention_mask: Optional[Union[torch.Tensor, List[torch.Tensor]]] = None,
         return_confidence: bool = False,
         return_full_probs: bool = False,
+        batch_size: int = 32,
+        num_workers: int = 0,
     ) -> Union[
         torch.Tensor,  # Just predictions
         Tuple[torch.Tensor, float],  # predictions, confidence
         Tuple[torch.Tensor, torch.Tensor],  # predictions, probabilities
-        Dict[int, Union[torch.Tensor, Tuple[torch.Tensor, float], Tuple[torch.Tensor, torch.Tensor]]]  # DataLoader results
+        Dict[int, Union[torch.Tensor, Tuple[torch.Tensor, float], Tuple[torch.Tensor, torch.Tensor]]]  # Dataset results
     ]:
         """
         Run inference on input data. Handles single samples, multiple samples (ensemble), 
-        or DataLoader input.
+        or Dataset input.
         
         Args:
-            inputs: Input data in one of three formats:
+            inputs: Input data in one of four formats:
                 - Single tensor [B, ...]
                 - List of tensors for ensemble prediction
                 - DataLoader yielding batches
+                - Dataset to create DataLoader from
             return_logits: If True, return raw logits instead of predictions
             attention_mask: Optional attention mask(s) matching input format
             return_confidence: Whether to return confidence scores with predictions
             return_full_probs: Whether to return full probability distribution for all classes
+            batch_size: Batch size when creating DataLoader from Dataset (ignored for other input types)
+            num_workers: Number of workers when creating DataLoader from Dataset (ignored for other input types)
             
         Returns:
             Predictions in a format matching the input:
             - Single tensor: predictions or (predictions, confidence/probs)
             - List of tensors: ensemble prediction or (prediction, confidence/probs)
-            - DataLoader: Dict mapping indices to predictions or (prediction, confidence/probs)
+            - Dataset/DataLoader: Dict mapping indices to predictions or (prediction, confidence/probs)
         """
         self.model.eval()
         
@@ -87,10 +92,23 @@ class InferenceEngine:
                 return_full_probs=return_full_probs
             )
             
-        # Case 3: DataLoader
-        elif isinstance(inputs, DataLoader):
-            return self._predict_dataloader(
+        # Case 3: Dataset input
+        elif isinstance(inputs, torch.utils.data.Dataset):
+            return self._predict_dataset(
                 inputs,
+                batch_size=1 if self.ensemble_strategy else batch_size,
+                num_workers=num_workers,
+                return_logits=return_logits,
+                return_confidence=return_confidence,
+                return_full_probs=return_full_probs
+            )
+            
+        # Case 4: DataLoader input (maintained for backward compatibility)
+        elif isinstance(inputs, DataLoader):
+            return self._predict_dataset(
+                inputs.dataset,
+                batch_size=1 if self.ensemble_strategy else inputs.batch_size,
+                num_workers=inputs.num_workers if hasattr(inputs, 'num_workers') else 0,
                 return_logits=return_logits,
                 return_confidence=return_confidence,
                 return_full_probs=return_full_probs
@@ -112,23 +130,23 @@ class InferenceEngine:
         if attention_mask is not None:
             attention_mask = attention_mask.to(self.device)
             
-        outputs = self.model(inputs, attention_mask=attention_mask)
+        output = self.model(inputs, attention_mask=attention_mask)
         
         if return_logits:
-            return outputs
+            return output
             
-        predictions = torch.argmax(outputs, dim=-1)
+        prediction = torch.argmax(output, dim=-1)
         
         if return_full_probs:
-            probs = torch.softmax(outputs, dim=-1)
-            return predictions, probs
+            probs = torch.softmax(output, dim=-1)
+            return prediction, probs
             
         if return_confidence:
-            probs = torch.softmax(outputs, dim=-1)
+            probs = torch.softmax(output, dim=-1)
             confidence = torch.max(probs, dim=-1).values
-            return predictions, confidence
+            return prediction, confidence
             
-        return predictions
+        return prediction
 
     def _predict_ensemble(
         self,
@@ -241,14 +259,24 @@ class InferenceEngine:
                 
         return final_pred
 
-    def _predict_dataloader(
+    def _predict_dataset(
         self,
-        dataloader: DataLoader,
+        dataset: torch.utils.data.Dataset,
+        batch_size: int = 32,
+        num_workers: int = 0,
         return_logits: bool = False,
         return_confidence: bool = False,
         return_full_probs: bool = False,
     ) -> Dict[int, Union[torch.Tensor, Tuple[torch.Tensor, float], Tuple[torch.Tensor, torch.Tensor]]]:
-        """Handle prediction for a DataLoader, optionally using ensemble prediction."""
+        """Handle prediction for a Dataset, optionally using ensemble prediction."""
+        # Create appropriate DataLoader
+        dataloader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=num_workers
+        )
+        
         if self.ensemble_strategy:
             # Group samples by series/video ID
             series_samples: Dict[int, List[torch.Tensor]] = defaultdict(list)
@@ -257,12 +285,8 @@ class InferenceEngine:
             for batch_idx, batch in enumerate(dataloader):
                 features, _, attention_mask = batch  # Assuming (features, labels, mask) format
                 
-                # Get series ID from dataset if available, otherwise use batch index
-                series_id = (
-                    dataloader.dataset.get_video_idx(batch_idx) 
-                    if hasattr(dataloader.dataset, 'get_video_idx')
-                    else batch_idx
-                )
+                # With batch_size=1, batch_idx equals sample_idx
+                series_id = dataset.get_video_idx(batch_idx)
                 
                 series_samples[series_id].append(features)
                 if attention_mask is not None:
