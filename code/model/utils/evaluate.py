@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from typing import Dict, Tuple, Optional, List, Union
 import pandas as pd
-from model.inference import InferenceEngine
+from inference import InferenceEngine
 
 
 def evaluate(
@@ -94,13 +94,15 @@ def evaluate(
 
 def evaluate_detailed(
     model: torch.nn.Module,
-    test_loader: torch.utils.data.DataLoader,
+    dataset: torch.utils.data.Dataset,
     device: str = "cuda",
     class_names: Optional[Dict[int, str]] = None,
     save_confusion_matrix: Optional[str] = None,
     ensemble_strategy: Optional[str] = None,
     return_confidence: bool = False,
-    criterion=None,
+    criterion = None,
+    num_workers: int = 0,
+    batch_size: int = 32,
 ) -> Union[
     Tuple[Dict[str, float], pd.DataFrame],
     Tuple[Dict[str, float], pd.DataFrame, Dict[int, float]]
@@ -110,13 +112,15 @@ def evaluate_detailed(
     
     Args:
         model: The model to evaluate
-        test_loader: DataLoader for test data
+        dataset: Dataset to evaluate on
         device: Device to run evaluation on
         class_names: Optional dictionary mapping class indices to class names
         save_confusion_matrix: Optional path to save confusion matrix plot
         ensemble_strategy: Optional ensemble strategy ("majority", "logits_average", "confidence_weighted")
         return_confidence: Whether to return confidence scores
         criterion: Optional loss criterion
+        num_workers: Number of workers for data loading
+        batch_size: Batch size for evaluation (ignored if ensemble_strategy is provided)
         
     Returns:
         Tuple containing:
@@ -124,58 +128,79 @@ def evaluate_detailed(
             - DataFrame containing the confusion matrix
             - Optional dictionary mapping sample/series IDs to confidence scores
     """
+    # If using ensemble, delegate to evaluate_with_ensemble
+    if ensemble_strategy is not None:
+        metrics, cm_df, _, confidences = evaluate_with_ensemble(
+            model=model,
+            dataset=dataset,
+            device=device,
+            class_names=class_names,
+            save_confusion_matrix=save_confusion_matrix,
+            ensemble_strategy=ensemble_strategy,
+            criterion=criterion,
+            num_workers=num_workers
+        )
+        if return_confidence:
+            return metrics, cm_df, confidences
+        return metrics, cm_df
+    
+    # Create dataloader for regular evaluation
+    eval_loader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers
+    )
+    
     # Initialize inference engine
     engine = InferenceEngine(
         model=model,
-        device=device,
-        ensemble_strategy=ensemble_strategy
+        device=device
     )
     
-    # Collect true labels and predictions
-    y_true = []
-    y_pred = []
-    confidences = {}
-    test_loss = 0.0
-    
-    sample_idx = 0  # Track overall sample index across batches
-    for batch_idx, (features, labels, _) in enumerate(test_loader):
-        # Handle batch of labels
-        batch_labels = labels.view(-1).cpu().numpy()  # Flatten any batch dimension
-        y_true.extend(batch_labels)
+    # Get predictions and optionally confidences
+    if return_confidence:
+        predictions = engine.predict(
+            eval_loader,
+            return_confidence=True
+        )
+        # Separate predictions and confidences
+        y_pred = []
+        y_true = []
+        confidences = {}
         
-        # Get predictions for this batch
-        if return_confidence:
-            batch_preds, batch_confs = engine.predict(
-                features, 
-                return_confidence=True
-            )
-            # Handle predictions and confidences
-            batch_preds = batch_preds.cpu().numpy()
-            batch_confs = batch_confs.cpu().numpy()
-            y_pred.extend(batch_preds)
-            # Store confidences
-            for i, conf in enumerate(batch_confs):
-                confidences[sample_idx + i] = conf
-        else:
-            batch_preds = engine.predict(features)
-            batch_preds = batch_preds.cpu().numpy()
-            y_pred.extend(batch_preds)
-            
-        # Calculate loss if criterion provided
-        if criterion is not None:
-            logits = engine.predict(features, return_logits=True)
-            loss = criterion(logits, labels.to(device))
-            test_loss += loss.item()
-            
-        sample_idx += len(batch_labels)
+        for batch_idx, (pred_conf, labels, _) in enumerate(zip(predictions.values(), eval_loader)):
+            pred, conf = pred_conf
+            batch_labels = labels.view(-1).cpu().numpy()
+            y_true.extend(batch_labels)
+            y_pred.extend(pred.cpu().numpy())
+            confidences[batch_idx] = conf
+    else:
+        predictions = engine.predict(eval_loader)
+        y_pred = []
+        y_true = []
+        
+        for batch_idx, (pred, labels, _) in enumerate(zip(predictions.values(), eval_loader)):
+            batch_labels = labels.view(-1).cpu().numpy()
+            y_true.extend(batch_labels)
+            y_pred.extend(pred.cpu().numpy())
+    
+    # Calculate loss if criterion provided
+    test_loss = 0.0
+    if criterion is not None:
+        with torch.no_grad():
+            for features, labels, _ in eval_loader:
+                logits = engine.predict(features, return_logits=True)
+                loss = criterion(logits, labels.to(device))
+                test_loss += loss.item()
+        test_loss /= len(eval_loader)
     
     # Calculate metrics
     metrics = {
         'accuracy': accuracy_score(y_true, y_pred),
     }
-    
     if criterion is not None:
-        metrics['loss'] = test_loss / len(test_loader)
+        metrics['loss'] = test_loss
     
     # Generate confusion matrix
     cm = confusion_matrix(y_true, y_pred)
@@ -256,24 +281,26 @@ def print_evaluation_results(
 
 def evaluate_with_ensemble(
     model: torch.nn.Module,
-    test_loader: torch.utils.data.DataLoader,
+    dataset: torch.utils.data.Dataset,
     device: str = "cuda",
     class_names: Optional[Dict[int, str]] = None,
     save_confusion_matrix: Optional[str] = None,
-    aggregation_strategy: str = "majority",
+    ensemble_strategy: str = "majority",
     criterion = None,
+    num_workers: int = 0,
 ) -> Tuple[Dict[str, float], pd.DataFrame, str, Dict[int, float]]:
     """
     Evaluate model using ensemble predictions from multiple samples per series.
     
     Args:
         model: The trained model
-        test_loader: DataLoader for test data
+        dataset: Dataset to evaluate on
         device: Device to run evaluation on
         class_names: Optional dictionary mapping class indices to class names
         save_confusion_matrix: Optional path to save confusion matrix plot
-        aggregation_strategy: Strategy for combining multiple predictions
+        ensemble_strategy: Strategy for combining multiple predictions ("majority", "logits_average", "confidence_weighted")
         criterion: Optional loss criterion
+        num_workers: Number of workers for data loading
         
     Returns:
         Tuple containing:
@@ -282,41 +309,65 @@ def evaluate_with_ensemble(
             - String containing the classification report
             - Dictionary mapping series IDs to confidence scores
     """
-    # Initialize ensemble predictor
-    predictor = EnsemblePredictor(
-        model=model,
-        device=device,
-        aggregation_strategy=aggregation_strategy,
-        return_confidence=True
+    # Create dataloaders - batch_size=1 for ensemble prediction, larger batch for loss calculation
+    ensemble_loader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=1,
+        shuffle=False,
+        num_workers=num_workers
     )
     
-    # Get video IDs and true labels
-    video_ids = []
-    video_labels = {}
-    for batch_idx, (_, labels, _) in enumerate(test_loader):
-        video_id = test_loader.dataset.get_video_idx(batch_idx)
-        video_ids.append(video_id)
-        if video_id not in video_labels:
-            video_labels[video_id] = labels.item()
+    # For loss calculation, we can use larger batches
+    eval_loader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=32,  # Larger batch size for efficiency
+        shuffle=False,
+        num_workers=num_workers
+    ) if criterion is not None else None
     
-    # Get ensemble predictions
-    predictions = predictor.predict_dataloader(test_loader, video_ids)
+    # Initialize ensemble predictor
+    predictor = InferenceEngine(
+        model=model,
+        device=device,
+        ensemble_strategy=ensemble_strategy
+    )
+    
+    # Get predictions with confidence scores
+    predictions = predictor.predict(ensemble_loader, return_confidence=True)
     
     # Separate predictions and confidences
     y_true = []
     y_pred = []
     confidences = {}
     
-    for vid_id in predictions:
-        pred, conf = predictions[vid_id]
-        y_true.append(video_labels[vid_id])
+    # Collect video IDs and predictions
+    for batch_idx, (_, labels, _) in enumerate(ensemble_loader):
+        # With batch_size=1, batch_idx equals sample_idx
+        video_id = ensemble_loader.dataset.get_video_idx(batch_idx)
+        
+        pred_conf = predictions[batch_idx]
+        pred, conf = pred_conf
+        
+        y_true.append(labels.item())
         y_pred.append(pred.item())
-        confidences[vid_id] = conf
+        confidences[video_id] = conf
+    
+    # Calculate loss if criterion provided
+    test_loss = 0.0
+    if criterion is not None:
+        with torch.no_grad():
+            for features, labels, _ in eval_loader:
+                logits = predictor.predict(features, return_logits=True)
+                loss = criterion(logits, labels.to(device))
+                test_loss += loss.item()
+        test_loss /= len(eval_loader)
     
     # Calculate metrics
     metrics = {
         'accuracy': accuracy_score(y_true, y_pred),
     }
+    if criterion is not None:
+        metrics['loss'] = test_loss
     
     # Generate confusion matrix
     cm = confusion_matrix(y_true, y_pred)
@@ -357,7 +408,7 @@ def evaluate_with_ensemble(
             cmap='Blues',
             square=True
         )
-        plt.title(f'Confusion Matrix (Ensemble: {aggregation_strategy})')
+        plt.title(f'Confusion Matrix (Ensemble: {ensemble_strategy})')
         plt.ylabel('True Label')
         plt.xlabel('Predicted Label')
         plt.tight_layout()
