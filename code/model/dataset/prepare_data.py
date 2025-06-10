@@ -3,6 +3,7 @@ import numpy as np
 import os
 from omegaconf import OmegaConf, DictConfig
 from model.utils.utils import minmax_scale_series
+import json
 
 def load_base_paths():
     """
@@ -33,10 +34,12 @@ def validate_filename_column(df: pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-def encode_label(df: pd.DataFrame) -> pd.DataFrame:
-    label_mapping = {label: idx for idx, label in enumerate(set(df["label"]))}
+def encode_label(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+    # Sort labels to ensure consistent encoding
+    unique_labels = sorted(set(df["label"]))
+    label_mapping = {label: idx for idx, label in enumerate(unique_labels)}
     df["label_encoded"] = df["label"].map(label_mapping)
-    return df
+    return df, label_mapping
 
 def train_test_split(df: pd.DataFrame) -> pd.DataFrame:
     # should already be sorted, but just in case
@@ -87,6 +90,7 @@ def prepare_training_metadata(data_version: str) -> None:
     # Construct paths
     preprocessed_metadata_path = os.path.join(paths.preprocessed_base, f"landmarks_metadata_{data_version}.csv")
     training_metadata_path = os.path.join(paths.metadata_base, f"landmarks_metadata_{data_version}_training.csv")
+    label_mapping_path = os.path.join(paths.metadata_base, f"label_encoding_{data_version}.json")
     
     # Ensure metadata directory exists
     os.makedirs(os.path.dirname(training_metadata_path), exist_ok=True)
@@ -95,12 +99,17 @@ def prepare_training_metadata(data_version: str) -> None:
     df = pd.read_csv(preprocessed_metadata_path)
     df = validate_filename_column(df)
     # Add training-specific columns
-    df = encode_label(df)
+    df, label_mapping = encode_label(df)
     df = train_test_split(df)
     
     # Save to training location
     df.to_csv(training_metadata_path, index=False)
     print(f"Training metadata saved to: {training_metadata_path}")
+    
+    # Save label mapping
+    with open(label_mapping_path, 'w') as f:
+        json.dump(label_mapping, f, indent=2)
+    print(f"Label mapping saved to: {label_mapping_path}")
 
 def prepare_landmark_arrays(load_landmarks_dir: str, positions_config: DictConfig) -> None:
 
