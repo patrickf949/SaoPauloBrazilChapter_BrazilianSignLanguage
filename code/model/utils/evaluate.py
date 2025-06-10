@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from typing import Dict, Tuple, Optional, List, Union
 import pandas as pd
-from inference import InferenceEngine
+from model.utils.inference import InferenceEngine
 
 
 def evaluate(
