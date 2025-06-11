@@ -22,16 +22,17 @@ from model.dataset import frame_sampling
 from model.features.feature_processor import FeatureProcessor
 from model.utils.inference import InferenceEngine
 
+timestamp = "00"
+motion_version = "v0"
+pose_version = "v0"
+preprocess_version = "v0"
+
+path_to_root = os.path.join(root_dir, "webapp", "backend")
+
 def process_video(video_fn):
 
     # Preprocessing
     ## Settings
-    timestamp = "00"
-    motion_version = "v0"
-    pose_version = "v0"
-    preprocess_version = "v0"
-
-    path_to_root = os.path.join(root_dir, "webapp", "backend")
 
     video_path = os.path.join(path_to_root, "data", "interim", "RawCleanVideos", video_fn)
     print(video_path)
