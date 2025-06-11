@@ -156,7 +156,7 @@ class InferenceEngine:
         return_confidence: bool = False,
         return_full_probs: bool = False,
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, float], Tuple[torch.Tensor, torch.Tensor]]:
-        """Handle ensemble prediction from multiple samples.
+        """Handle ensemble prediction from multiple related samples.
         
         For each ensemble strategy, confidence and probabilities are calculated as follows:
         
@@ -259,6 +259,37 @@ class InferenceEngine:
                 
         return final_pred
 
+    def _predict_batch(
+        self,
+        inputs: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
+        return_logits: bool = False,
+        return_confidence: bool = False,
+        return_full_probs: bool = False,
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, float], Tuple[torch.Tensor, torch.Tensor]]:
+        """Handle prediction for a batch of inputs."""
+        inputs = inputs.to(self.device)
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(self.device)
+            
+        output = self.model(inputs, attention_mask=attention_mask)
+        
+        if return_logits:
+            return output
+            
+        prediction = torch.argmax(output, dim=-1)
+        
+        if return_full_probs:
+            probs = torch.softmax(output, dim=-1)
+            return prediction, probs
+            
+        if return_confidence:
+            probs = torch.softmax(output, dim=-1)
+            confidence = torch.max(probs, dim=-1).values
+            return prediction, confidence
+            
+        return prediction
+
     def _predict_dataset(
         self,
         dataset: torch.utils.data.Dataset,
@@ -307,17 +338,28 @@ class InferenceEngine:
                 
         else:
             # Regular batch prediction
-            predictions = {}
-            for batch_idx, batch in enumerate(dataloader):
+            all_predictions = []
+            for batch in dataloader:
                 features, _, attention_mask = batch
-                pred = self._predict_single(
+                pred = self._predict_batch(
                     features,
                     attention_mask=attention_mask,
                     return_logits=return_logits,
                     return_confidence=return_confidence,
                     return_full_probs=return_full_probs
                 )
-                predictions[batch_idx] = pred
+                all_predictions.append(pred)
+            
+            # Concatenate all predictions
+            if return_logits:
+                return torch.cat([p[0] for p in all_predictions], dim=0)
+            elif return_confidence or return_full_probs:
+                # For (predictions, confidence/probs) tuples
+                preds = torch.cat([p[0] for p in all_predictions], dim=0)
+                values = torch.cat([p[1] for p in all_predictions], dim=0)
+                return preds, values
+            else:
+                return torch.cat([p[0] for p in all_predictions], dim=0)
                 
         return predictions
 
