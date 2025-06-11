@@ -204,6 +204,8 @@ class LandmarkDataset(Dataset):
         label = torch.tensor([self.metadata.loc[video_idx_number, "label_encoded"]], dtype=torch.int64)
         get_item_timing['label_creation'] = time.time() - lc_start_time
 
+        # When using a dataloader, we usually pass collate_func_pad to the dataloader
+        # which will return a tuple of (features, labels, attention_mask), skipping the get_item_timing
         return features, label, get_item_timing
 
     def get_video_idx(self, idx: int) -> int:

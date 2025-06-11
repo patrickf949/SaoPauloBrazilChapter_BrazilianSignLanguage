@@ -3,6 +3,7 @@ from typing import List, Dict, Optional, Union, Tuple, Literal
 from torch.utils.data import DataLoader
 import numpy as np
 from collections import defaultdict
+from model.dataset.dataloader_functions import collate_func_pad
 
 class InferenceEngine:
     """
@@ -37,13 +38,19 @@ class InferenceEngine:
         attention_mask: Optional[Union[torch.Tensor, List[torch.Tensor]]] = None,
         return_confidence: bool = False,
         return_full_probs: bool = False,
+        return_labels: bool = False,
         batch_size: int = 32,
         num_workers: int = 0,
     ) -> Union[
         torch.Tensor,  # Just predictions
         Tuple[torch.Tensor, float],  # predictions, confidence
         Tuple[torch.Tensor, torch.Tensor],  # predictions, probabilities
-        Dict[int, Union[torch.Tensor, Tuple[torch.Tensor, float], Tuple[torch.Tensor, torch.Tensor]]]  # Dataset results
+        Tuple[torch.Tensor, torch.Tensor],  # predictions, labels
+        Tuple[torch.Tensor, torch.Tensor, float],  # predictions, labels, confidence
+        Tuple[torch.Tensor, torch.Tensor, torch.Tensor],  # predictions, labels, probabilities
+        Dict[int, Union[torch.Tensor, Tuple[torch.Tensor, float], Tuple[torch.Tensor, torch.Tensor], 
+                       Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, float],
+                       Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]  # Dataset results
     ]:
         """
         Run inference on input data. Handles single samples, multiple samples (ensemble), 
@@ -59,6 +66,7 @@ class InferenceEngine:
             attention_mask: Optional attention mask(s) matching input format
             return_confidence: Whether to return confidence scores with predictions
             return_full_probs: Whether to return full probability distribution for all classes
+            return_labels: Whether to return ground truth labels along with predictions
             batch_size: Batch size when creating DataLoader from Dataset (ignored for other input types)
             num_workers: Number of workers when creating DataLoader from Dataset (ignored for other input types)
             
@@ -67,11 +75,14 @@ class InferenceEngine:
             - Single tensor: predictions or (predictions, confidence/probs)
             - List of tensors: ensemble prediction or (prediction, confidence/probs)
             - Dataset/DataLoader: Dict mapping indices to predictions or (prediction, confidence/probs)
+            If return_labels is True, labels are included in the return tuple for Dataset/DataLoader inputs
         """
         self.model.eval()
         
         # Case 1: Single tensor input
         if isinstance(inputs, torch.Tensor):
+            if return_labels:
+                raise ValueError("Cannot return labels for single tensor input")
             return self._predict_single(
                 inputs, 
                 attention_mask=attention_mask,
@@ -82,6 +93,8 @@ class InferenceEngine:
             
         # Case 2: List of tensors for ensemble
         elif isinstance(inputs, list) and isinstance(inputs[0], torch.Tensor):
+            if return_labels:
+                raise ValueError("Cannot return labels for list of tensors")
             if self.ensemble_strategy is None:
                 raise ValueError("Must specify ensemble_strategy to use ensemble prediction")
             return self._predict_ensemble(
@@ -100,7 +113,8 @@ class InferenceEngine:
                 num_workers=num_workers,
                 return_logits=return_logits,
                 return_confidence=return_confidence,
-                return_full_probs=return_full_probs
+                return_full_probs=return_full_probs,
+                return_labels=return_labels
             )
             
         # Case 4: DataLoader input (maintained for backward compatibility)
@@ -111,7 +125,8 @@ class InferenceEngine:
                 num_workers=inputs.num_workers if hasattr(inputs, 'num_workers') else 0,
                 return_logits=return_logits,
                 return_confidence=return_confidence,
-                return_full_probs=return_full_probs
+                return_full_probs=return_full_probs,
+                return_labels=return_labels
             )
             
         else:
@@ -124,7 +139,7 @@ class InferenceEngine:
         return_logits: bool = False,
         return_confidence: bool = False,
         return_full_probs: bool = False,
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, float], Tuple[torch.Tensor, torch.Tensor]]:
+    ) -> Union[float, np.ndarray, Tuple[float, float], Tuple[float, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
         """Handle prediction for a single input tensor."""
         inputs = inputs.to(self.device)
         if attention_mask is not None:
@@ -133,20 +148,20 @@ class InferenceEngine:
         output = self.model(inputs, attention_mask=attention_mask)
         
         if return_logits:
-            return output
+            return output.cpu().numpy()
             
         prediction = torch.argmax(output, dim=-1)
         
         if return_full_probs:
             probs = torch.softmax(output, dim=-1)
-            return prediction, probs
+            return prediction.item(), probs.cpu().numpy()
             
         if return_confidence:
             probs = torch.softmax(output, dim=-1)
             confidence = torch.max(probs, dim=-1).values
-            return prediction, confidence
+            return prediction.item(), confidence.item()
             
-        return prediction
+        return prediction.item()
 
     def _predict_ensemble(
         self,
@@ -155,7 +170,7 @@ class InferenceEngine:
         return_logits: bool = False,
         return_confidence: bool = False,
         return_full_probs: bool = False,
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, float], Tuple[torch.Tensor, torch.Tensor]]:
+    ) -> Union[float, np.ndarray, Tuple[float, float], Tuple[float, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
         """Handle ensemble prediction from multiple related samples.
         
         For each ensemble strategy, confidence and probabilities are calculated as follows:
@@ -194,20 +209,20 @@ class InferenceEngine:
             logits = self._predict_single(sample, mask, return_logits=True)
             all_logits.append(logits)
             
-        stacked_logits = torch.stack(all_logits)
+        stacked_logits = np.stack(all_logits)
         
         if return_logits:
             return stacked_logits
             
         if self.ensemble_strategy == "majority":
             # Get per-sample predictions
-            predictions = torch.argmax(stacked_logits, dim=-1)
+            predictions = np.argmax(stacked_logits, axis=-1)
             # Take most common prediction as final
-            final_pred = torch.mode(predictions).values
+            final_pred = float(np.bincount(predictions).argmax())
             
             if return_full_probs:
                 # Count votes for each class
-                vote_counts = torch.zeros(stacked_logits.size(-1), device=self.device)
+                vote_counts = np.zeros(stacked_logits.shape[-1])
                 for pred in predictions:
                     vote_counts[pred] += 1
                 # Convert to probabilities by normalizing
@@ -216,16 +231,16 @@ class InferenceEngine:
                 
             if return_confidence:
                 # Confidence is proportion of samples that agree with final prediction
-                confidence = (predictions == final_pred).float().mean().item()
+                confidence = float(np.mean(predictions == final_pred))
                 return final_pred, confidence
                 
         elif self.ensemble_strategy == "logits_average":
             # Average logits across samples
-            avg_logits = torch.mean(stacked_logits, dim=0)
+            avg_logits = np.mean(stacked_logits, axis=0)
             # Convert to probabilities
-            probs = torch.softmax(avg_logits, dim=-1)
+            probs = np.exp(avg_logits) / np.sum(np.exp(avg_logits), axis=-1, keepdims=True)
             # Get prediction from averaged logits
-            final_pred = torch.argmax(avg_logits, dim=-1)
+            final_pred = float(np.argmax(avg_logits))
             
             if return_full_probs:
                 # Return full probability distribution
@@ -233,20 +248,20 @@ class InferenceEngine:
                 
             if return_confidence:
                 # Confidence is probability of winning class
-                confidence = probs[final_pred].item()
+                confidence = float(probs[final_pred])
                 return final_pred, confidence
                 
         elif self.ensemble_strategy == "confidence_weighted":
             # Get probabilities and confidences for each sample
-            probs = torch.softmax(stacked_logits, dim=-1)
-            confidences = torch.max(probs, dim=-1).values  # [num_samples]
+            probs = np.exp(stacked_logits) / np.sum(np.exp(stacked_logits), axis=-1, keepdims=True)
+            confidences = np.max(probs, axis=-1)  # [num_samples]
             
             # Weight each sample's probabilities by its confidence
-            weighted_probs = torch.sum(probs * confidences.unsqueeze(-1), dim=0)
+            weighted_probs = np.sum(probs * confidences[:, np.newaxis], axis=0)
             # Normalize to get proper probability distribution
-            weighted_probs = weighted_probs / weighted_probs.sum()
+            weighted_probs = weighted_probs / np.sum(weighted_probs)
             
-            final_pred = torch.argmax(weighted_probs, dim=-1)
+            final_pred = float(np.argmax(weighted_probs))
             
             if return_full_probs:
                 # Return weighted probability distribution
@@ -254,7 +269,7 @@ class InferenceEngine:
                 
             if return_confidence:
                 # Confidence is weighted probability of winning class
-                confidence = weighted_probs[final_pred].item()
+                confidence = float(weighted_probs[final_pred])
                 return final_pred, confidence
                 
         return final_pred
@@ -266,7 +281,7 @@ class InferenceEngine:
         return_logits: bool = False,
         return_confidence: bool = False,
         return_full_probs: bool = False,
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, float], Tuple[torch.Tensor, torch.Tensor]]:
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """Handle prediction for a batch of inputs."""
         inputs = inputs.to(self.device)
         if attention_mask is not None:
@@ -275,20 +290,20 @@ class InferenceEngine:
         output = self.model(inputs, attention_mask=attention_mask)
         
         if return_logits:
-            return output
+            return output.cpu().numpy()
             
         prediction = torch.argmax(output, dim=-1)
         
         if return_full_probs:
             probs = torch.softmax(output, dim=-1)
-            return prediction, probs
+            return prediction.cpu().numpy(), probs.cpu().numpy()
             
         if return_confidence:
             probs = torch.softmax(output, dim=-1)
             confidence = torch.max(probs, dim=-1).values
-            return prediction, confidence
+            return prediction.cpu().numpy(), confidence.cpu().numpy()
             
-        return prediction
+        return prediction.cpu().numpy()
 
     def _predict_dataset(
         self,
@@ -298,30 +313,37 @@ class InferenceEngine:
         return_logits: bool = False,
         return_confidence: bool = False,
         return_full_probs: bool = False,
-    ) -> Dict[int, Union[torch.Tensor, Tuple[torch.Tensor, float], Tuple[torch.Tensor, torch.Tensor]]]:
+        return_labels: bool = False,
+    ) -> Union[
+        Dict[int, Union[float, np.ndarray, Tuple[float, float], Tuple[float, np.ndarray], Tuple[np.ndarray, np.ndarray]]],
+        Union[np.ndarray, Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]
+    ]:
         """Handle prediction for a Dataset, optionally using ensemble prediction."""
-        # Create appropriate DataLoader
+        # Create appropriate DataLoader with collate function
         dataloader = torch.utils.data.DataLoader(
             dataset,
             batch_size=batch_size,
             shuffle=False,
-            num_workers=num_workers
+            num_workers=num_workers,
+            collate_fn=collate_func_pad
         )
         
         if self.ensemble_strategy:
             # Group samples by series/video ID
             series_samples: Dict[int, List[torch.Tensor]] = defaultdict(list)
             series_masks: Dict[int, List[torch.Tensor]] = defaultdict(list)
+            series_labels: Dict[int, List[torch.Tensor]] = defaultdict(list)
             
             for batch_idx, batch in enumerate(dataloader):
-                features, _, attention_mask = batch  # Assuming (features, labels, mask) format
-                
+                features, labels, attention_mask = batch
                 # With batch_size=1, batch_idx equals sample_idx
                 series_id = dataset.get_video_idx(batch_idx)
                 
                 series_samples[series_id].append(features)
                 if attention_mask is not None:
                     series_masks[series_id].append(attention_mask)
+                if return_labels:
+                    series_labels[series_id].append(labels)
                     
             # Make predictions for each series
             predictions = {}
@@ -334,13 +356,26 @@ class InferenceEngine:
                     return_confidence=return_confidence,
                     return_full_probs=return_full_probs
                 )
-                predictions[series_id] = pred
+                
+                if return_labels:
+                    # For ensemble, we'll use the label from the first sample
+                    labels = series_labels[series_id][0].cpu().numpy()
+                    if return_confidence:
+                        predictions[series_id] = (pred[0], labels, pred[1])
+                    elif return_full_probs:
+                        predictions[series_id] = (pred[0], labels, pred[1])
+                    else:
+                        predictions[series_id] = (pred, labels)
+                else:
+                    predictions[series_id] = pred
                 
         else:
             # Regular batch prediction
             all_predictions = []
+            all_labels = []
+            
             for batch in dataloader:
-                features, _, attention_mask = batch
+                features, labels, attention_mask = batch
                 pred = self._predict_batch(
                     features,
                     attention_mask=attention_mask,
@@ -349,17 +384,26 @@ class InferenceEngine:
                     return_full_probs=return_full_probs
                 )
                 all_predictions.append(pred)
+                if return_labels:
+                    all_labels.append(labels)
             
-            # Concatenate all predictions
+            # Concatenate all predictions and labels
             if return_logits:
-                return torch.cat([p[0] for p in all_predictions], dim=0)
+                return np.concatenate([p for p in all_predictions], axis=0)
             elif return_confidence or return_full_probs:
                 # For (predictions, confidence/probs) tuples
-                preds = torch.cat([p[0] for p in all_predictions], dim=0)
-                values = torch.cat([p[1] for p in all_predictions], dim=0)
+                preds = np.concatenate([p[0] for p in all_predictions], axis=0)
+                values = np.concatenate([p[1] for p in all_predictions], axis=0)
+                if return_labels:
+                    labels = torch.cat(all_labels, dim=0).cpu().numpy()
+                    return preds, labels, values
                 return preds, values
             else:
-                return torch.cat([p[0] for p in all_predictions], dim=0)
+                preds = np.concatenate([p for p in all_predictions], axis=0)
+                if return_labels:
+                    labels = torch.cat(all_labels, dim=0).cpu().numpy()
+                    return preds, labels
+                return preds
                 
         return predictions
 
