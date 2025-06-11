@@ -7,21 +7,22 @@ import torch
 import pandas as pd
 from omegaconf import OmegaConf
 
-def process_video(video_fn):
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    root_dir = os.path.dirname(os.path.dirname(script_dir))
-    code_dir = os.path.join(root_dir, 'code')
-    if code_dir not in sys.path:
-        sys.path.insert(0, code_dir)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(os.path.dirname(script_dir))
+code_dir = os.path.join(root_dir, 'code')
+if code_dir not in sys.path:
+    sys.path.insert(0, code_dir)
 
-    from data.download_videos import get_video_metadata
-    from preprocess.video_analyzer import VideoAnalyzer
-    from preprocess.preprocessor import Preprocessor
-    from preprocess.vizualisation import draw_landmarks_on_video_with_frame
-    from model.utils.utils import load_config, load_obj
-    from model.dataset import frame_sampling
-    from model.features.feature_processor import FeatureProcessor
-    from model.utils.inference import InferenceEngine
+from data.download_videos import get_video_metadata
+from preprocess.video_analyzer import VideoAnalyzer
+from preprocess.preprocessor import Preprocessor
+from preprocess.vizualisation import draw_landmarks_on_video_with_frame
+from model.utils.utils import load_config, load_obj
+from model.dataset import frame_sampling
+from model.features.feature_processor import FeatureProcessor
+from model.utils.inference import InferenceEngine
+
+def process_video(video_fn):
 
     # Preprocessing
     ## Settings
