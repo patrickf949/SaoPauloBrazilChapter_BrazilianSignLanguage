@@ -210,6 +210,7 @@ class InferenceEngine:
             all_logits.append(logits)
             
         stacked_logits = np.stack(all_logits)
+        stacked_logits = np.squeeze(stacked_logits, axis=1)  # Remove redundant dimension
         
         if return_logits:
             return stacked_logits
@@ -322,7 +323,7 @@ class InferenceEngine:
         # Create appropriate DataLoader with collate function
         dataloader = torch.utils.data.DataLoader(
             dataset,
-            batch_size=batch_size,
+            batch_size=batch_size, # 1 if ensemble_strategy else batch_size
             shuffle=False,
             num_workers=num_workers,
             collate_fn=collate_func_pad
