@@ -39,7 +39,7 @@ class InferenceEngine:
         return_confidence: bool = False,
         return_full_probs: bool = False,
         return_labels: bool = False,
-        batch_size: int = 32,
+        batch_size: int = 256,
         num_workers: int = 0,
     ) -> Union[
         torch.Tensor,  # Just predictions
