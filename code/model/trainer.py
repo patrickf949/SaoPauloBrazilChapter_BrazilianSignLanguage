@@ -8,7 +8,7 @@ from model.utils.train import (
     train_epoch,
     train_epoch_fold,
 )
-from model.utils.evaluate import evaluate, evaluate_detailed, print_evaluation_results
+# from model.utils.evaluate import evaluate, evaluate_detailed, print_evaluation_results
 from model.dataset.landmark_dataset import LandmarkDataset
 from model.dataset.dataloader_functions import collate_func_pad
 from model.utils.path_utils import get_save_paths, get_data_paths, load_base_paths
