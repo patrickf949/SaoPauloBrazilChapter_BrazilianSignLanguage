@@ -87,6 +87,7 @@ class LandmarkDataset(Dataset):
         features_config: Union[str, Dict, DictConfig],
         augmentation_config: Union[str, Dict, DictConfig],
         dataset_split: str,
+        seed: int = None,
     ):
         # these configs should already be DictConfig objects, load_config is just for safety
         dataset_config = load_config(dataset_config, "dataset_config")
@@ -104,12 +105,16 @@ class LandmarkDataset(Dataset):
         if self.dataset_split == "train":
             sampling_config = dataset_config["frame_sampling_train"]
             self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
-            self.sampling_params = sampling_config["params"]
+            self.sampling_params = sampling_config["params"].copy()  # Create a copy to avoid modifying the original
         else:
             # Use test sampling for validation and test splits
             sampling_config = dataset_config["frame_sampling_test"]
             self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
-            self.sampling_params = sampling_config["params"]
+            self.sampling_params = sampling_config["params"].copy()  # Create a copy to avoid modifying the original
+
+        # Add seed to sampling parameters if provided
+        if seed is not None:
+            self.sampling_params["seed"] = seed
 
         # Calculate samples per video and store all samples
         self.samples_per_video = []
