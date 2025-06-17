@@ -145,6 +145,7 @@ def multiple_sampling_without_replacement_uniform(num_frames: int, params: Dict[
         include_remaining (bool, optional): Whether to include the remaining frames in the last sample, defaults to True.
             If True and there are insufficient remaining frames for a complete sample, will combine remaining frames
             with additional sampled frames to create one final complete sample.
+        seed (int, optional): Random seed for reproducible sampling, defaults to None.
 
     Returns:
         List[List[int]]: A list of lists of frame indices
@@ -158,6 +159,10 @@ def multiple_sampling_without_replacement_uniform(num_frames: int, params: Dict[
     num_samples_limit = params.get('num_samples_limit', None)
     replacement_rate = params.get('replacement_rate', 0.0)
     include_remaining = params.get('include_remaining', True)
+    seed = params.get('seed', None)
+
+    if seed is not None:
+        np.random.seed(seed)
 
     if replacement_rate < 0.0 or replacement_rate > 1.0:
         raise ValueError("Replacement rate must be between 0.0 and 1.0")
