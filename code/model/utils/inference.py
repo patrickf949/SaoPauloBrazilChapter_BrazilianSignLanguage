@@ -219,7 +219,7 @@ class InferenceEngine:
             # Get per-sample predictions
             predictions = np.argmax(stacked_logits, axis=-1)
             # Take most common prediction as final
-            final_pred = float(np.bincount(predictions).argmax())
+            final_pred = int(np.bincount(predictions).argmax())
             
             if return_full_probs:
                 # Count votes for each class
@@ -241,7 +241,7 @@ class InferenceEngine:
             # Convert to probabilities
             probs = np.exp(avg_logits) / np.sum(np.exp(avg_logits), axis=-1, keepdims=True)
             # Get prediction from averaged logits
-            final_pred = float(np.argmax(avg_logits))
+            final_pred = int(np.argmax(avg_logits))
             
             if return_full_probs:
                 # Return full probability distribution
@@ -262,7 +262,7 @@ class InferenceEngine:
             # Normalize to get proper probability distribution
             weighted_probs = weighted_probs / np.sum(weighted_probs)
             
-            final_pred = float(np.argmax(weighted_probs))
+            final_pred = int(np.argmax(weighted_probs))
             
             if return_full_probs:
                 # Return weighted probability distribution
