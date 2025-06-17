@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Tuple, Dict
 from sklearn.metrics import confusion_matrix, classification_report
 import seaborn as sns
 import matplotlib.pyplot as plt
