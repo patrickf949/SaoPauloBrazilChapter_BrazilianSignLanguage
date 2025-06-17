@@ -102,6 +102,7 @@ def test_model(model_dir: str, device: str = "cpu", seed: int = None, model_name
         label_encoding = json.load(f)
     class_names = [label_encoding[str(i)] for i in range(len(label_encoding))]
 
+    print("Loading datasets...")
     train_dataset = LandmarkDataset(
         config.dataset, config.features, augmentations, "train"
     )
@@ -109,6 +110,7 @@ def test_model(model_dir: str, device: str = "cpu", seed: int = None, model_name
         config.dataset, config.features, augmentations, "test"
     )
 
+    print("Loading inference engines...")
     sample_inference = InferenceEngine(
         model=model,
         device='cpu',
@@ -130,22 +132,33 @@ def test_model(model_dir: str, device: str = "cpu", seed: int = None, model_name
         ensemble_strategy='confidence_weighted'
     )
 
+    print("Predicting on train dataset...")
+    print("\tBy sample")
     sample_train_preds, sample_train_labels, sample_train_probs = sample_inference.predict(train_dataset, return_labels=True, return_full_probs=True)
+    print("\tBy majority")
     majority_train_output = majority_inference.predict(train_dataset, return_labels=True, return_full_probs=True)
     majority_train_preds, majority_train_labels, majority_train_probs = [np.array(x) for x in zip(*majority_train_output.values())]
+    print("\tBy logits")
     logits_train_output = logits_inference.predict(train_dataset, return_labels=True, return_full_probs=True)
     logits_train_preds, logits_train_labels, logits_train_probs = [np.array(x) for x in zip(*logits_train_output.values())]
+    print("\tBy confidence")
     confidence_train_output = confidence_inference.predict(train_dataset, return_labels=True, return_full_probs=True)
     confidence_train_preds, confidence_train_labels, confidence_train_probs = [np.array(x) for x in zip(*confidence_train_output.values())]
-    
+
+    print("Predicting on test dataset...")
+    print("\tBy sample")
     sample_test_preds, sample_test_labels, sample_test_probs = sample_inference.predict(test_dataset, return_labels=True, return_full_probs=True)
+    print("\tBy majority")
     majority_test_output = majority_inference.predict(test_dataset, return_labels=True, return_full_probs=True)
     majority_test_preds, majority_test_labels, majority_test_probs = [np.array(x) for x in zip(*majority_test_output.values())]
+    print("\tBy logits")
     logits_test_output = logits_inference.predict(test_dataset, return_labels=True, return_full_probs=True)
     logits_test_preds, logits_test_labels, logits_test_probs = [np.array(x) for x in zip(*logits_test_output.values())]
+    print("\tBy confidence")
     confidence_test_output = confidence_inference.predict(test_dataset, return_labels=True, return_full_probs=True)
     confidence_test_preds, confidence_test_labels, confidence_test_probs = [np.array(x) for x in zip(*confidence_test_output.values())]
 
+    print("Evaluating predictions...")
     sample_train_eval = EvaluationMetrics(
         sample_train_preds,
         sample_train_labels,
@@ -219,10 +232,10 @@ def test_model(model_dir: str, device: str = "cpu", seed: int = None, model_name
         'logits_loss': logits_train_eval.get_loss(nn.CrossEntropyLoss()),
         'confidence_acc': confidence_train_eval.accuracy,
         'confidence_loss': confidence_train_eval.get_loss(nn.CrossEntropyLoss()),
-        'sample_topk_acc_2': sample_train_eval.topk_accuracy(2),
-        'sample_topk_acc_3': sample_train_eval.topk_accuracy(3),
-        'sample_topk_acc_4': sample_train_eval.topk_accuracy(4),
-        'sample_topk_acc_5': sample_train_eval.topk_accuracy(5),
+        'sample_topk_acc_2': sample_train_eval.get_topk_accuracy(2),
+        'sample_topk_acc_3': sample_train_eval.get_topk_accuracy(3),
+        'sample_topk_acc_4': sample_train_eval.get_topk_accuracy(4),
+        'sample_topk_acc_5': sample_train_eval.get_topk_accuracy(5),
     }
 
     test_results = {
@@ -234,10 +247,10 @@ def test_model(model_dir: str, device: str = "cpu", seed: int = None, model_name
         'logits_loss': logits_test_eval.get_loss(nn.CrossEntropyLoss()),
         'confidence_acc': confidence_test_eval.accuracy,
         'confidence_loss': confidence_test_eval.get_loss(nn.CrossEntropyLoss()),
-        'sample_topk_acc_2': sample_test_eval.topk_accuracy(2),
-        'sample_topk_acc_3': sample_test_eval.topk_accuracy(3),
-        'sample_topk_acc_4': sample_test_eval.topk_accuracy(4),
-        'sample_topk_acc_5': sample_test_eval.topk_accuracy(5),
+        'sample_topk_acc_2': sample_test_eval.get_topk_accuracy(2),
+        'sample_topk_acc_3': sample_test_eval.get_topk_accuracy(3),
+        'sample_topk_acc_4': sample_test_eval.get_topk_accuracy(4),
+        'sample_topk_acc_5': sample_test_eval.get_topk_accuracy(5),
     }
 
     return train_results, test_results
