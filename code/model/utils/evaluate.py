@@ -133,7 +133,9 @@ class EvaluationMetrics:
             fmt='.2f' if normalize else 'd',
             cmap=cmap,
             xticklabels=self.class_names,
-            yticklabels=self.class_names
+            yticklabels=self.class_names,
+            linewidths=0.25,  # Add lines between cells
+            linecolor='grey'  # Make the lines black for better visibility
         )
         plt.title('Confusion Matrix')
         plt.ylabel('True Label')
