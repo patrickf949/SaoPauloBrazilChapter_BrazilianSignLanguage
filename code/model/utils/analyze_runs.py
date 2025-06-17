@@ -1,15 +1,17 @@
-import os
-import pandas as pd
-from omegaconf import OmegaConf
 import json
+import os
+
+import numpy as np
+import pandas as pd
 import torch
-from torch.utils.data import DataLoader
 import torch.nn as nn
+from omegaconf import OmegaConf
+
 from model.dataset.landmark_dataset import LandmarkDataset
-from model.utils.inference_then_evaluate import evaluate_detailed
-from model.utils.utils import load_obj
-from model.utils.path_utils import get_data_paths
+from model.utils.evaluate import EvaluationMetrics
 from model.utils.inference import InferenceEngine
+from model.utils.path_utils import load_base_paths
+from model.utils.utils import load_obj
 
 def get_results_from_training_log(training_log):
     total_epochs = len(training_log)
@@ -71,37 +73,14 @@ def make_results_row(run_dir, run_name):
     results.update(get_results_from_config(config))
     return results
 
-def load_checkpoint(filepath: str, device: str = "cuda") -> dict:
-    """Load training checkpoint from file.
-    
-    Args:
-        filepath: Path to checkpoint file
-        
-    Returns:
-        Dictionary containing checkpoint data
-    """
-    if not os.path.exists(filepath):
-        raise FileNotFoundError(f"No checkpoint found at {filepath}")
-    
-    checkpoint = torch.load(filepath, map_location=device)
-    print(f"Loaded checkpoint from: {filepath}")
-    return checkpoint
-
-def load_model(model_path: str, config_path: str, device: str = "cuda"):
-    config = OmegaConf.load(config_path)
-    checkpoint = load_checkpoint(model_path, device)
-    model = load_obj(config.model.class_name)(**config.model.params)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    model.to(device)
-    return model
-
-def test_model(model_dir: str, device: str = "cuda", seed: int = None, model_name: str = "best_model.pt"):
+def test_model(model_dir: str, device: str = "cpu", seed: int = None, model_name: str = "best_model.pt"):
     """Test model on data.
     
     Args:
-        model_path: Path to model file
-        data_path: Path to data file
-        device: Device to use for testing
+        model_dir: Directory containing model files and config
+        device: Device to use for testing (default: 'cuda')
+        seed: Random seed for reproducibility (optional)
+        model_name: Name of model checkpoint file to load (default: 'best_model.pt')
     """
     config_path = os.path.join(model_dir, "config.yaml")
     config = OmegaConf.load(config_path)
@@ -117,8 +96,8 @@ def test_model(model_dir: str, device: str = "cuda", seed: int = None, model_nam
     "test": None,
     }
 
-    _, metadata_path = get_data_paths(config.dataset.data_version)
-    training_metadata = pd.read_csv(os.path.join(metadata_path, f"landmarks_metadata_{config.dataset.data_version}_training.csv"))
+    base_paths = load_base_paths()
+    metadata_path = base_paths.metadata_base
     with open(os.path.join(metadata_path, "label_encoding.json"), "r") as f:
         label_encoding = json.load(f)
     class_names = [label_encoding[str(i)] for i in range(len(label_encoding))]
