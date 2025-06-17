@@ -360,7 +360,7 @@ class InferenceEngine:
                 
                 if return_labels:
                     # For ensemble, we'll use the label from the first sample
-                    labels = series_labels[series_id][0].cpu().numpy()
+                    labels = series_labels[series_id][0].cpu().numpy()[0]
                     if return_confidence:
                         predictions[series_id] = (pred[0], labels, pred[1])
                     elif return_full_probs:
