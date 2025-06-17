@@ -189,3 +189,51 @@ class EvaluationMetrics:
                 errors[f"{self.class_names[label]}->{self.class_names[pred]}"].append(i)
                 
         return dict(errors)
+
+    def plot_probability_heatmap(
+        self,
+        figsize: Tuple[int, int] = (12, 10),
+        cmap: str = 'YlOrRd',
+        save_path: Optional[str] = None
+    ) -> None:
+        """
+        Plot a heatmap showing the average probability distribution for each true class.
+        This helps visualize how confident the model is in its predictions, even when they're incorrect.
+        
+        Args:
+            figsize: Figure size
+            cmap: Colormap for the heatmap
+            save_path: Optional path to save the plot
+        """
+        if self.probabilities is None:
+            raise ValueError("Probabilities not available for probability heatmap")
+            
+        # Calculate average probabilities for each true class
+        avg_probs = np.zeros((self.num_classes, self.num_classes))
+        for i in range(self.num_classes):
+            mask = self.labels == i
+            if mask.any():
+                avg_probs[i] = self.probabilities[mask].mean(axis=0)
+                
+        # Format the numbers: 0 and 1 with no decimals, others with 2 decimals
+        formatted_probs = [[f"{x:.0f}" if np.round(x, 2) == 0.0 or np.round(x, 2) == 1.0 else f"{x:.2f}" for x in row] for row in avg_probs]
+                
+        plt.figure(figsize=figsize)
+        sns.heatmap(
+            avg_probs,
+            annot=formatted_probs,
+            fmt='',
+            cmap=cmap,
+            xticklabels=self.class_names,
+            yticklabels=self.class_names,
+            linewidths=0.25,
+            linecolor='grey',
+            annot_kws={'size': int(200/len(self.class_names))}  # Make the annotation text smaller
+        )
+        plt.title('Average Probability Distribution by True Class')
+        plt.ylabel('True Class')
+        plt.xlabel('Predicted Class Probability')
+        
+        if save_path:
+            plt.savefig(save_path)
+        plt.show()
