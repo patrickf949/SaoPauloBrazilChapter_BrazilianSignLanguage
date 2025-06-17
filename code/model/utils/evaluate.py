@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, List, Optional, Union, Tuple
+from typing import List, Optional, Union, Tuple
 from sklearn.metrics import confusion_matrix, classification_report
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -13,9 +13,9 @@ class EvaluationMetrics:
     """
     def __init__(
         self,
-        predictions: Union[np.ndarray, Dict[int, Union[float, np.ndarray]]],
-        labels: Union[np.ndarray, Dict[int, Union[float, np.ndarray]]],
-        probabilities: Optional[Union[np.ndarray, Dict[int, np.ndarray]]] = None,
+        predictions: np.ndarray,
+        labels: np.ndarray,
+        probabilities: Optional[np.ndarray] = None,
         num_classes: Optional[int] = None,
         class_names: Optional[List[str]] = None,
     ):
@@ -29,10 +29,9 @@ class EvaluationMetrics:
             num_classes: Number of classes in the dataset
             class_names: Optional list of class names for detailed reporting
         """
-        # Convert to numpy for easier computation
-        self.predictions = self._to_numpy(predictions)
-        self.labels = self._to_numpy(labels)
-        self.probabilities = self._to_numpy(probabilities) if probabilities is not None else None
+        self.predictions = np.array(predictions)
+        self.labels = np.array(labels)
+        self.probabilities = np.array(probabilities) if probabilities is not None else None
         
         # Set number of classes
         if num_classes is None:
@@ -44,13 +43,6 @@ class EvaluationMetrics:
         
         # Compute basic metrics
         self._compute_basic_metrics()
-        
-    def _to_numpy(self, data: Union[np.ndarray, Dict[int, Union[float, np.ndarray]]]) -> np.ndarray:
-        """Convert dict of values to numpy array if needed."""
-        if isinstance(data, dict):
-            # For ensemble predictions, convert dict to array
-            return np.array([v for v in data.values()])
-        return np.array(data)
         
     def _compute_basic_metrics(self):
         """Compute basic metrics that are always available."""
