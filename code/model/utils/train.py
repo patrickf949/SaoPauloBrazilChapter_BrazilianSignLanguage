@@ -84,7 +84,7 @@ def train_epoch_fold(
     epoch: int,
     k_folds: int,
     model: nn.Module,
-    datasets: Dict[str, LandmarkDataset],
+    train_dataset: LandmarkDataset,
     train_batch_size: int,
     val_batch_size: int,
     device: str,
@@ -111,7 +111,6 @@ def train_epoch_fold(
             - List of (train_loss, val_loss) tuples for each fold
             - List of statistics for each fold
     """
-    train_dataset = datasets["train_dataset"]
     # val_dataset is a copy of train_dataset, but with augmentation disabled
     val_dataset = copy.deepcopy(train_dataset)
     val_dataset.dataset_split = "val"

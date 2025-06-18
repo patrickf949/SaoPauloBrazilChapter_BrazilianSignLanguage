@@ -1,26 +1,27 @@
-from model.utils.utils import load_obj
-from model.features.features_analysis import analyze_dataset_features
-import os
-from torch import nn
-from torch.utils.data import DataLoader
 import csv
-from model.utils.train import (
-    train_epoch,
-    train_epoch_fold,
-)
-# from model.utils.evaluate import evaluate, evaluate_detailed, print_evaluation_results
-from model.dataset.landmark_dataset import LandmarkDataset
-from model.dataset.dataloader_functions import collate_func_pad
-from model.utils.path_utils import get_save_paths, get_data_paths, load_base_paths
-from model.dataset.prepare_data import prepare_training_metadata, prepare_landmark_arrays
-from model.utils.logging import TrainingLogger
+import json
+import os
+import time
+from datetime import datetime
+
+import hydra
+import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
-import hydra
-from model.utils.utils import set_config_param
-from datetime import datetime
-import numpy as np
-import time
+from torch import nn
+from torch.utils.data import DataLoader
+
+from model.dataset.dataloader_functions import collate_func_pad
+from model.dataset.landmark_dataset import LandmarkDataset
+from model.dataset.prepare_data import prepare_training_metadata, prepare_landmark_arrays
+from model.features.features_analysis import analyze_dataset_features
+
+from model.utils.logging import TrainingLogger
+from model.utils.path_utils import get_save_paths, get_data_paths, load_base_paths
+from model.utils.train import train_epoch, train_epoch_fold
+from model.utils.utils import load_obj, set_config_param
+from model.utils.inference import InferenceEngine
+from model.utils.evaluate import EvaluationMetrics
 
 # Ensure base output directories exist
 paths = load_base_paths()
@@ -126,11 +127,15 @@ def train(config: DictConfig):
 
     # ----- Data preparation -----
     # Get dataset
-    datasets = get_dataset(config)
+    # datasets = get_dataset(config)
+    _, label_mapping_path = prepare_training_metadata(config.dataset.data_version, return_paths=True)
+    verify_dataset = LandmarkDataset(
+        config.dataset, config.features, config.augmentation, None, seed=42
+    )
 
     # For new training runs, analyze features and update config with actual input size
     if not resume:
-        n_features = analyze_dataset_features(datasets["train_dataset"])
+        n_features = analyze_dataset_features(verify_dataset)
         set_config_param(config.model.params, "input_size", n_features)
         OmegaConf.save(config, config_path)
 
@@ -167,14 +172,18 @@ def train(config: DictConfig):
         
         # Get current learning rate
         current_lr = optimizer.param_groups[0]['lr']
-        
+
         if config.training.type == "cross_validation":
+            # Sample a new dataset for this epoch
+            train_dataset = LandmarkDataset(
+                config.dataset, config.features, config.augmentation, "train", seed=epoch
+            )
             # Modified to get per-fold metrics
             avg_train_loss, avg_val_loss, fold_metrics, fold_stats = train_epoch_fold(
                 epoch,
                 config.training.k_folds,
                 model,
-                datasets,
+                train_dataset,
                 config.training.train_batch_size,
                 config.training.val_batch_size,
                 device,
@@ -185,6 +194,17 @@ def train(config: DictConfig):
             # Log metrics
             logger.log_fold_training(epoch, fold_metrics, fold_stats, avg_train_loss, avg_val_loss, current_lr)
         else:
+            # Sample a new dataset for this epoch
+            train_dataset = LandmarkDataset(
+                config.dataset, config.features, config.augmentation, "train", seed=epoch
+            )
+            val_dataset = LandmarkDataset(
+                config.dataset, config.features, config.augmentation, "val", seed=epoch
+            )
+            datasets = {
+                "train_dataset": train_dataset,
+                "val_dataset": val_dataset,
+            }
             avg_train_loss, avg_val_loss = train_epoch(
                 model, device, datasets, optimizer, criterion, config.training.train_batch_size, config.training.val_batch_size
             )
@@ -212,7 +232,7 @@ def train(config: DictConfig):
             }, best_model_path)
             print(f"Saved new best model checkpoint to: {best_model_path}")
             # save best dataset
-            datasets["train_dataset"].save(best_dataset_path, epoch)
+            train_dataset.save(best_dataset_path, epoch)
         else:
             patience_counter += 1
             print(f"Patience: {patience_counter}/{config.training.patience}")
@@ -243,7 +263,7 @@ def train(config: DictConfig):
         save_checkpoint(checkpoint, checkpoint_path)
         # save dataset
         start_time = time.time()
-        datasets["train_dataset"].save(dataset_path, epoch)
+        train_dataset.save(dataset_path, epoch)
         end_time = time.time()
         print(f"Time taken to save dataset: {end_time - start_time} seconds")
 
@@ -257,35 +277,40 @@ def train(config: DictConfig):
     # - Large enough for efficient processing
     # - Small enough to avoid memory issues
     # - If using ensemble prediction, samples from the same video will be automatically grouped
-    test_batch_size = config.training.val_batch_size
-    test_loader = DataLoader(
-        datasets["test_dataset"],
-        batch_size=test_batch_size,
-        shuffle=False,  # Keep order for reproducibility
-        collate_fn=collate_func_pad,  # Use same collate function as training
+    test_dataset = LandmarkDataset(
+        config.dataset, config.features, config.augmentation, "test", seed=42
     )
-    
-    # Get class names from dataset
-    class_names = {
-        label: name for label, name in 
-        zip(datasets["test_dataset"].metadata["label_encoded"], 
-            datasets["test_dataset"].metadata["label"])
-    }
-    
-    # Run detailed evaluation with confidence scores
-    metrics, confusion_matrix_df, confidences = evaluate_detailed(
+    with open(label_mapping_path, "r") as f:
+        label_encoding = json.load(f)
+    class_names = [label_encoding[str(i)] for i in range(len(label_encoding))]
+
+    sample_inference = InferenceEngine(
         model=model,
-        test_loader=test_loader,
-        device=device,
-        class_names=class_names,
-        save_confusion_matrix=os.path.join(os.path.dirname(log_path), "confusion_matrix.png"),
-        criterion=criterion,
-        return_confidence=True
+        device='cpu',
+        ensemble_strategy=None
+    )
+    sample_test_preds, sample_test_labels, sample_test_probs = sample_inference.predict(test_dataset, return_labels=True, return_full_probs=True)
+
+    sample_test_eval = EvaluationMetrics(
+        sample_test_preds,
+        sample_test_labels,
+        sample_test_probs,
+        num_classes=len(class_names),
+        class_names=class_names
     )
     
+    metrics = {
+        'sample_acc': sample_test_eval.accuracy,
+        'sample_loss': sample_test_eval.get_loss(nn.CrossEntropyLoss()),
+        'sample_topk_acc_2': sample_test_eval.get_topk_accuracy(2),
+        'sample_topk_acc_3': sample_test_eval.get_topk_accuracy(3),
+        'sample_topk_acc_4': sample_test_eval.get_topk_accuracy(4),
+        'sample_topk_acc_5': sample_test_eval.get_topk_accuracy(5),
+    }
+    confusion_matrix_df = sample_test_eval.get_confusion_matrix()
     # Print results
     print("\n=== Evaluation Results (best model) ===")
-    print_evaluation_results(metrics, confusion_matrix_df, confidences, class_names)
+    print(metrics)
     
     # Save detailed results
     results_path = os.path.join(os.path.dirname(log_path), "evaluation_results.txt")
@@ -299,26 +324,26 @@ def train(config: DictConfig):
         f.write("\nConfusion Matrix:\n")
         f.write(confusion_matrix_df.to_string())
         
-        if confidences:
-            f.write("\n\nConfidence Statistics:\n")
-            conf_values = list(confidences.values())
-            f.write(f"Mean confidence: {np.mean(conf_values):.4f}\n")
-            f.write(f"Std confidence: {np.std(conf_values):.4f}\n")
-            f.write(f"Min confidence: {np.min(conf_values):.4f}\n")
-            f.write(f"Max confidence: {np.max(conf_values):.4f}\n")
+        # if confidences:
+        #     f.write("\n\nConfidence Statistics:\n")
+        #     conf_values = list(confidences.values())
+        #     f.write(f"Mean confidence: {np.mean(conf_values):.4f}\n")
+        #     f.write(f"Std confidence: {np.std(conf_values):.4f}\n")
+        #     f.write(f"Min confidence: {np.min(conf_values):.4f}\n")
+        #     f.write(f"Max confidence: {np.max(conf_values):.4f}\n")
             
-            # Write samples with lowest confidence
-            f.write("\nLowest Confidence Predictions:\n")
-            n_lowest = min(5, len(confidences))
-            lowest_conf = sorted(confidences.items(), key=lambda x: x[1])[:n_lowest]
-            for idx, conf in lowest_conf:
-                sample_name = f"Sample {idx}"
-                f.write(f"{sample_name}: {conf:.4f}\n")
+        #     # Write samples with lowest confidence
+        #     f.write("\nLowest Confidence Predictions:\n")
+        #     n_lowest = min(5, len(confidences))
+        #     lowest_conf = sorted(confidences.items(), key=lambda x: x[1])[:n_lowest]
+        #     for idx, conf in lowest_conf:
+        #         sample_name = f"Sample {idx}"
+        #         f.write(f"{sample_name}: {conf:.4f}\n")
 
     # Close logger
     logger.close()
 
-    return metrics["accuracy"], metrics.get("loss", 0.0), best_epoch
+    return metrics["sample_acc"], metrics.get("sample_loss", 0.0), best_epoch
 
 
 if __name__ == "__main__":
