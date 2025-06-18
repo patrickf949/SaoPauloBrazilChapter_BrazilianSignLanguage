@@ -1,10 +1,14 @@
 import json
 import os
+import copy
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from torch.utils.data import Subset
+from sklearn.model_selection import StratifiedGroupKFold
+from typing import List, Dict, DictConfig, Tuple
 from omegaconf import OmegaConf
 
 from model.dataset.landmark_dataset import LandmarkDataset
@@ -73,15 +77,7 @@ def make_results_row(run_dir, run_name):
     results.update(get_results_from_config(config))
     return results
 
-def test_model(model_dir: str, device: str = "cpu", seed: int = None, model_name: str = "best_model.pt"):
-    """Test model on data.
-    
-    Args:
-        model_dir: Directory containing model files and config
-        device: Device to use for testing (default: 'cuda')
-        seed: Random seed for reproducibility (optional)
-        model_name: Name of model checkpoint file to load (default: 'best_model.pt')
-    """
+def load_model(model_dir: str, model_name: str, device: str = "cpu"):
     config_path = os.path.join(model_dir, "config.yaml")
     config = OmegaConf.load(config_path)
 
@@ -90,167 +86,175 @@ def test_model(model_dir: str, device: str = "cpu", seed: int = None, model_name
     model = load_obj(config.model.class_name)(**config.model.params)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.to(device)
-    
-    augmentations = {
-    "train": None,
-    "test": None,
-    }
+    return model
 
-    base_paths = load_base_paths()
-    metadata_path = base_paths.metadata_base
-    with open(os.path.join(metadata_path, "label_encoding.json"), "r") as f:
+def load_class_names(encoding_json_path: str):
+    with open(encoding_json_path, "r") as f:
         label_encoding = json.load(f)
     class_names = [label_encoding[str(i)] for i in range(len(label_encoding))]
+    return class_names
 
-    print("Loading datasets...")
-    train_dataset = LandmarkDataset(
-        config.dataset, config.features, augmentations, "train", seed=seed
-    )
-    test_dataset = LandmarkDataset(
-        config.dataset, config.features, augmentations, "test", seed=seed
-    )
+def load_saved_dataset(dataset_path: str, seed: int = None):
+    dataset = LandmarkDataset.load(dataset_path)
+    return dataset
+
+def create_dataset_without_augmentations(config: DictConfig, split: str, seed: int = None):
+    augmentations = {
+        "train": None,
+        "test": None,
+    }
+    dataset = LandmarkDataset(config.dataset, config.features, augmentations, split, seed=seed)
+    return dataset
+
+def create_cross_validation_datasets(train_dataset: LandmarkDataset, epoch: int, k_folds: int = 5):
+    datasets = {}
+    
+    val_dataset = copy.deepcopy(train_dataset)
+    val_dataset.dataset_split = "val"
+    
+    if len(train_dataset) == 0:
+        raise ValueError("Training dataset is empty")
+    if len(val_dataset) == 0:
+        raise ValueError("Validation dataset is empty")
+    if len(train_dataset) != len(val_dataset):
+        raise ValueError("Training and validation datasets don't have the same length")
+    
+    # Create groups array where each sample from the same video gets the same group number
+    groups = []
+    labels = []
+    for video_idx in range(len(train_dataset.metadata)):
+        video_label = train_dataset.metadata.iloc[video_idx]["label_encoded"]
+        groups.extend([video_idx] * train_dataset.samples_per_video[video_idx])
+        labels.extend([video_label] * train_dataset.samples_per_video[video_idx])
+    
+    groups = np.array(groups)
+    stratified_group_kfold = StratifiedGroupKFold(n_splits=k_folds, shuffle=True, random_state=42 + epoch)
+    fold_indices = list(stratified_group_kfold.split(range(len(train_dataset)), labels, groups=groups))
+
+    for fold, (train_ids, val_ids) in enumerate(fold_indices):
+        print(f"- Fold {fold + 1} -")
+        datasets[fold] = (Subset(train_dataset, train_ids), Subset(val_dataset, val_ids))
+    return datasets
+
+def test_model_on_dataset(model: nn.Module, dataset: LandmarkDataset, class_names: List[str], \
+               device: str = "cpu", model_name: str = "best_model.pt", \
+               majority_ensemble: bool = False, logits_ensemble: bool = False, confidence_ensemble: bool = False):
+    """
+    Test model on dataset.
+    
+    Args:
+        model: Model to use for inference
+        dataset: Dataset to test on
+        class_names: List of class names
+        device: Device to use for inference (default: 'cpu')
+        model_name: Name of model checkpoint file to load (default: 'best_model.pt')
+        majority_ensemble: Whether to use majority ensemble (default: False)
+        logits_ensemble: Whether to use logits ensemble (default: False)
+        confidence_ensemble: Whether to use confidence ensemble (default: False)
+    """
+
+    results = {}
 
     print("Loading inference engines...")
     sample_inference = InferenceEngine(
         model=model,
-        device='cpu',
+        device=device,
         ensemble_strategy=None
     )
-    majority_inference = InferenceEngine(
-        model=model,
-        device='cpu',
-        ensemble_strategy='majority'
-    )
-    logits_inference = InferenceEngine(
-        model=model,
-        device='cpu',
-        ensemble_strategy='logits_average'
-    )
-    confidence_inference = InferenceEngine(
-        model=model,
-        device='cpu',
-        ensemble_strategy='confidence_weighted'
-    )
 
-    print("Predicting on train dataset...")
-    print("\tBy sample")
-    sample_train_preds, sample_train_labels, sample_train_probs = sample_inference.predict(train_dataset, return_labels=True, return_full_probs=True)
-    print("\tBy majority")
-    majority_train_output = majority_inference.predict(train_dataset, return_labels=True, return_full_probs=True)
-    majority_train_preds, majority_train_labels, majority_train_probs = [np.array(x) for x in zip(*majority_train_output.values())]
-    print("\tBy logits")
-    logits_train_output = logits_inference.predict(train_dataset, return_labels=True, return_full_probs=True)
-    logits_train_preds, logits_train_labels, logits_train_probs = [np.array(x) for x in zip(*logits_train_output.values())]
-    print("\tBy confidence")
-    confidence_train_output = confidence_inference.predict(train_dataset, return_labels=True, return_full_probs=True)
-    confidence_train_preds, confidence_train_labels, confidence_train_probs = [np.array(x) for x in zip(*confidence_train_output.values())]
-
-    print("Predicting on test dataset...")
-    print("\tBy sample")
-    sample_test_preds, sample_test_labels, sample_test_probs = sample_inference.predict(test_dataset, return_labels=True, return_full_probs=True)
-    print("\tBy majority")
-    majority_test_output = majority_inference.predict(test_dataset, return_labels=True, return_full_probs=True)
-    majority_test_preds, majority_test_labels, majority_test_probs = [np.array(x) for x in zip(*majority_test_output.values())]
-    print("\tBy logits")
-    logits_test_output = logits_inference.predict(test_dataset, return_labels=True, return_full_probs=True)
-    logits_test_preds, logits_test_labels, logits_test_probs = [np.array(x) for x in zip(*logits_test_output.values())]
-    print("\tBy confidence")
-    confidence_test_output = confidence_inference.predict(test_dataset, return_labels=True, return_full_probs=True)
-    confidence_test_preds, confidence_test_labels, confidence_test_probs = [np.array(x) for x in zip(*confidence_test_output.values())]
-
-    print("Evaluating predictions...")
-    sample_train_eval = EvaluationMetrics(
-        sample_train_preds,
-        sample_train_labels,
-        sample_train_probs,
+    print("Running sample inference...")
+    sample_preds, sample_labels, sample_probs = sample_inference.predict(dataset, return_labels=True, return_full_probs=True)
+    
+    sample_eval = EvaluationMetrics(
+        sample_preds,
+        sample_labels,
+        sample_probs,
         num_classes=len(class_names),
         class_names=class_names
     )
 
-    majority_train_eval = EvaluationMetrics(
-        majority_train_preds,
-        majority_train_labels,
-        majority_train_probs,
-        num_classes=len(class_names),
-        class_names=class_names
-    )
+    results['sample_acc'] = sample_eval.accuracy
+    results['sample_loss'] = sample_eval.get_loss(nn.CrossEntropyLoss())
+    results['sample_topk_acc_2'] = sample_eval.get_topk_accuracy(2)
+    results['sample_topk_acc_3'] = sample_eval.get_topk_accuracy(3)
+    results['sample_topk_acc_4'] = sample_eval.get_topk_accuracy(4)
+    results['sample_topk_acc_5'] = sample_eval.get_topk_accuracy(5)
 
-    logits_train_eval = EvaluationMetrics(
-        logits_train_preds,
-        logits_train_labels,
-        logits_train_probs,
-        num_classes=len(class_names),
-        class_names=class_names
-    )
+    if majority_ensemble:
+        print("Running majority ensemble inference...")
+        majority_inference = InferenceEngine(
+            model=model,
+            device=device,
+            ensemble_strategy='majority'
+        )
+        majority_output = majority_inference.predict(dataset, return_labels=True, return_full_probs=True)
+        majority_preds, majority_labels, majority_probs = [np.array(x) for x in zip(*majority_output.values())]
+        
+        majority_eval = EvaluationMetrics(
+            majority_preds,
+            majority_labels,
+            majority_probs,
+            num_classes=len(class_names),
+            class_names=class_names
+        )
+        results['majority_acc'] = majority_eval.accuracy
+        results['majority_loss'] = majority_eval.get_loss(nn.CrossEntropyLoss())
 
-    confidence_train_eval = EvaluationMetrics(
-        confidence_train_preds,
-        confidence_train_labels,
-        confidence_train_probs,
-        num_classes=len(class_names),
-        class_names=class_names
-    )
+    if logits_ensemble:
+        print("Running logits ensemble inference...")
+        logits_inference = InferenceEngine(
+            model=model,
+            device=device,
+            ensemble_strategy='logits_average'
+        )
+        logits_output = logits_inference.predict(dataset, return_labels=True, return_full_probs=True)
+        logits_preds, logits_labels, logits_probs = [np.array(x) for x in zip(*logits_output.values())]
+        
+        logits_eval = EvaluationMetrics(
+            logits_preds,
+            logits_labels,
+            logits_probs,
+            num_classes=len(class_names),
+            class_names=class_names
+        )
+        results['logits_acc'] = logits_eval.accuracy
+        results['logits_loss'] = logits_eval.get_loss(nn.CrossEntropyLoss())
 
-    sample_test_eval = EvaluationMetrics(
-        sample_test_preds,
-        sample_test_labels,
-        sample_test_probs,
-        num_classes=len(class_names),
-        class_names=class_names
-    )
+    if confidence_ensemble:
+        print("Running confidence ensemble inference...")
+        confidence_inference = InferenceEngine(
+            model=model,
+            device=device,
+            ensemble_strategy='confidence_weighted'
+        )
+        confidence_output = confidence_inference.predict(dataset, return_labels=True, return_full_probs=True)
+        confidence_preds, confidence_labels, confidence_probs = [np.array(x) for x in zip(*confidence_output.values())]
+        
+        confidence_eval = EvaluationMetrics(
+            confidence_preds,
+            confidence_labels,
+            confidence_probs,
+            num_classes=len(class_names),
+            class_names=class_names
+        )
+        results['confidence_acc'] = confidence_eval.accuracy
+        results['confidence_loss'] = confidence_eval.get_loss(nn.CrossEntropyLoss())
 
-    majority_test_eval = EvaluationMetrics(
-        majority_test_preds,
-        majority_test_labels,
-        majority_test_probs,
-        num_classes=len(class_names),
-        class_names=class_names
-    )
+    return results
 
-    logits_test_eval = EvaluationMetrics(
-        logits_test_preds,
-        logits_test_labels,
-        logits_test_probs,
-        num_classes=len(class_names),
-        class_names=class_names
-    )
+def test_model_on_cross_validation_datasets(model: nn.Module, datasets: Dict[int, Tuple[Subset, Subset]], class_names: List[str], \
+               device: str = "cpu", model_name: str = "best_model.pt", \
+               majority_ensemble: bool = False, logits_ensemble: bool = False, confidence_ensemble: bool = False):
+    """
+    Test model on cross validation datasets.
+    """
+    train_results = {}
+    val_results = {}
 
-    confidence_test_eval = EvaluationMetrics(
-        confidence_test_preds,
-        confidence_test_labels,
-        confidence_test_probs,
-        num_classes=len(class_names),
-        class_names=class_names
-    )
-
-    train_results = {
-        'sample_acc': sample_train_eval.accuracy,
-        'sample_loss': sample_train_eval.get_loss(nn.CrossEntropyLoss()),
-        'majority_acc': majority_train_eval.accuracy,
-        'majority_loss': majority_train_eval.get_loss(nn.CrossEntropyLoss()),
-        'logits_acc': logits_train_eval.accuracy,
-        'logits_loss': logits_train_eval.get_loss(nn.CrossEntropyLoss()),
-        'confidence_acc': confidence_train_eval.accuracy,
-        'confidence_loss': confidence_train_eval.get_loss(nn.CrossEntropyLoss()),
-        'sample_topk_acc_2': sample_train_eval.get_topk_accuracy(2),
-        'sample_topk_acc_3': sample_train_eval.get_topk_accuracy(3),
-        'sample_topk_acc_4': sample_train_eval.get_topk_accuracy(4),
-        'sample_topk_acc_5': sample_train_eval.get_topk_accuracy(5),
-    }
-
-    test_results = {
-        'sample_acc': sample_test_eval.accuracy,
-        'sample_loss': sample_test_eval.get_loss(nn.CrossEntropyLoss()),
-        'majority_acc': majority_test_eval.accuracy,
-        'majority_loss': majority_test_eval.get_loss(nn.CrossEntropyLoss()),
-        'logits_acc': logits_test_eval.accuracy,
-        'logits_loss': logits_test_eval.get_loss(nn.CrossEntropyLoss()),
-        'confidence_acc': confidence_test_eval.accuracy,
-        'confidence_loss': confidence_test_eval.get_loss(nn.CrossEntropyLoss()),
-        'sample_topk_acc_2': sample_test_eval.get_topk_accuracy(2),
-        'sample_topk_acc_3': sample_test_eval.get_topk_accuracy(3),
-        'sample_topk_acc_4': sample_test_eval.get_topk_accuracy(4),
-        'sample_topk_acc_5': sample_test_eval.get_topk_accuracy(5),
-    }
-
-    return train_results, test_results
+    for fold, (train_dataset, val_dataset) in datasets.items():
+        print(f"- Fold {fold + 1} -")
+        train_results[fold] = test_model_on_dataset(model, train_dataset, class_names, device, model_name, \
+                                              majority_ensemble, logits_ensemble, confidence_ensemble)
+        val_results[fold] = test_model_on_dataset(model, val_dataset, class_names, device, model_name, \
+                                              majority_ensemble, logits_ensemble, confidence_ensemble)
+    return train_results, val_results
