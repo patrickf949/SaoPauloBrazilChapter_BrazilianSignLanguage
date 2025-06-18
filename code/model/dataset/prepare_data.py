@@ -37,9 +37,10 @@ def validate_filename_column(df: pd.DataFrame) -> pd.DataFrame:
 def encode_label(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     # Sort labels to ensure consistent encoding
     unique_labels = sorted(set(df["label"]))
-    label_mapping = {label: idx for idx, label in enumerate(unique_labels)}
-    df["label_encoded"] = df["label"].map(label_mapping)
-    return df, label_mapping
+    label_to_idx_mapping = {label: idx for idx, label in enumerate(unique_labels)}
+    df["label_encoded"] = df["label"].map(label_to_idx_mapping)
+    idx_to_label_mapping = {idx: label for label, idx in label_to_idx_mapping.items()}
+    return df, idx_to_label_mapping
 
 def train_test_split(df: pd.DataFrame) -> pd.DataFrame:
     # should already be sorted, but just in case
@@ -77,7 +78,7 @@ def train_test_split(df: pd.DataFrame) -> pd.DataFrame:
     df["dataset_split"] = df["dataset_split_group"].map(dataset_split_dict)
     return df.drop(columns=["dataset_split_group"])
 
-def prepare_training_metadata(data_version: str) -> None:
+def prepare_training_metadata(data_version: str, return_paths: bool = False) -> None:
     """
     Read the preprocessed metadata file, add training-specific columns (label encoding and dataset splits),
     and save to the training metadata location.
@@ -110,6 +111,9 @@ def prepare_training_metadata(data_version: str) -> None:
     with open(label_mapping_path, 'w') as f:
         json.dump(label_mapping, f, indent=2)
     print(f"Label mapping saved to: {label_mapping_path}")
+
+    if return_paths:
+        return training_metadata_path, label_mapping_path
 
 def prepare_landmark_arrays(load_landmarks_dir: str, positions_config: DictConfig) -> None:
 
