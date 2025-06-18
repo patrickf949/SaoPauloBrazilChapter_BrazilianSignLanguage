@@ -95,5 +95,10 @@ def get_save_paths(config: DictConfig) -> tuple[str, str, str, str]:
     checkpoint_path = os.path.join(run_dir, "checkpoint.pt")
     best_model_path = os.path.join(run_dir, "best_model.pt")
     config_path = os.path.join(run_dir, "config.yaml")
-    
-    return log_path, checkpoint_path, best_model_path, config_path
+    dataset_log_paths = {
+        "train": os.path.join(run_dir, "train_dataset.pt"),
+        "best_train": os.path.join(run_dir, "best_train_dataset.pt"),
+        "test": os.path.join(run_dir, "test_dataset.pt"),
+    }
+
+    return log_path, checkpoint_path, best_model_path, config_path, dataset_log_paths
