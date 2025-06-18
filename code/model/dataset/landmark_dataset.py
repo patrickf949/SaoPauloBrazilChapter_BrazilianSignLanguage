@@ -121,8 +121,8 @@ class LandmarkDataset(Dataset):
             self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
 
         # Add seed to sampling parameters if provided
+        self.sampling_params = OmegaConf.to_container(sampling_config["params"])
         if seed is not None:
-            self.sampling_params = OmegaConf.to_container(sampling_config["params"])
             self.sampling_params["seed"] = seed
 
         # Calculate samples per video and store all samples
