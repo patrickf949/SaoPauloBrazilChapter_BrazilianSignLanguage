@@ -5,6 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import torch
+import pandas as pd
 
 class EvaluationMetrics:
     """
@@ -95,8 +96,13 @@ class EvaluationMetrics:
         return self.class_metrics
         
     def get_confusion_matrix(self) -> np.ndarray:
-        """Get confusion matrix."""
-        return self.confusion_mat
+        """Get confusion matrix as a dataframe."""
+        cm_df = pd.DataFrame(
+            self.confusion_mat, 
+            index=self.class_names,
+            columns=self.class_names
+        )
+        return cm_df
         
     def plot_confusion_matrix(
         self,
@@ -135,7 +141,8 @@ class EvaluationMetrics:
         
         if save_path:
             plt.savefig(save_path)
-        plt.show()
+        else:
+            plt.show()
         
     def get_classification_report(self) -> str:
         """Get detailed classification report."""
@@ -228,4 +235,5 @@ class EvaluationMetrics:
         
         if save_path:
             plt.savefig(save_path)
-        plt.show()
+        else:
+            plt.show()

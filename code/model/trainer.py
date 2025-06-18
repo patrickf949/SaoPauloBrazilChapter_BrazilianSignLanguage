@@ -307,11 +307,10 @@ def train(config: DictConfig):
         'sample_topk_acc_4': sample_test_eval.get_topk_accuracy(4),
         'sample_topk_acc_5': sample_test_eval.get_topk_accuracy(5),
     }
-    confusion_matrix_df = sample_test_eval.get_confusion_matrix()
     # Print results
     print("\n=== Evaluation Results (best model) ===")
     print(metrics)
-    
+    sample_test_eval.plot_confusion_matrix(save_path=os.path.join(os.path.dirname(log_path), "confusion_matrix.png"))
     # Save detailed results
     results_path = os.path.join(os.path.dirname(log_path), "evaluation_results.txt")
     with open(results_path, "w") as f:
@@ -320,9 +319,6 @@ def train(config: DictConfig):
         for metric, value in metrics.items():
             if value is not None:
                 f.write(f"{metric.capitalize()}: {value:.4f}\n")
-        
-        f.write("\nConfusion Matrix:\n")
-        f.write(confusion_matrix_df.to_string())
         
         # if confidences:
         #     f.write("\n\nConfidence Statistics:\n")
