@@ -12,6 +12,7 @@ import os
 from . import frame_sampling
 from model.features.feature_processor import FeatureProcessor
 import time
+from omegaconf import OmegaConf
 
 def uniform_intervals(start: int, end: int, interval: int):
     return list(range(start, end + 1, interval))
@@ -90,12 +91,14 @@ class LandmarkDataset(Dataset):
         seed: int = None,
     ):
         # these configs should already be DictConfig objects, load_config is just for safety
-        dataset_config = load_config(dataset_config, "dataset_config")
-        features_config = load_config(features_config, "features_config")
+        self.dataset_config = load_config(dataset_config, "dataset_config")
+        self.features_config = load_config(features_config, "features_config")
+        self.augmentation_config = load_config(augmentation_config, "augmentation_config")
         self.dataset_split = dataset_split
+        self.seed = seed
 
         # Get standardized paths based on data version
-        self.data_dir, metadata_path = get_data_paths(dataset_config["data_version"])
+        self.data_dir, metadata_path = get_data_paths(self.dataset_config["data_version"])
         
         # Load and filter metadata
         self.metadata = pd.read_csv(metadata_path)
@@ -103,12 +106,12 @@ class LandmarkDataset(Dataset):
         
         # Frame sampling configuration
         if self.dataset_split == "train":
-            sampling_config = dataset_config["frame_sampling_train"]
+            sampling_config = self.dataset_config["frame_sampling_train"]
             self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
             self.sampling_params = sampling_config["params"].copy()  # Create a copy to avoid modifying the original
         else:
             # Use test sampling for validation and test splits
-            sampling_config = dataset_config["frame_sampling_test"]
+            sampling_config = self.dataset_config["frame_sampling_test"]
             self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
             self.sampling_params = sampling_config["params"].copy()  # Create a copy to avoid modifying the original
 
@@ -134,9 +137,9 @@ class LandmarkDataset(Dataset):
         # Initialize feature processor
         self.feature_processor = FeatureProcessor(
             dataset_split=self.dataset_split,
-            dataset_config=dataset_config,
-            features_config=features_config,
-            augmentation_config=augmentation_config,
+            dataset_config=self.dataset_config,
+            features_config=self.features_config,
+            augmentation_config=self.augmentation_config,
             landmarks_dir=self.data_dir,
         )
 
@@ -244,3 +247,68 @@ class LandmarkDataset(Dataset):
         start_idx = self.cumsum_samples[video_position]
         end_idx = self.cumsum_samples[video_position + 1]
         return list(range(start_idx, end_idx))
+
+    def save(self, save_path: str, epoch: int = None) -> None:
+        """Save the dataset state to a file.
+        
+        Args:
+            save_path: Path to save the dataset state to
+        """
+        # Create a dictionary of all the important state
+        state = {
+            'dataset_config': OmegaConf.to_container(self.dataset_config),
+            'features_config': OmegaConf.to_container(self.features_config),
+            'augmentation_config': OmegaConf.to_container(self.augmentation_config),
+            'dataset_split': self.dataset_split,
+            'seed': self.seed,
+            'metadata': self.metadata,
+            'samples_per_video': self.samples_per_video,
+            'all_samples': self.all_samples,
+            'cumsum_samples': self.cumsum_samples,
+            'sampling_params': self.sampling_params,
+            'sampling_func_name': self.sampling_func.__name__,
+        }
+        if epoch is not None:
+            state['epoch'] = epoch
+        
+        # Save the state
+        torch.save(state, save_path)
+        print(f"Saved dataset state to: {save_path}")
+
+    @classmethod
+    def load(cls, load_path: str) -> 'LandmarkDataset':
+        """Load a dataset state from a file.
+        
+        Args:
+            load_path: Path to load the dataset state from
+            
+        Returns:
+            A new LandmarkDataset instance with the loaded state
+        """
+        # Load the state
+        state = torch.load(load_path)
+        
+        # Create a new dataset instance with the loaded configs
+        dataset = cls(
+            dataset_config=state['dataset_config'],
+            features_config=state['features_config'],
+            augmentation_config=state['augmentation_config'],
+            dataset_split=state['dataset_split'],
+            seed=state['seed']
+        )
+        
+        # Restore the state
+        dataset.metadata = state['metadata']
+        dataset.samples_per_video = state['samples_per_video']
+        dataset.all_samples = state['all_samples']
+        dataset.cumsum_samples = state['cumsum_samples']
+        dataset.sampling_params = state['sampling_params']
+        
+        # Restore the sampling function
+        dataset.sampling_func = frame_sampling.get_sampling_function(state['sampling_func_name'])
+        if 'epoch' in state:
+            dataset.epoch = state['epoch']
+        print(f"Loaded dataset state from: {load_path}")
+        print(f"Epoch: {dataset.epoch}")
+
+        return dataset
