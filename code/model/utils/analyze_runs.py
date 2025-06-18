@@ -104,10 +104,10 @@ def test_model(model_dir: str, device: str = "cpu", seed: int = None, model_name
 
     print("Loading datasets...")
     train_dataset = LandmarkDataset(
-        config.dataset, config.features, augmentations, "train"
+        config.dataset, config.features, augmentations, "train", seed=seed
     )
     test_dataset = LandmarkDataset(
-        config.dataset, config.features, augmentations, "test"
+        config.dataset, config.features, augmentations, "test", seed=seed
     )
 
     print("Loading inference engines...")
