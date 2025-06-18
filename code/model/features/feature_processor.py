@@ -20,6 +20,7 @@ class FeatureProcessor:
         features_config: Union[str, Dict, DictConfig],
         augmentation_config: Union[str, Dict, DictConfig],
         landmarks_dir: str,
+        seed: int = None,
     ):
         """
         Initialize the feature processor.
@@ -30,7 +31,11 @@ class FeatureProcessor:
             features_config: Dictionary of feature estimators and their configurations
             augmentation_config: List of augmentation configurations with their probabilities
             landmarks_dir: Directory containing landmark data and metadata
+            seed: Random seed for reproducible augmentation selection
         """
+        # Store seed for reproducible augmentation selection
+        self.seed = seed
+        
         # Extract metadata configuration from features config
         metadata_config = features_config.get("metadata", {})
         self.scale_range = metadata_config.get("scale_range", [-1, 1])
@@ -95,6 +100,13 @@ class FeatureProcessor:
         # Select data augmentations once for the entire sequence
         selected_augmentations = []
         if dataset_split == "train":
+            # Set random seed for reproducible augmentation selection if seed is provided
+            if self.seed is not None:
+                # Use a combination of the seed and metadata to ensure different videos get different but reproducible augmentations
+                video_seed = hash(metadata_row["filename"]) % (2**32)  # Ensure it's a 32-bit integer
+                combined_seed = (self.seed + video_seed) % (2**32)
+                np.random.seed(combined_seed)
+            
             for aug in self.augmentations:
                 if np.random.uniform() <= aug["p"]:
                     selected_augmentations.append(aug["augmentation"])

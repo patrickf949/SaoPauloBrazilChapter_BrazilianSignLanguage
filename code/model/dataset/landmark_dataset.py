@@ -141,6 +141,7 @@ class LandmarkDataset(Dataset):
             features_config=self.features_config,
             augmentation_config=self.augmentation_config,
             landmarks_dir=self.data_dir,
+            seed=self.seed,
         )
 
     def _load_frames(self, idx: int):
@@ -306,6 +307,17 @@ class LandmarkDataset(Dataset):
         
         # Restore the sampling function
         dataset.sampling_func = frame_sampling.get_sampling_function(state['sampling_func_name'])
+        
+        # Recreate the feature processor with the loaded seed to ensure augmentation reproducibility
+        dataset.feature_processor = FeatureProcessor(
+            dataset_split=dataset.dataset_split,
+            dataset_config=dataset.dataset_config,
+            features_config=dataset.features_config,
+            augmentation_config=dataset.augmentation_config,
+            landmarks_dir=dataset.data_dir,
+            seed=dataset.seed,
+        )
+        
         if 'epoch' in state:
             dataset.epoch = state['epoch']
         print(f"Loaded dataset state from: {load_path}")
