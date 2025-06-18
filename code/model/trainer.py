@@ -123,7 +123,7 @@ def train(config: DictConfig):
         best_epoch = 0
 
     # Get paths for saving artifacts
-    log_path, checkpoint_path, best_model_path, config_path, dataset_path, best_dataset_path = get_save_paths(config)
+    log_path, checkpoint_path, best_model_path, config_path = get_save_paths(config)
 
     # ----- Data preparation -----
     # Get dataset
@@ -232,7 +232,7 @@ def train(config: DictConfig):
             }, best_model_path)
             print(f"Saved new best model checkpoint to: {best_model_path}")
             # save best dataset
-            train_dataset.save(best_dataset_path, epoch)
+            train_dataset.save(os.path.join(run_dir, "best_train_dataset.pt"), epoch)
         else:
             patience_counter += 1
             print(f"Patience: {patience_counter}/{config.training.patience}")
@@ -263,7 +263,7 @@ def train(config: DictConfig):
         save_checkpoint(checkpoint, checkpoint_path)
         # save dataset
         start_time = time.time()
-        train_dataset.save(dataset_path, epoch)
+        train_dataset.save(os.path.join(run_dir, "train_dataset.pt"), epoch)
         end_time = time.time()
         print(f"Time taken to save dataset: {end_time - start_time} seconds")
 
@@ -280,6 +280,7 @@ def train(config: DictConfig):
     test_dataset = LandmarkDataset(
         config.dataset, config.features, config.augmentation, "test", seed=42
     )
+    test_dataset.save(os.path.join(run_dir, "test_dataset.pt"), epoch)
     with open(label_mapping_path, "r") as f:
         label_encoding = json.load(f)
     class_names = [label_encoding[str(i)] for i in range(len(label_encoding))]
