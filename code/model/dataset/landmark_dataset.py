@@ -87,7 +87,7 @@ class LandmarkDataset(Dataset):
         dataset_config: Union[str, Dict, DictConfig],
         features_config: Union[str, Dict, DictConfig],
         augmentation_config: Union[str, Dict, DictConfig],
-        dataset_split: str,
+        dataset_split: str = None,
         seed: int = None,
     ):
         # these configs should already be DictConfig objects, load_config is just for safety
@@ -100,23 +100,29 @@ class LandmarkDataset(Dataset):
         # Get standardized paths based on data version
         self.data_dir, metadata_path = get_data_paths(self.dataset_config["data_version"])
         
-        # Load and filter metadata
+        # Load metadata
         self.metadata = pd.read_csv(metadata_path)
-        self.metadata = self.metadata[self.metadata["dataset_split"] == dataset_split]
         
+        # Only filter metadata if dataset_split is provided
+        if self.dataset_split is not None:
+            self.metadata = self.metadata[self.metadata["dataset_split"] == dataset_split]
+        # We need to specify a split for the frame sampling & augmentation to work
+        else:
+            self.dataset_split = "train"
+
         # Frame sampling configuration
         if self.dataset_split == "train":
+            # Use train sampling for training split or when no split is specified
             sampling_config = self.dataset_config["frame_sampling_train"]
             self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
-            self.sampling_params = sampling_config["params"].copy()  # Create a copy to avoid modifying the original
         else:
             # Use test sampling for validation and test splits
             sampling_config = self.dataset_config["frame_sampling_test"]
             self.sampling_func = frame_sampling.get_sampling_function(sampling_config["method"])
-            self.sampling_params = sampling_config["params"].copy()  # Create a copy to avoid modifying the original
 
         # Add seed to sampling parameters if provided
         if seed is not None:
+            self.sampling_params = OmegaConf.to_container(sampling_config["params"])
             self.sampling_params["seed"] = seed
 
         # Calculate samples per video and store all samples
