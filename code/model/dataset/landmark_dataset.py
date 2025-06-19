@@ -283,6 +283,38 @@ class LandmarkDataset(Dataset):
         print(f"Saved dataset state to: {save_path}")
 
     @classmethod
+    def load_from_run_dir(cls, run_dir: str, dataset_split: str, seed: int = None) -> 'LandmarkDataset':
+        """Load a dataset state from a file.
+        
+        Args:
+            run_dir: Path to the run directory
+            dataset_split: The dataset split to load
+            seed: The seed to use for the dataset
+            
+        Returns:
+            A new LandmarkDataset instance with the loaded state
+        """
+        # Load the state
+        config_path = os.path.join(run_dir, "config.yaml")
+        config = load_config(config_path, "dataset_config")
+        
+        # Convert configs back to DictConfig objects
+        dataset_config = DictConfig(config['dataset_config'])
+        features_config = DictConfig(config['features_config'])
+        augmentation_config = DictConfig(config['augmentation_config'])
+        
+        # Create a new dataset instance with the loaded configs
+        dataset = cls(
+            dataset_config=dataset_config,
+            features_config=features_config,
+            augmentation_config=augmentation_config,
+            dataset_split=dataset_split,
+            seed=seed
+        )
+        
+        return dataset
+
+    @classmethod
     def load(cls, load_path: str) -> 'LandmarkDataset':
         """Load a dataset state from a file.
         
@@ -293,13 +325,18 @@ class LandmarkDataset(Dataset):
             A new LandmarkDataset instance with the loaded state
         """
         # Load the state
-        state = torch.load(load_path)
+        state = torch.load(load_path, weights_only=False)
+        
+        # Convert configs back to DictConfig objects
+        dataset_config = DictConfig(state['dataset_config'])
+        features_config = DictConfig(state['features_config'])
+        augmentation_config = DictConfig(state['augmentation_config'])
         
         # Create a new dataset instance with the loaded configs
         dataset = cls(
-            dataset_config=state['dataset_config'],
-            features_config=state['features_config'],
-            augmentation_config=state['augmentation_config'],
+            dataset_config=dataset_config,
+            features_config=features_config,
+            augmentation_config=augmentation_config,
             dataset_split=state['dataset_split'],
             seed=state['seed']
         )
