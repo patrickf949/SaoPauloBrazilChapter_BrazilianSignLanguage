@@ -408,11 +408,11 @@ class InferenceEngine:
             
         if return_full_probs:
             if self.ensemble_strategy == "majority":
-                print("Full probabilities represent normalized vote counts for each class (num_votes_for_class / total_votes)")
+                print("FYI: Full probabilities represent normalized vote counts for each class (num_votes_for_class / total_votes)")
             elif self.ensemble_strategy == "logits_average":
-                print("Full probabilities represent the softmax distribution from averaged logits across all samples")
+                print("FYI: Full probabilities represent the softmax distribution from averaged logits across all samples")
             elif self.ensemble_strategy == "confidence_weighted":
-                print("Full probabilities represent weighted sum of each sample's probabilities, weighted by their confidence")
+                print("FYI: Full probabilities represent weighted sum of each sample's probabilities, weighted by their confidence")
 
         return predictions
 
