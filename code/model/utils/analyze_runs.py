@@ -140,7 +140,8 @@ def create_cross_validation_datasets(train_dataset: LandmarkDataset, epoch: int,
 
 def test_model_on_dataset(model: nn.Module, dataset: LandmarkDataset, class_names: List[str], \
                device: str = "cpu", model_name: str = "best_model.pt", return_eval: bool = False, \
-               majority_ensemble: bool = False, logits_ensemble: bool = False, confidence_ensemble: bool = False):
+               majority_ensemble: bool = False, logits_ensemble: bool = False, confidence_ensemble: bool = False)\
+                 -> Dict[str, float] | Tuple[Dict[str, float], EvaluationMetrics]:
     """
     Test model on dataset.
     
