@@ -22,6 +22,7 @@ from model.utils.train import train_epoch, train_epoch_fold
 from model.utils.utils import load_obj, set_config_param
 from model.utils.inference import InferenceEngine
 from model.utils.evaluate import EvaluationMetrics
+from model.utils.analyze_runs import test_model_on_dataset
 
 # Ensure base output directories exist
 paths = load_base_paths()
@@ -278,45 +279,59 @@ def train(config: DictConfig):
         config.dataset, config.features, config.augmentation, "test", seed=42
     )
     test_dataset.save(dataset_log_paths["test"], epoch)
+
     with open(label_mapping_path, "r") as f:
         label_encoding = json.load(f)
     class_names = [label_encoding[str(i)] for i in range(len(label_encoding))]
 
-    sample_inference = InferenceEngine(
-        model=model,
-        device='cpu',
-        ensemble_strategy=None
-    )
-    sample_test_preds, sample_test_labels, sample_test_probs = sample_inference.predict(test_dataset, return_labels=True, return_full_probs=True)
+    test_results, eval_obj = test_model_on_dataset(
+        model, test_dataset, class_names, device, model_name="best_model.pt",
+        majority_ensemble=True, logits_ensemble=True, confidence_ensemble=True, return_eval=True
+        )
 
-    sample_test_eval = EvaluationMetrics(
-        sample_test_preds,
-        sample_test_labels,
-        sample_test_probs,
-        num_classes=len(class_names),
-        class_names=class_names
-    )
+    # save test_results dict to file
+    with open(os.path.join(os.path.dirname(log_path), "test_results.json"), "w") as f:
+        json.dump(test_results, f)
+
+    # save plots from eval_obj
+    eval_obj.plot_confusion_matrix(save_path=os.path.join(os.path.dirname(log_path), "confusion_matrix.png"))
+    eval_obj.plot_probability_heatmap(save_path=os.path.join(os.path.dirname(log_path), "probability_heatmap.png"))
+
+    # sample_inference = InferenceEngine(
+    #     model=model,
+    #     device='cpu',
+    #     ensemble_strategy=None
+    # )
+    # sample_test_preds, sample_test_labels, sample_test_probs = sample_inference.predict(test_dataset, return_labels=True, return_full_probs=True)
+
+    # sample_test_eval = EvaluationMetrics(
+    #     sample_test_preds,
+    #     sample_test_labels,
+    #     sample_test_probs,
+    #     num_classes=len(class_names),
+    #     class_names=class_names
+    # )
     
-    metrics = {
-        'sample_acc': sample_test_eval.accuracy,
-        'sample_loss': sample_test_eval.get_loss(nn.CrossEntropyLoss()),
-        'sample_topk_acc_2': sample_test_eval.get_topk_accuracy(2),
-        'sample_topk_acc_3': sample_test_eval.get_topk_accuracy(3),
-        'sample_topk_acc_4': sample_test_eval.get_topk_accuracy(4),
-        'sample_topk_acc_5': sample_test_eval.get_topk_accuracy(5),
-    }
-    # Print results
-    print("\n=== Evaluation Results (best model) ===")
-    print(metrics)
-    sample_test_eval.plot_confusion_matrix(save_path=os.path.join(os.path.dirname(log_path), "confusion_matrix.png"))
-    # Save detailed results
-    results_path = os.path.join(os.path.dirname(log_path), "evaluation_results.txt")
-    with open(results_path, "w") as f:
-        f.write("=== Evaluation Results ===\n\n")
-        f.write("Overall Metrics:\n")
-        for metric, value in metrics.items():
-            if value is not None:
-                f.write(f"{metric.capitalize()}: {value:.4f}\n")
+    # metrics = {
+    #     'sample_acc': sample_test_eval.accuracy,
+    #     'sample_loss': sample_test_eval.get_loss(nn.CrossEntropyLoss()),
+    #     'sample_topk_acc_2': sample_test_eval.get_topk_accuracy(2),
+    #     'sample_topk_acc_3': sample_test_eval.get_topk_accuracy(3),
+    #     'sample_topk_acc_4': sample_test_eval.get_topk_accuracy(4),
+    #     'sample_topk_acc_5': sample_test_eval.get_topk_accuracy(5),
+    # }
+    # # Print results
+    # print("\n=== Evaluation Results (best model) ===")
+    # print(metrics)
+    # sample_test_eval.plot_confusion_matrix(save_path=os.path.join(os.path.dirname(log_path), "confusion_matrix.png"))
+    # # Save detailed results
+    # results_path = os.path.join(os.path.dirname(log_path), "evaluation_results.txt")
+    # with open(results_path, "w") as f:
+    #     f.write("=== Evaluation Results ===\n\n")
+    #     f.write("Overall Metrics:\n")
+    #     for metric, value in metrics.items():
+    #         if value is not None:
+    #             f.write(f"{metric.capitalize()}: {value:.4f}\n")
         
         # if confidences:
         #     f.write("\n\nConfidence Statistics:\n")
@@ -337,7 +352,7 @@ def train(config: DictConfig):
     # Close logger
     logger.close()
 
-    return metrics["sample_acc"], metrics.get("sample_loss", 0.0), best_epoch
+    # return metrics["sample_acc"], metrics.get("sample_loss", 0.0), best_epoch
 
 
 if __name__ == "__main__":
