@@ -231,8 +231,8 @@ def train(config: DictConfig):
                 'loss': best_loss,
             }, best_model_path)
             print(f"Saved new best model checkpoint to: {best_model_path}")
-            # save best dataset
-            train_dataset.save(dataset_log_paths["best_train"], epoch)
+            # # save best dataset
+            # train_dataset.save(dataset_log_paths["best_train"], epoch)
         else:
             patience_counter += 1
             print(f"Patience: {patience_counter}/{config.training.patience}")
@@ -261,8 +261,8 @@ def train(config: DictConfig):
             'timestamp': current_time
         }
         save_checkpoint(checkpoint, checkpoint_path)
-        # save dataset
-        train_dataset.save(dataset_log_paths["train"], epoch)
+        # # save dataset
+        # train_dataset.save(dataset_log_paths["train"], epoch)
 
     # Load the best model state before final evaluation
     if best_model_state:
