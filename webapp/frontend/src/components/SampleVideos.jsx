@@ -110,9 +110,6 @@ const VideoLibrary = () => {
 
   return (
     <Box sx={{ p: 3, position: "relative" }}>
-      <Typography variant="h7" gutterBottom>
-        Sample Sign Language Videos
-      </Typography>
 
       {videos.length === 0 ? (
         <Box textAlign="center" py={4}>
