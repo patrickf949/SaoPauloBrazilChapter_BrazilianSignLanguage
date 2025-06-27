@@ -12,17 +12,24 @@ export default function Home() {
       </Typography>
 
       <Box sx={{ flexGrow: 1, p: 2 }}>
-        <Grid container spacing={2} sx={{ width: "100%" }}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper elevation={3} sx={{ padding: 2 }}>
+        <Grid 
+          container
+          spacing={2}
+          sx={{ width: "100%", minHeight: "60vh" }}
+          alignItems="stretch"
+          >
+          <Grid size={{ xs: 12, md: 6 }} sx={{height:'100%'}}>
+            
+            <Paper elevation={3} sx={{ padding: 2, height:'100%'}}>
+
               <SampleVideos />
               <VideoPlayer />
               <VideoUploader />
             </Paper>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 6 }} sx={{ minHeight: "60vh" }}>
-            <Paper elevation={3} sx={{ padding: 2 }}>
+          <Grid size={{ xs: 12, md: 6 }} sx={{  height:'100%' }}>
+            <Paper elevation={3} sx={{ padding: 2, height:'100%'}}>
               <Results />
             </Paper>
           </Grid>
