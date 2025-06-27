@@ -40,9 +40,6 @@ const Results = () => {
             alignItems: "center",
           }}
         >
-          <Typography variant="h5">
-            Interpretation of the selected video
-          </Typography>
           <hr />
           <video
             controls
@@ -60,7 +57,7 @@ const Results = () => {
             }}
           />
           <hr />
-          <Typography variant="h4">{result?.label}</Typography>
+          <Typography variant="h6">{result?.label}</Typography>
         </Box>
       )}
     </Box>
