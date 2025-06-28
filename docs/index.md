@@ -129,7 +129,12 @@ Below, you can find the approach used to solve each of the issues above.
 
 ## Preprocessing
 
-![alt text](assets/placeholder.png)
+![alt text](assets/placeholder.png "placeholder")
+
+
+<img src="assets/placeholder.png" alt="isolated" width="200"/>
+
+<img src="assets/placeholder.png" alt="isolated" title="hover hint" style="width: 75%;"/>
 
 ### EDA
 
