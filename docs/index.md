@@ -45,6 +45,9 @@ Here's a list of people that contributed to the project. Feel free to reach out 
 ## Introduction
 ### Problem statement
 *Similar to what we could find in the Omdenas website*
+The problem systems we started the project with is here.
+
+The scope of this is quite broad and ambitious for a 3-month project. While still aiming high, we kept this in mind to inform our decision making. For example, when deciding which words in the dataset to focus on, we included words that would be most likely to be used in a medical context. And we worked with the thinking that this is an initial proof-of-concept, of a solution we would like to develop further in future.
 
 ### Sign language processing
 *We could do a brief description of the different tasks that are possible with SLP*
@@ -52,6 +55,27 @@ Here's a list of people that contributed to the project. Feel free to reach out 
 
 ### Research steps
 *Cite the paper we used as reference*
+
+### Plan
+We will try to classify videos of LIBRAS words
+So not images, and not alphabet signs
+If possible, we will focus on healthcare related words, since that is the original goal
+But since this is just a PoC, if the data is limited in quantity or quality, we can just focus on general words
+We will follow a similar methodology to:
+2023 paper collecting public LIBRAS datasets & applying SLT
+Key details and points:
+A Cross-Dataset Study on the Brazilian Sign Language Translation (2023)
+Omdena Indonesia’s Sign Language Translation Project
+Key details and points:
+Omdena Indonesia - Report Summary
+To understand our goal in this project, it would be helpful to read about them.
+2023 paper - A Cross-Dataset Study
+We will try to use the same 4 source datasets as them
+We will try to also explore both CNN & Landmark Based feature extraction methods
+Omdena Indonesia’s Sign Language Translation Project
+We might record our own videos like they did
+We will try to also explore both CNN & Landmark Based feature extraction methods
+We will try to create a similar Report & Demo App 
 
 ## Data
 
@@ -99,11 +123,16 @@ Below, you can find the approach used to solve each of the issues above.
 
 
 ### Review steps
+
 ### Final dataset
 
+
 ## Preprocessing
+
+![alt text](assets/placeholder.png)
+
 ### EDA
-*DRAFT*
+
 - Dataset differences
     - dimensions
         - grid of data sources & dims
@@ -112,16 +141,21 @@ Below, you can find the approach used to solve each of the issues above.
     - durations
         - plot for each label
 
-*DRAFT*
+#### Dimensions & FPS
+
+#### Durations
+
 ### Pose estimation with [MediaPipe Holistic](https://ai.google.dev/edge/mediapipe/solutions/guide)
 why:
     - will be used in preprocessing for motion detection, offset & scaling
     - Will be used as the base features that will be input to the model
 
-### Start/End point definition
+### Start/End Point Trimming
+
 our first preprocessing step is to trim the videos. We will remove the periods from the start and end of the video where the signer is stationary. Resulting in shorter videos where to the actual sign performance takes up the majority of the time.
-*DRAFT*
-#### motion detection 
+
+#### Motion Detection 
+
 - to do this we explored various different methods for measuring motion between frames:
     - bg sub
     - Basic
@@ -132,7 +166,9 @@ our first preprocessing step is to trim the videos. We will remove the periods f
 - Show some before & after
 - show some example via gifs
 - for some previous versions, we used a combination of multiple, but in the final version settled on just landmarks
-#### detecting start and end
+
+#### Analysing Motion Start and End
+
 - basic method is just taking an absolute threshold for the start & end
 - complex method involves 
     - detecting the first and last peak to get the correct general location 
@@ -156,8 +192,9 @@ our first preprocessing step is to trim the videos. We will remove the periods f
     - Simple was also robust to jittery motion
     - We would need some more development to deal with this in complex 
     - But in this limited time, just go for simple
-*DRAFT*
-### Scaling and align videos
+
+### Scaling & Alignment
+
 The next 2 steps are unifying the scale and position alignment of the data. They are separate steps but quite similar and related.
 The basic process is to define some reference points that represent the target scale / alignment.
 plot?
@@ -182,7 +219,7 @@ In the final iteration of the preprocessing, we moved to using the mean, not of 
 Our logic was that these frames are supposed to be when the signer is most stationary. So they will provide a better reference point for approximating the signers base position. As expected the variance of these points is less then the full video.
 
 ### Interpolating `none` frames
-*DRAFT*
+
 Context
 - Format of MediaPipe output
     - For a frame, individual landmarks can't be none. Only the full group of landmarks can be none
@@ -194,7 +231,6 @@ Context
         - (Plot showing None sequences)
     - A significant proportion of these problematic Nones are from the lowest resolution dataset, INES 
 
-*DRAFT*
 
 ## Model development
 ### Landmark -> LSTM method
