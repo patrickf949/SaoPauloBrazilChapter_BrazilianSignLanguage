@@ -1,15 +1,40 @@
 <mark>This page is under construction</mark>
 
-# Healthcare Sign Language Brazil
+# Sign Language Translation for Brazilian Healthcare
 
+This project was done as part of an Omdena local chapter challenge with the Sao Paulo chapter. These challenges are open source collaborations between volunteer developers around the world, working to create AI application that solve social issues for local communities. 
+
+Brazil has a significant deaf community, with Brazilian Sign Language (Libras) recognized as an official language. However, communication barriers often exist in healthcare settings, potentially compromising the quality of care for deaf patients.
+
+Deaf patients in Brazilian healthcare facilities frequently face challenges in communicating effectively with healthcare providers, leading to potential misdiagnoses, treatment errors, and a compromised patient experience.
+
+This project aimed to address this by developing a sign language translation model for Brazilian Sign Language (LIBRAS), and a demo web app to showcase the model.
+
+Project work:
+- Scraped data from 4 different sources
+- Cleaned the data to create a dataset of 1000+ videos of LIBRAS signs
+- Reviewed the data to find words with the most videos
+- Created a target dataset of 25 words with high quality videos, and words related to the healthcare domain
+- Developed an advanced preprocessing pipeline that allowed us to use data from multiple sources
+- Developed a modelling code base that allowed us to experiment with different data sampling, data augmentation, model architectures and training strategies
+- Ran a range of model experiments, and found the best performing model
+- Developed a demo web app to showcase the model
+- Created a report summarizing the project and the results
+
+You can see the model in action in the [demo app](#demo-app).
+
+You can read more details about the project in the report below.
+
+You can find the code for the project in our Github Repository: [https://github.com/omdena-sao-paulo/sign-language-translation-for-brazilian-healthcare](https://github.com/omdena-sao-paulo/sign-language-translation-for-brazilian-healthcare).
 
 ## Summary
-*This should be somewhat similar to what is described in the [project's main page](https://www.omdena.com/chapter-challenges/ai-assisted-sign-language-translation-for-brazilian-healthcare-settings)*
+*This should be somewhat similar to what is described in the [project's main page](https://www.omdena.com/chapter-challenges/ai-assisted-sign-language-translation-for-brazilian-healthcare-settings).*
 
 ### Goal
 
 ### Contributors
-Here's a list of people that contributed to the project. Feel free to reach out to them if needed:
+
+This project took place over 4 months, from February to June 2025. Here's a list of people that contributed to the project. Feel free to reach out to them if needed:
 
 **Project Leader**
 
@@ -58,7 +83,8 @@ Here's a list of people that contributed to the project. Feel free to reach out 
 
 ## Introduction
 ### Problem statement
-*Similar to what we could find in the Omdenas website*
+*Similar to what we could find in the [Omdenas website](https://www.omdena.com/chapter-challenges/ai-assisted-sign-language-translation-for-brazilian-healthcare-settings)*
+
 The problem systems we started the project with is here.
 
 The scope of this is quite broad and ambitious for a 3-month project. While still aiming high, we kept this in mind to inform our decision making. For example, when deciding which words in the dataset to focus on, we included words that would be most likely to be used in a medical context. And we worked with the thinking that this is an initial proof-of-concept, of a solution we would like to develop further in future.
