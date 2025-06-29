@@ -1,7 +1,7 @@
 num_epochs: 300
 train_batch_size: 64
 val_batch_size: 256
-patience: 50
+patience: 20
 lr: 1e-4
 
 device: cuda
