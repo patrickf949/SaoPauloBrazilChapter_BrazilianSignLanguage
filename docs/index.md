@@ -11,29 +11,43 @@
 ### Contributors
 Here's a list of people that contributed to the project. Feel free to reach out to them if needed:
 
-[Ben Thompson](https://www.linkedin.com/in/ben-d-thompson/) (Project Manager)
+**Project Leader**
 
-[Ayushya Pare](https://www.linkedin.com) (Data Scraping)
+[Ben Thompson](https://www.linkedin.com/in/ben-d-thompson/) (Project Leader & Lead ML Engineer)
+- Main tasks: Data Scraping, Data Preprocessing, Modelling, Demo Web App
 
-[Gustavo Santos](https://www.linkedin.com/in/gustavopsantos) (Data cleaning)
+**Task Leaders**
 
-[Anastasiia Derzhanskaia](https://www.linkedin.com) (Model development)
+[Ayushya Pare](https://www.linkedin.com) (Lead ML Engineer)
+- Main tasks: Research Resources, Data Scraping
 
-[Kunal Sood](https://www.linkedin.com) (Model development)
+[Gustavo Santos](https://www.linkedin.com/in/gustavopsantos) (Lead ML Engineer)
+- Main tasks: Data Scraping, Data Cleaning & Organisation
 
-[Patrick Fitz](https://www.linkedin.com) (App development)
+[Anastasiia Derzhanskaia](https://www.linkedin.com) (Lead ML Engineer)
+- Main tasks: Model development
 
-[Damla Helvaci](https://www.linkedin.com)
+[Patrick Fitz](https://www.linkedin.com) (Lead ML Engineer)
+- Main tasks: App development
 
-[Ethel Phiri](https://www.linkedin.com/in/ethel-phiri261312/)
+**Task Contributors**
 
-[Gulzar](https://www.linkedin.com)
+[Michael Spurgeon Jr](https://www.linkedin.com) (ML Engineer)
+- Main tasks: Data Scraping
 
-[Michael Spurgeon Jr](https://www.linkedin.com)
+[Wafa Basudan](https://www.linkedin.com) (ML Engineer)
+- Main tasks: Model Development
 
-[Pooja Prasad](https://www.linkedin.com)
+[Ethel Phiri](https://www.linkedin.com/in/ethel-phiri261312/) (Junior ML Engineer)
+- Main tasks: Data Scraping
 
-[Lorem Ipsum](https://www.linkedin.com) (Main role)
+[Kunal Sood](https://www.linkedin.com) (Junior ML Engineer)
+- Main tasks: Model development
+
+<!-- [Damla Helvaci](https://www.linkedin.com) -->
+
+
+
 
 
 ### Results
