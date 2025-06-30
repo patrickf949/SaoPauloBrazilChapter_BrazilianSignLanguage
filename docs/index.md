@@ -43,34 +43,40 @@ This project took place over 4 months, from February to June 2025. Here's a list
 
 **Task Leaders**
 
-[Ayushya Pare](https://www.linkedin.com) (Lead ML Engineer)
+[Ayushya Pare](https://www.linkedin.com/in/ayushya-pare/) (Lead ML Engineer)
 - Main tasks: Research Resources, Data Scraping
 
 [Gustavo Santos](https://www.linkedin.com/in/gustavopsantos) (Lead ML Engineer)
 - Main tasks: Data Scraping, Data Cleaning & Organisation
 
-[Anastasiia Derzhanskaia](https://www.linkedin.com) (Lead ML Engineer)
+[Anastasiia Derzhanskaia](https://www.linkedin.com/in/anastasiia-derzhanskaia/) (Lead ML Engineer)
 - Main tasks: Model development
 
-[Patrick Fitz](https://www.linkedin.com) (Lead ML Engineer)
+[Patrick Fitz](https://www.linkedin.com/in/patrick-fitz-b2186a11b/) (Lead ML Engineer)
 - Main tasks: App development
 
 **Task Contributors**
 
-[Michael Spurgeon Jr](https://www.linkedin.com) (ML Engineer)
+[Michael Spurgeon Jr](https://www.linkedin.com/in/michael-spurgeon-jr-ab3661321/) (ML Engineer)
 - Main tasks: Data Scraping
 
-[Wafa Basudan](https://www.linkedin.com) (ML Engineer)
+[Wafa Basudan](https://www.linkedin.com/in/wafa-basoodan-9447616a/) (ML Engineer)
 - Main tasks: Model Development
 
 [Ethel Phiri](https://www.linkedin.com/in/ethel-phiri261312/) (Junior ML Engineer)
 - Main tasks: Data Scraping
 
-[Kunal Sood](https://www.linkedin.com) (Junior ML Engineer)
+[Kunal Sood](https://www.linkedin.com/in/kunal-sood-3b993225b/) (Junior ML Engineer)
 - Main tasks: Model development
 
-<!-- [Damla Helvaci](https://www.linkedin.com) -->
+[Pooja Prasad](https://github.com/prajinip13) (Junior ML Engineer)
+- Main tasks: Data Review & Cleaning
 
+[Gulzar Helvaci](https://github.com/guluzar-gb) (Junior ML Engineer)
+- Main tasks: Data Review & Cleaning
+
+[Damla Helvaci](https://www.linkedin.com/in/damla-helvaci/) (Junior ML Engineer)
+- Main tasks: Data Review & Cleaning
 
 
 
