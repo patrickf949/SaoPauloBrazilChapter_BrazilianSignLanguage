@@ -48,7 +48,7 @@ def get_results_from_training_log(training_log):
 
 def get_results_from_config(config):
     model = config['model']['class_name'].split('.')[-1]
-    position = 'position' in config['features'].keys()
+    position = 'positions' in config['features'].keys()
     angles = 'angles' in config['features'].keys()
     differences = 'differences' in config['features'].keys()
     distances = 'distances' in config['features'].keys()
