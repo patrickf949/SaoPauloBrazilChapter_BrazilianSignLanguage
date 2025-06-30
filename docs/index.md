@@ -2,15 +2,15 @@
 
 # Sign Language Translation for Brazilian Healthcare
 
+## Background / Introduction / no heading
+
 This project was done as part of an Omdena local chapter challenge with the Sao Paulo chapter. These challenges are open source collaborations between volunteer developers around the world, working to create AI application that solve social issues for local communities. 
 
-Brazil has a significant deaf community, with Brazilian Sign Language (Libras) recognized as an official language. However, communication barriers often exist in healthcare settings, potentially compromising the quality of care for deaf patients.
-
-Deaf patients in Brazilian healthcare facilities frequently face challenges in communicating effectively with healthcare providers, leading to potential misdiagnoses, treatment errors, and a compromised patient experience.
+Brazil has a significant deaf community, with Brazilian Sign Language (Libras) recognized as an official language. However, communication barriers often exist in healthcare settings, potentially compromising the quality of care for deaf patients. This potentially lead to misdiagnoses, treatment errors, or a compromised patient experience.
 
 This project aimed to address this by developing a sign language translation model for Brazilian Sign Language (LIBRAS), and a demo web app to showcase the model.
 
-Project work:
+## Project work:
 - Scraped data from 4 different sources
 - Cleaned the data to create a dataset of 1000+ videos of LIBRAS signs
 - Reviewed the data to find words with the most videos
@@ -27,12 +27,9 @@ You can read more details about the project in the report below.
 
 You can find the code for the project in our Github Repository: [https://github.com/omdena-sao-paulo/sign-language-translation-for-brazilian-healthcare](https://github.com/omdena-sao-paulo/sign-language-translation-for-brazilian-healthcare).
 
-## Summary
-*This should be somewhat similar to what is described in the [project's main page](https://www.omdena.com/chapter-challenges/ai-assisted-sign-language-translation-for-brazilian-healthcare-settings).*
+## Results
 
-### Goal
-
-### Contributors
+## Contributors
 
 This project took place over 4 months, from February to June 2025. Here's a list of people that contributed to the project. Feel free to reach out to them if needed:
 
@@ -79,13 +76,7 @@ This project took place over 4 months, from February to June 2025. Here's a list
 - Main tasks: Data Review & Cleaning
 
 
-
-
-### Results
-*Briefly describe main results and use a [link] (#results-1) reference somewhere in your text to send the reader to a complete version of the results* 
-
-### Demo app
-*Briefly describe the app and use a [link] (#demo-app-1) reference somewhere in your text to send the reader to a more complete description of the app* 
+# Report
 
 ## Introduction
 ### Problem statement
