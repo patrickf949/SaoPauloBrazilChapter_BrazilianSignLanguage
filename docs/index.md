@@ -135,26 +135,49 @@ The problem systems we started the project with is here.
 
 The scope of this is quite broad and ambitious for a 3-month project. While still aiming high, we kept this in mind to inform our decision making. For example, when deciding which words in the dataset to focus on, we included words that would be most likely to be used in a medical context. And we worked with the thinking that this is an initial proof-of-concept, of a solution we would like to develop further in future.
 
-### Domain: Sign language processing
-*We could do a brief description of the different tasks that are possible with SLP*
-*Also, reference the site we used during research phase*
 
 ##  Initial Research & Planning
-At the beginning of the project, we collaborated to research various topics, to inform our plan.
-- SLP techniques broadly
+
+### Research
+To decide on the scope of the project and our plan for development, we began with research. We investigated:
+
+- Domain: Sign Language Processing (SLP)
     - What are the conventions for processing sign language video data?
     - What are the common modelling approaches?
     - What are the pros and cons of each approach?
-- Data sources
+- Data Sources: LIBRAS Datasets
+    - What public datasets are available?
     - What are the different formats of sign language video data?
-    - W
-- Existing papers & projects exploring SLP for LIBRAS specifically
-    - What are the different model architectures for sign language processing?
-    - What are the pros and cons of each architecture?
+- Literature: Sign Language Processing with LIBRAS data
+    - Existing papers & projects exploring SLP for LIBRAS specifically
+    - What datasets did they use?
+    - What were there results, and can we replicate or improve on them?
     
-#### Literature Review
-#### Data Sources Review
-We surveyed existing LIBRAS datasets, and reviewed them. This is a summary of our review of the 9 most relevant datasets.
+#### Domain: Sign language processing
+
+Sign Language Processing (SLP) is a field of artificial intelligence that combines Natural Language Processing (NLP) and Computer Vision (CV) to automatically process and analyze sign language content. Unlike spoken languages that use audio signals, signed languages use visual-gestural modality through manual articulations combined with non-manual elements like facial expressions and body movements.
+
+**Key SLP Tasks Relevant to Our Project:**
+
+1. **Sign Language Recognition**: Identifying individual signs or sequences of signs from video input
+2. **Sign Language Translation**: Converting sign language videos into spoken language text (our primary focus)
+3. **Sign Language Production**: Generating sign language videos from spoken language text
+4. **Sign Language Detection**: Determining if a video contains sign language content
+5. **Sign Language Segmentation**: Identifying boundaries between different signs in continuous signing
+
+**Challenges in SLP:**
+- **Visual-gestural modality**: Unlike spoken languages, signed languages lack a written form, forcing researchers to work directly with raw video signals
+- **Simultaneity**: Multiple articulators (hands, face, body) can convey information simultaneously
+- **Spatial coherence**: Spatial relationships and movements are crucial for meaning
+- **Lack of standardization**: Limited annotated datasets, especially for languages like Brazilian Sign Language (Libras)
+
+*Reference: [Sign Language Processing Star](https://research.sign.mt/) - A comprehensive resource for SLP research and datasets*
+
+
+#### Data Sources: LIBRAS Datasets
+
+##### Review of available datasets
+We surveyed existing LIBRAS datasets, and reviewed them. This table contains details from the 9 most relevant datasets we found.
 
 | Dataset | Year | Type | Format | Access | Number of Classes | Examples per Class | Total Examples |
 |---------|------|---------------|---------|---------|----------------|-------------|-------------|
@@ -168,11 +191,30 @@ We surveyed existing LIBRAS datasets, and reviewed them. This is a summary of ou
 | **National Institute of Deaf Education (INES) – LIBRAS Dictionary Dataset** | - | Words | Videos | [Scrapable](https://www.ines.gov.br/dicionario-de-libras/) | 237 | 1 - 2 | 282 |
 | **SignBank - LIBRAS Dataset (Universidade Federal de Santa Catarina)** | - | Words | Videos | [Scrapable](https://signbank.libras.ufsc.br/en) | 3090 | 1 | 3090 |
 
-We decided that although it is more difficult, we wanted to focus on sign **videos**, not images. This would be more applicable to a real-world situation.
+##### Datasets selected for our task
 
-We also decided to focus on sign **words**, not alphabet signs, movement/shape types, or sentences. Again, **words** would be more applicable to a real-world situation than alphabet signs or movement/shape types. 
+We decided that although it is more difficult, we wanted to focus on sign **videos**, not images. 
+ - This would be more applicable to a real-world situation.
 
-Sign sentences would be the most similar to real-world use, and also the most challenging to model. However we didn't find any datasets with this type of data. Even in SLP more broadly, large high quality datasets of sentences are rare, so it is not surprising we couldn't find any for LIBRAS.
+We also decided to focus on sign **words**, not alphabet signs, movement/shape types, or sentences. 
+ -  Again, **words** would be more applicable to a real-world situation than alphabet signs or movement/shape types. 
+
+Sign sentences would be the most similar to real-world use, and also the most challenging to model. 
+  - However we didn't find any datasets with this type of data. 
+  - Even in SLP more broadly, large high quality datasets of sentences are rare, so it is not surprising we couldn't find any for LIBRAS.
+
+
+
+#### Literature Review
+
+We found a few papers working with LIBRAS data, but most were not directly relevant to our project, as they focussed on different tasks, like images instead of videos, or classification of movement types instead of words.
+
+One very relevant paper was the 2023 paper [A Cross-Dataset Study on the Brazilian Sign Language Translation](https://openaccess.thecvf.com/content/ICCV2023W/CLVL/papers/de_Avellar_Sarmento_A_Cross-Dataset_Study_on_the_Brazilian_Sign_Language_Translation_ICCVW_2023_paper.pdf) by de Avellar & Sarmento.
+
+This paper was a cross-dataset study on the Brazilian Sign Language Translation task, and it was the most relevant to our project. 
+They combined the 4 datasets we selected for our task, and used an LSTM model to classify the signs. They tried two different methods for feature extraction: pre-trained Convolutional Neural Network (CNN) models, and Landmark Estimation. 
+
+They made a lot of effort to scrape the data, clean, and preprocess it into one unified dataset. This is the 2023 'LIBRAS Cross-Dataset Study' dataset listed in the table above. Kindly the dataset is available on request, but unfortunately we didn't hear back from one of the authors. So we would have to scrape, clean, and preprocess the data ourselves.
 
 ### Plan
 #### Overview
@@ -192,6 +234,9 @@ Sign sentences would be the most similar to real-world use, and also the most ch
 #### Data
 
 #### Method
+
+#### Tasks
+
 #### Deliverables
 
 
