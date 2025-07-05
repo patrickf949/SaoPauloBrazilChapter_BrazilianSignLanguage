@@ -10,7 +10,12 @@ Brazil has a significant deaf community, with Brazilian Sign Language (Libras) r
 
 This project aimed to address this by developing a sign language translation model for Brazilian Sign Language (LIBRAS), and a demo web app to showcase the model.
 
-## Project work:
+## Project Overview / Summary
+
+### Sign Language Processing
+https://research.sign.mt/
+
+### Outline:
 - Scraped data from 4 different sources
 - Cleaned the data to create a dataset of 1000+ videos of LIBRAS signs
 - Reviewed the data to find words with the most videos
@@ -21,6 +26,12 @@ This project aimed to address this by developing a sign language translation mod
 - Developed a demo web app to showcase the model
 - Created a report summarizing the project and the results
 
+### Results
+- a
+- b
+- c
+
+### Deliverables
 You can see the model in action in the [demo app](link-to-be-added).
 
 You can find the code for the project in our Github Repository: [https://github.com/OmdenaAI/SaoPauloBrazilChapter_BrazilianSignLanguage](https://github.com/OmdenaAI/SaoPauloBrazilChapter_BrazilianSignLanguage)
@@ -28,112 +39,90 @@ You can find the code for the project in our Github Repository: [https://github.
 You can read more details about the project in the report below: [Report Beginning](#report)
 
 
-## Results
+
+
 
 ## Contributors
 
-This project took place over 4 months, from February to June 2025. Here's a list of people that contributed to the project. Feel free to reach out to them if needed:
+This project took place over 4 months, from February to June 2025. Here's a list of people that contributed to the project. Feel free to reach out to them if you have questions about any aspect of the project.
 
-**Project Leader**
+### **Project Leader**
 
-[Ben Thompson](https://www.linkedin.com/in/ben-d-thompson/) (Project Leader & Lead ML Engineer)
-- Main tasks: Data Scraping, Data Preprocessing, Modelling, Demo Web App
+[Ben Thompson](https://www.linkedin.com/in/ben-d-thompson/) 
+- Tasks: Research Resources, Data Scraping, Data Preprocessing, Model Development, Demo App Development
+- Omdena Role: Project Leader & Lead ML Engineer
 
-**Task Leaders**
-
-[Ayushya Pare](https://www.linkedin.com/in/ayushya-pare/) (Lead ML Engineer)
-- Main tasks: Research Resources, Data Scraping
-
-[Gustavo Santos](https://www.linkedin.com/in/gustavopsantos) (Lead ML Engineer)
-- Main tasks: Data Scraping, Data Cleaning & Organisation
-
-[Anastasiia Derzhanskaia](https://www.linkedin.com/in/anastasiia-derzhanskaia/) (Lead ML Engineer)
-- Main tasks: Model development
-
-[Patrick Fitz](https://www.linkedin.com/in/patrick-fitz-b2186a11b/) (Lead ML Engineer)
-- Main tasks: App development
-
-**Task Leaders**
+### **Task Leaders**
 <table>
 <tr>
 </tr>
 <tr>
 <td>
 
-[**Ayushya Pare**](https://www.linkedin.com/in/ayushya-pare/) 
-- Role: Lead ML Engineer
+[**Ayushya Pare**](https://www.linkedin.com/in/ayushya-pare/)
 - Tasks: Research Resources, Data Scraping
+- Omdena Role: Lead ML Engineer
 
-[**Gustavo Santos**](https://www.linkedin.com/in/gustavopsantos) (Lead ML Engineer)
-- Main tasks: Data Scraping, Data Cleaning & Organisation
+[**Gustavo Santos**](https://www.linkedin.com/in/gustavopsantos) 
+- Tasks: Data Scraping, Data Cleaning & Organisation
+- Omdena Role: Lead ML Engineer
 </td>
 <td>
 
-[**Anastasiia Derzhanskaia**](https://www.linkedin.com/in/anastasiia-derzhanskaia/) (Lead ML Engineer)
-- Main tasks: Model development
+[**Anastasiia Derzhanskaia**](https://www.linkedin.com/in/anastasiia-derzhanskaia/) 
+- Tasks: Model Development
+- Omdena Role: Lead ML Engineer
 
-[**Patrick Fitz**](https://www.linkedin.com/in/patrick-fitz-b2186a11b/) (Lead ML Engineer)
-- Main tasks: App development
+[**Patrick Fitz**](https://www.linkedin.com/in/patrick-fitz-b2186a11b/) 
+- Tasks: Demo App Development
+- Omdena Role: Lead ML Engineer
 </td>
 </tr>
 </table>
 
-**Task Contributors**
+### **Task Contributors**
 <table>
 <tr>
 </tr>
 <tr>
 <td>
 
-[**Michael Spurgeon Jr**](https://www.linkedin.com/in/michael-spurgeon-jr-ab3661321/) (ML Engineer)
-- Tasks: Data Scraping
+[**Michael Spurgeon Jr**](https://www.linkedin.com/in/michael-spurgeon-jr-ab3661321/) 
+- Tasks: Data Scraping, Model Development
+- Omdena Role: ML Engineer
 
-[**Pooja Prasad**](https://github.com/prajinip13) (Junior ML Engineer)
+[**Pooja Prasad**](https://github.com/prajinip13) 
 - Tasks: Data Review & Cleaning
+- Omdena Role: Junior ML Engineer
 </td>
 <td>
 
-[**Wafa Basudan**](https://www.linkedin.com/in/wafa-basoodan-9447616a/) (ML Engineer)
+[**Wafa Basudan**](https://www.linkedin.com/in/wafa-basoodan-9447616a/) 
 - Tasks: Model Development
+- Omdena Role: ML Engineer
 
-[**Kunal Sood**](https://www.linkedin.com/in/kunal-sood-3b993225b/) (Junior ML Engineer)
+[**Kunal Sood**](https://www.linkedin.com/in/kunal-sood-3b993225b/) 
 - Tasks: Model Development
+- Omdena Role: Junior ML Engineer
 </td>
 <td>
 
-[**Ethel Phiri**](https://www.linkedin.com/in/ethel-phiri261312/) (Junior ML Engineer)
-- Main tasks: Data Scraping
+[**Ethel Phiri**](https://www.linkedin.com/in/ethel-phiri261312/) 
+- Tasks: Data Scraping
+- Omdena Role: Junior ML Engineer
 
-[**Gulzar Helvaci**](https://github.com/guluzar-gb) (Junior ML Engineer)
-- Main tasks: Data Review & Cleaning
+[**Gulzar Helvaci**](https://github.com/guluzar-gb) 
+- Tasks: Data Review & Cleaning
+- Omdena Role: Junior ML Engineer
 </td>
 </tr>
 </table>
 
-&nbsp;&nbsp;&nbsp;[**Damla Helvaci**](https://www.linkedin.com/in/damla-helvaci/) (Junior ML Engineer)
+[**Damla Helvaci**](https://www.linkedin.com/in/damla-helvaci/) 
 - Tasks: Data Review & Cleaning
+- Omdena Role: Junior ML Engineer
 ------------------
 
-[**Michael Spurgeon Jr**](https://www.linkedin.com/in/michael-spurgeon-jr-ab3661321/) (ML Engineer)
-- Main tasks: Data Scraping
-
-[**Wafa Basudan**](https://www.linkedin.com/in/wafa-basoodan-9447616a/) (ML Engineer)
-- Main tasks: Model Development
-
-[Ethel Phiri](https://www.linkedin.com/in/ethel-phiri261312/) (Junior ML Engineer)
-- Main tasks: Data Scraping
-
-[Kunal Sood](https://www.linkedin.com/in/kunal-sood-3b993225b/) (Junior ML Engineer)
-- Main tasks: Model development
-
-[Pooja Prasad](https://github.com/prajinip13) (Junior ML Engineer)
-- Main tasks: Data Review & Cleaning
-
-[Gulzar Helvaci](https://github.com/guluzar-gb) (Junior ML Engineer)
-- Main tasks: Data Review & Cleaning
-
-[Damla Helvaci](https://www.linkedin.com/in/damla-helvaci/) (Junior ML Engineer)
-- Main tasks: Data Review & Cleaning
 
 
 # Report
@@ -146,27 +135,66 @@ The problem systems we started the project with is here.
 
 The scope of this is quite broad and ambitious for a 3-month project. While still aiming high, we kept this in mind to inform our decision making. For example, when deciding which words in the dataset to focus on, we included words that would be most likely to be used in a medical context. And we worked with the thinking that this is an initial proof-of-concept, of a solution we would like to develop further in future.
 
-### Sign language processing
+### Domain: Sign language processing
 *We could do a brief description of the different tasks that are possible with SLP*
 *Also, reference the site we used during research phase*
 
-### Research steps
-*Cite the paper we used as reference*
+##  Initial Research & Planning
+At the beginning of the project, we collaborated to research various topics, to inform our plan.
+- SLP techniques broadly
+    - What are the conventions for processing sign language video data?
+    - What are the common modelling approaches?
+    - What are the pros and cons of each approach?
+- Data sources
+    - What are the different formats of sign language video data?
+    - W
+- Existing papers & projects exploring SLP for LIBRAS specifically
+    - What are the different model architectures for sign language processing?
+    - What are the pros and cons of each architecture?
+    
+#### Literature Review
+#### Data Sources Review
+We surveyed existing LIBRAS datasets, and reviewed them. This is a summary of our review of the 9 most relevant datasets.
+
+| Dataset | Year | Type | Format | Access | Number of Classes | Examples per Class | Total Examples |
+|---------|------|---------------|---------|---------|----------------|-------------|-------------|
+| Brazilian Sign Language Words Recognition Dataset | - | Words | Images | [Downloadable](https://www.kaggle.com/datasets/alvarole/brazilian-sign-language-words-recognition) | 15 | ~60 - 1000 | ~5000 |
+| Brazilian Sign Language Alphabet Dataset | 2020 | Alphabet | Images | [Downloadable](https://biankatpas.github.io/Brazilian-Sign-Language-Alphabet-Dataset/?utm_source=chatgpt.com) | 15 | 150 - 600 | 3000 |
+| Libras Movement | 2009 | 'Hand Movement Types' | Hand Landmarks | [Downloadable](https://archive.ics.uci.edu/dataset/181/libras+movement) | 15 | - | - |
+| Libras SignWriting Handshape (LSWH100) | 2024 | 'Handshapes' | CG Images | [Downloadable](https://www.sciencedirect.com/science/article/pii/S2352340924007455) | 100 | ~480 | 48000 |
+| LIBRAS Cross-Dataset Study | 2023 | Words | Videos | [Restricted](https://github.com/avellar-amanda/LIBRAS-Translation?tab=readme-ov-file) | 49 | ~6 | ~294 |
+| **V-Librasil - A New Dataset with Signs in Brazilian Sign Language (Libras)** | - | Words | Videos | [Scrapable](https://ieee-dataport.org/documents/v-librasil-new-dataset-signs-brazilian-sign-language-libras) | 1,364 | 3 | 4089 |
+| **Federal University of Viçosa (UFV) – LIBRAS-Portuguese Dictionary Dataset** | - | Words | Videos | [Scrapable](https://sistemas.cead.ufv.br/capes/dicionario/) | 1,004 | 1 - 2 | 1029 |
+| **National Institute of Deaf Education (INES) – LIBRAS Dictionary Dataset** | - | Words | Videos | [Scrapable](https://www.ines.gov.br/dicionario-de-libras/) | 237 | 1 - 2 | 282 |
+| **SignBank - LIBRAS Dataset (Universidade Federal de Santa Catarina)** | - | Words | Videos | [Scrapable](https://signbank.libras.ufsc.br/en) | 3090 | 1 | 3090 |
+
+We decided that although it is more difficult, we wanted to focus on sign **videos**, not images. This would be more applicable to a real-world situation.
+
+We also decided to focus on sign **words**, not alphabet signs, movement/shape types, or sentences. Again, **words** would be more applicable to a real-world situation than alphabet signs or movement/shape types. 
+
+Sign sentences would be the most similar to real-world use, and also the most challenging to model. However we didn't find any datasets with this type of data. Even in SLP more broadly, large high quality datasets of sentences are rare, so it is not surprising we couldn't find any for LIBRAS.
 
 ### Plan
-We will try to classify videos of LIBRAS words
-So not images, and not alphabet signs
-If possible, we will focus on healthcare related words, since that is the original goal
-But since this is just a PoC, if the data is limited in quantity or quality, we can just focus on general words
-We will follow a similar methodology to:
-2023 paper collecting public LIBRAS datasets & applying SLT
-Key details and points:
-A Cross-Dataset Study on the Brazilian Sign Language Translation (2023)
-Omdena Indonesia’s Sign Language Translation Project
-Key details and points:
-Omdena Indonesia - Report Summary
-To understand our goal in this project, it would be helpful to read about them.
-2023 paper - A Cross-Dataset Study
+#### Overview
+- We will try to classify videos of LIBRAS words
+    - So not images, and not alphabet signs
+- If possible, we will focus on healthcare related words, since that is the original goal
+    - But since this is just a PoC, if the data is limited in quantity or quality, we can just focus on general words
+- We will follow a similar methodology to:
+    - 2023 paper collecting public LIBRAS datasets & applying SLT
+    - Key details and points:
+        - A Cross-Dataset Study on the Brazilian Sign Language Translation (2023)
+    - Omdena Indonesia’s Sign Language Translation Project
+    - Key details and points:
+        - Omdena Indonesia - Report Summary
+- To understand our goal in this project, it would be helpful to read about them.
+    - 2023 paper - A Cross-Dataset Study
+#### Data
+
+#### Method
+#### Deliverables
+
+
 We will try to use the same 4 source datasets as them
 We will try to also explore both CNN & Landmark Based feature extraction methods
 Omdena Indonesia’s Sign Language Translation Project
