@@ -14,6 +14,7 @@ __pycache__/
 
 # Specifically ignore all video directories
 **/videos/
+docs/assets/*.mp4
 
 # Data
 /data/interim/*/**
