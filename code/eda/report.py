@@ -19,13 +19,14 @@ This file contains functions for creating various visualizations for the report.
 def video_to_gif(video_path: str, 
                 output_path: str,
                 fps: int = 10,
-                max_width: int = 320,
-                max_height: int = None,
+                max_width: Optional[int] = None,
+                max_height: Optional[int] = None,
                 start_time: float = None,
                 end_time: float = None,
                 quality: int = 85,
                 optimize: bool = True,
-                loop: int = 0) -> str:
+                loop: int = 0,
+                final_frame_duration: int = 1000) -> str:
     """
     Convert a video file to GIF format using OpenCV and PIL.
     
@@ -33,13 +34,14 @@ def video_to_gif(video_path: str,
         video_path: Path to input video file
         output_path: Path to save the output GIF file
         fps: Frames per second for the output GIF (default: 10)
-        max_width: Maximum width of the GIF in pixels (default: 320)
-        max_height: Maximum height of the GIF in pixels (if None, maintains aspect ratio)
+        max_width: Maximum width of the GIF in pixels (if None, maintains original width)
+        max_height: Maximum height of the GIF in pixels (if None, maintains original height)
         start_time: Start time in seconds (if None, starts from beginning)
         end_time: End time in seconds (if None, goes to end)
         quality: GIF quality from 1-100 (default: 85)
         optimize: Whether to optimize the GIF (default: True)
         loop: Number of loops (0 = infinite, 1 = no loop, etc.)
+        final_frame_duration: How long to display the final frame in milliseconds (default: 1000)
         
     Returns:
         Path to the created GIF file
@@ -76,21 +78,33 @@ def video_to_gif(video_path: str,
     frame_step = max(1, int(video_fps / fps))
     
     # Calculate output dimensions
-    aspect_ratio = width / height
-    if max_height is None:
-        output_width = max_width
-        output_height = int(max_width / aspect_ratio)
-    else:
-        # Fit within both max_width and max_height while maintaining aspect ratio
-        scale_w = max_width / width
-        scale_h = max_height / height
-        scale = min(scale_w, scale_h)
-        output_width = int(width * scale)
-        output_height = int(height * scale)
+    output_width = width
+    output_height = height
+    
+    # Scale if max dimensions are provided
+    if max_width is not None or max_height is not None:
+        aspect_ratio = width / height
+        if max_width is not None and max_height is not None:
+            # Scale to fit within both constraints
+            scale_w = max_width / width
+            scale_h = max_height / height
+            scale = min(scale_w, scale_h)
+            output_width = int(width * scale)
+            output_height = int(height * scale)
+        elif max_width is not None:
+            # Scale by width
+            output_width = max_width
+            output_height = int(max_width / aspect_ratio)
+        else:  # max_height is not None
+            # Scale by height
+            output_height = max_height
+            output_width = int(max_height * aspect_ratio)
     
     # Extract frames
     frames = []
+    durations = []  # List to store duration for each frame
     frame_indices = range(start_frame, end_frame, frame_step)
+    base_duration = int(1000 / fps)  # Duration in milliseconds
     
     for frame_idx in frame_indices:
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
@@ -101,24 +115,30 @@ def video_to_gif(video_path: str,
         # Convert BGR to RGB
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
-        # Resize frame
-        frame_resized = cv2.resize(frame_rgb, (output_width, output_height), 
-                                 interpolation=cv2.INTER_LANCZOS4)
+        # Resize frame if dimensions changed
+        if output_width != width or output_height != height:
+            frame_resized = cv2.resize(frame_rgb, (output_width, output_height), 
+                                     interpolation=cv2.INTER_LANCZOS4)
+        else:
+            frame_resized = frame_rgb
         
         # Convert to PIL Image
         pil_image = Image.fromarray(frame_resized)
         frames.append(pil_image)
+        durations.append(base_duration)
     
     cap.release()
     
     if not frames:
         raise RuntimeError("No frames were extracted from the video")
     
-    # Ensure output directory exists
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    # Add final frame duration
+    durations[-1] = final_frame_duration
     
-    # Save as GIF
-    duration = int(1000 / fps)  # Duration in milliseconds
+    # If output_path has a directory component, ensure it exists
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
     
     # Save with optimization
     if optimize:
@@ -126,7 +146,7 @@ def video_to_gif(video_path: str,
             output_path,
             save_all=True,
             append_images=frames[1:],
-            duration=duration,
+            duration=durations,
             loop=loop,
             optimize=True,
             quality=quality
@@ -136,25 +156,27 @@ def video_to_gif(video_path: str,
             output_path,
             save_all=True,
             append_images=frames[1:],
-            duration=duration,
+            duration=durations,
             loop=loop,
             quality=quality
         )
     
     print(f"GIF created successfully: {output_path}")
     print(f"  - Frames: {len(frames)}")
-    print(f"  - Duration: {len(frames) / fps:.2f} seconds")
+    print(f"  - Duration: {(sum(durations) / 1000):.2f} seconds")
     print(f"  - Size: {output_width}x{output_height}")
     print(f"  - File size: {os.path.getsize(output_path) / 1024:.1f} KB")
     
     return output_path
 
 def apply_to_videos(combine_function, video_paths: List[str], save_path: str, 
-                   fps: float = None, codec: str = 'mp4v', 
+                   fps: float = None, codec: str = 'avc1', 
                    start_time: float = None, end_time: float = None,
+                   max_dimension: int = 1920,
                    verbose: bool = True) -> str:
     """
     Apply a combining function to multiple videos frame by frame and save the result.
+    For videos shorter than the longest video, their final frame will be frozen until the end.
     
     Args:
         combine_function: Function that takes a list of frames (one from each video) 
@@ -162,9 +184,10 @@ def apply_to_videos(combine_function, video_paths: List[str], save_path: str,
         video_paths: List of paths to input video files
         save_path: Path to save the output video
         fps: Output video FPS (if None, uses the FPS of the first video)
-        codec: Video codec to use (default: 'mp4v')
+        codec: Video codec to use (default: 'avc1')
         start_time: Start time in seconds (if None, starts from beginning)
-        end_time: End time in seconds (if None, goes to end of shortest video)
+        end_time: End time in seconds (if None, goes to end of longest video)
+        max_dimension: Maximum dimension (width or height) for the output video
         verbose: Whether to print progress information
         
     Returns:
@@ -173,23 +196,6 @@ def apply_to_videos(combine_function, video_paths: List[str], save_path: str,
     Raises:
         ValueError: If video files cannot be opened or have incompatible properties
         RuntimeError: If no frames are processed
-        
-    Example:
-        # Combine videos side by side
-        def side_by_side(frames):
-            return np.hstack(frames)
-        
-        apply_to_videos(side_by_side, ['video1.mp4', 'video2.mp4'], 'combined.mp4')
-        
-        # Overlay videos with transparency
-        def overlay(frames):
-            result = frames[0].copy()
-            for frame in frames[1:]:
-                alpha = 0.5
-                result = cv2.addWeighted(result, 1-alpha, frame, alpha, 0)
-            return result
-        
-        apply_to_videos(overlay, ['background.mp4', 'overlay.mp4'], 'overlaid.mp4')
     """
     if not video_paths:
         raise ValueError("At least one video path must be provided")
@@ -210,13 +216,13 @@ def apply_to_videos(combine_function, video_paths: List[str], save_path: str,
             height, width = image.shape[:2]
             
             # For images, we'll use the output FPS and treat them as static frames
-            # We'll calculate duration based on the shortest video later
+            # We'll calculate duration based on the longest video later
             video_properties.append({
                 'fps': None,  # Will be set to output FPS
                 'total_frames': None,  # Will be calculated based on duration
                 'width': width,
                 'height': height,
-                'duration': None,  # Will be set to match shortest video
+                'duration': None,  # Will be set to match longest video
                 'is_image': True,
                 'image_data': image
             })
@@ -227,7 +233,7 @@ def apply_to_videos(combine_function, video_paths: List[str], save_path: str,
                 print(f"Image {i+1}: {video_path}")
                 print(f"  - Type: PNG Image")
                 print(f"  - Size: {width}x{height}")
-                print(f"  - Duration: Will match shortest video")
+                print(f"  - Duration: Will match longest video")
         else:
             # Handle video file
             cap = cv2.VideoCapture(video_path)
@@ -277,7 +283,7 @@ def apply_to_videos(combine_function, video_paths: List[str], save_path: str,
     for props in video_properties:
         if props.get('is_image', False):
             props['fps'] = fps
-            # Duration will be set based on shortest video
+            # Duration will be set based on longest video
     
     # Determine frame range
     if start_time is not None:
@@ -285,18 +291,18 @@ def apply_to_videos(combine_function, video_paths: List[str], save_path: str,
     else:
         start_frame = 0
     
-    # Find the shortest video duration to determine end frame
+    # Find the longest video duration
     # Filter out images for duration calculation
     video_durations = [props['duration'] for props in video_properties if not props.get('is_image', False)]
     if video_durations:
-        min_duration = min(video_durations)
+        max_duration = max(video_durations)
     else:
-        min_duration = 5.0  # Default duration if only images are provided
+        max_duration = 5.0  # Default duration if only images are provided
     
     if end_time is not None:
-        end_time = min(end_time, min_duration)
+        end_time = min(end_time, max_duration)
     else:
-        end_time = min_duration
+        end_time = max_duration
     
     # Update image durations to match the output duration
     for props in video_properties:
@@ -316,14 +322,62 @@ def apply_to_videos(combine_function, video_paths: List[str], save_path: str,
     if save_dir:  # Only create directory if there is a path component
         os.makedirs(save_dir, exist_ok=True)
     
-    # Initialize video writer
-    # We'll determine output dimensions from the first combined frame
-    fourcc = cv2.VideoWriter_fourcc(*codec)
-    out = None  # Will be initialized after first frame
+    # Process first frame to get output dimensions
+    frames = []
+    for i, cap in enumerate(caps):
+        if video_properties[i].get('is_image', False):
+            frame = video_properties[i]['image_data'].copy()
+        else:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+            ret, frame = cap.read()
+            if not ret:
+                frame = np.zeros((video_properties[i]['height'], 
+                                video_properties[i]['width'], 3), dtype=np.uint8)
+        frames.append(frame)
     
-    # Process frames
-    frame_count = 0
-    for frame_idx in range(start_frame, end_frame):
+    # Get combined frame dimensions
+    combined_frame = combine_function(frames)
+    height, width = combined_frame.shape[:2]
+    
+    # Scale down if necessary
+    scale = 1.0
+    if width > max_dimension or height > max_dimension:
+        scale = min(max_dimension / width, max_dimension / height)
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+        if verbose:
+            print(f"Scaling output from {width}x{height} to {new_width}x{new_height}")
+        width, height = new_width, new_height
+        combined_frame = cv2.resize(combined_frame, (width, height))
+    
+    # Initialize video writer
+    fourcc = cv2.VideoWriter_fourcc(*codec)
+    out = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
+    if not out.isOpened():
+        # Try alternative codecs
+        alternative_codecs = ['mp4v', 'XVID', 'MJPG']
+        for alt_codec in alternative_codecs:
+            if verbose:
+                print(f"Trying alternative codec: {alt_codec}")
+            fourcc = cv2.VideoWriter_fourcc(*alt_codec)
+            out = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
+            if out.isOpened():
+                break
+        if not out.isOpened():
+            raise RuntimeError(f"Could not initialize video writer for {save_path}")
+    
+    if verbose:
+        print(f"Output video size: {width}x{height}")
+    
+    # Write first frame
+    out.write(combined_frame)
+    frame_count = 1
+    
+    # Keep track of last valid frames for each video
+    last_valid_frames = frames.copy()
+    
+    # Process remaining frames
+    for frame_idx in range(start_frame + 1, end_frame):
         # Read frames from all videos and images
         frames = []
         for i, cap in enumerate(caps):
@@ -335,33 +389,24 @@ def apply_to_videos(combine_function, video_paths: List[str], save_path: str,
                 # Calculate the frame index for this video based on its FPS
                 video_frame_idx = int(frame_idx * video_properties[i]['fps'] / fps)
                 
-                # Ensure we don't go beyond the video's frame count
+                # If we've reached the end of this video, use its last valid frame
                 if video_frame_idx >= video_properties[i]['total_frames']:
-                    # If we've reached the end of this video, use the last frame
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, video_properties[i]['total_frames'] - 1)
+                    frame = last_valid_frames[i].copy()
                 else:
                     cap.set(cv2.CAP_PROP_POS_FRAMES, video_frame_idx)
-                
-                ret, frame = cap.read()
-                if not ret:
-                    # If we can't read the frame, use a black frame
-                    frame = np.zeros((video_properties[i]['height'], 
-                                    video_properties[i]['width'], 3), dtype=np.uint8)
+                    ret, frame = cap.read()
+                    if ret:
+                        last_valid_frames[i] = frame.copy()  # Update last valid frame
+                    else:
+                        # If we can't read the frame, use the last valid frame
+                        frame = last_valid_frames[i].copy()
             
             frames.append(frame)
         
-        # Apply the combining function
+        # Apply the combining function and scale if necessary
         combined_frame = combine_function(frames)
-        
-        # Initialize video writer with the first frame's dimensions
-        if out is None:
-            height, width = combined_frame.shape[:2]
-            out = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
-            if not out.isOpened():
-                raise RuntimeError(f"Could not initialize video writer for {save_path}")
-            
-            if verbose:
-                print(f"Output video size: {width}x{height}")
+        if scale != 1.0:
+            combined_frame = cv2.resize(combined_frame, (width, height))
         
         # Write the combined frame
         out.write(combined_frame)
