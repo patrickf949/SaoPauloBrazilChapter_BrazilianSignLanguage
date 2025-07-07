@@ -11,10 +11,76 @@ from typing import Dict, List, Optional, Tuple
 import copy
 import matplotlib as mpl
 from PIL import Image
+from matplotlib import colors
 
 """
 This file contains functions for creating various visualizations for the report.
 """
+
+color_dict = {
+    'ne': 'mediumorchid',       # i
+    'sb': 'dodgerblue',     # s
+    'uf': 'mediumseagreen',     # u
+    'vl': 'darkorange',      # v
+}
+color_list = ['mediumorchid', 'dodgerblue', 'mediumseagreen', 'darkorange', 'darkorange', 'darkorange']
+color_list_rgb = [colors.to_rgb(color) for color in color_list]
+color_list_rgb_int = [(int(color[0]*255), int(color[1]*255), int(color[2]*255)) for color in color_list_rgb]
+data_source_list = ['INES', 'SignBank', 'UFV', 'V-Librasil', 'V-Librasil', 'V-Librasil']
+
+def all_signs_for_word(frames, word):
+    """
+    Concatenate all frames for a word, adding a border and a text label.
+    """
+    font = cv2.FONT_HERSHEY_TRIPLEX
+
+    # find the largest frame
+    max_area_index = np.argmax([frame.shape[0] * frame.shape[1] for frame in frames])
+    max_area_frame = frames[max_area_index]
+    target_height = max_area_frame.shape[0]
+    target_width = max_area_frame.shape[1]
+    target_aspect_ratio = target_width / target_height
+    # pad frames to the target aspect ratio
+    final_frames = []
+    for i, frame in enumerate(frames):
+        aspect_ratio = frame.shape[1] / frame.shape[0]
+
+        if aspect_ratio < target_aspect_ratio:
+            padded_width = int(frame.shape[0] * target_aspect_ratio)
+            padding_width = (padded_width - frame.shape[1]) // 2
+            padded_frame = cv2.copyMakeBorder(frame, 0, 0, padding_width, padding_width, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+        else:
+            padded_frame = frame.copy()
+
+        resized_frame = cv2.resize(padded_frame, (target_width, target_height))
+        color = color_list_rgb_int[i]
+        bordered_frame = cv2.copyMakeBorder(resized_frame, 50, 50, 50, 50, cv2.BORDER_CONSTANT, value=color)
+        
+        annotated_frame = cv2.copyMakeBorder(bordered_frame, 0, 350, 0, 0, cv2.BORDER_CONSTANT, value=(255, 255, 255))
+        data_source = data_source_list[i]
+        font_size = 6
+        font_thickness = 5
+        textsize = cv2.getTextSize(data_source, font, font_size, font_thickness)[0]
+        text_x = (target_width - textsize[0]) // 2
+        annotated_frame = cv2.putText(annotated_frame, data_source, (text_x, 1420), font, font_size, (0, 0, 0), font_thickness)
+
+        final_frames.append(annotated_frame)
+
+        if i < len(frames) - 1:
+            gap = np.full((target_height + 450, 250, 3), 255, dtype=np.uint8)
+            final_frames.append(gap)
+
+    # concatenate the frames
+    new_frame = np.concatenate(final_frames, axis=1)
+    new_frame = cv2.copyMakeBorder(new_frame, 600, 0, 300, 300, cv2.BORDER_CONSTANT, value=(255, 255, 255))
+    font_size = 10
+    font_thickness = 15
+    textsize = cv2.getTextSize(word, font, font_size, font_thickness)[0]
+    text_x = (new_frame.shape[1] - textsize[0]) // 2
+    new_frame = cv2.putText(new_frame, word, (text_x, 400), font, font_size, (0, 0, 0), font_thickness)
+
+    return new_frame
+
 
 def video_to_gif(video_path: str, 
                 output_path: str,
