@@ -358,7 +358,7 @@ def get_frame(input_video_path, frame_number):
     cap.release()
     return np.array(frame)
 
-def create_frame_with_motion_graph(frame, motion_data, frame_number, legend_labels=None, target_width=1280, target_height=720, graph_height=300, figsize=(12, 4), dpi=100, alpha=1):
+def create_frame_with_motion_graph(frame, motion_data, frame_number, legend_labels=None, target_width=1280, target_height=720, graph_height=300, figsize=(12, 4), dpi=100, alpha=1, colors=plt.cm.tab10.colors):
     '''
     Creates a single frame with video and motion graph.
     Returns the combined frame.
@@ -387,13 +387,12 @@ def create_frame_with_motion_graph(frame, motion_data, frame_number, legend_labe
     ax.set_ylabel("Motion Value")
     
     # Plot each motion data series with a legend
-    colors = plt.cm.tab10.colors  # Use a color map for distinct colors
     lines = []
     labels = []
     for i, series in enumerate(motion_data):
         label = legend_labels[i] if legend_labels and i < len(legend_labels) else f"Series {i + 1}"
         # Make all lines except the last one semi-transparent and dotted
-        line_alpha = alpha if i < len(motion_data) - 1 else 1.0
+        line_alpha = alpha if i < len(motion_data) - 1 else alpha
         line_style = '--' if i < len(motion_data) - 1 else '-'
         line_width = 1 if i < len(motion_data) - 1 else 2
         line, = ax.plot(range(len(series)), series, color=colors[i % len(colors)], 
@@ -454,10 +453,8 @@ def create_frame_with_motion_graph(frame, motion_data, frame_number, legend_labe
     
     return combined_frame
 
-def play_video_with_motion_graph(input_video_path, motion_data, legend_labels=None, graph_height=300, figsize=(12, 4), dpi=100, alpha=1, output_video_path=None):
+def play_video_with_motion_graph(input_video_path, motion_data, legend_labels=None, graph_height=300, figsize=(12, 4), dpi=100, alpha=1, output_video_path=None, target_height=720,target_width=1280, colors=plt.cm.tab10.colors):
     # Define target dimensions for the output video
-    target_width = 1280  # Set your desired width
-    target_height = 720  # Set your desired height
 
     # Open the video
     cap = cv2.VideoCapture(input_video_path)
@@ -500,7 +497,8 @@ def play_video_with_motion_graph(input_video_path, motion_data, legend_labels=No
                 graph_height=graph_height,
                 figsize=figsize,
                 dpi=dpi,
-                alpha=alpha
+                alpha=alpha,
+                colors=colors
             )
 
             # Show the combined frame

@@ -28,6 +28,27 @@ color_list_rgb = [colors.to_rgb(color) for color in color_list]
 color_list_rgb_int = [(int(color[0]*255), int(color[1]*255), int(color[2]*255)) for color in color_list_rgb]
 data_source_list = ['INES', 'SignBank', 'UFV', 'V-Librasil', 'V-Librasil', 'V-Librasil']
 
+def horizontal_concat(frames, pad:float=0.0, fill = 0):
+    final_frames=[]
+    gap = np.full((frames[0].shape[0], int(frames[0].shape[1]*pad), 3), fill)
+    for i, frame in enumerate(frames):
+        if i > 0 and i < len(frames):
+            final_frames.append(gap)
+        final_frames.append(frame)
+    horizontal = np.concatenate(final_frames, axis = 1)
+    return horizontal
+
+def vertical_concat(frames, pad:float=0.0, fill = 0):
+    final_frames=[]
+    gap = np.full((int(frames[0].shape[0]*pad), frames[0].shape[1], 3), fill)
+    for i, frame in enumerate(frames):
+        if i > 0 and i < len(frames):
+            final_frames.append(gap)
+        final_frames.append(frame)
+    vertical = np.concatenate(final_frames, axis = 0)
+    return vertical
+
+
 def all_signs_for_word(frames, word):
     """
     Concatenate all frames for a word, adding a border and a text label.
