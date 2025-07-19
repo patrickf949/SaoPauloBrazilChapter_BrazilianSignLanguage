@@ -30,7 +30,7 @@ data_source_list = ['INES', 'SignBank', 'UFV', 'V-Librasil', 'V-Librasil', 'V-Li
 
 def horizontal_concat(frames, pad:float=0.0, fill = 0):
     final_frames=[]
-    gap = np.full((frames[0].shape[0], int(frames[0].shape[1]*pad), 3), fill)
+    gap = np.full((frames[0].shape[0], int(frames[0].shape[1]*pad), 3), fill, dtype=np.uint8)  # Added dtype=np.uint8
     for i, frame in enumerate(frames):
         if i > 0 and i < len(frames):
             final_frames.append(gap)
@@ -40,7 +40,7 @@ def horizontal_concat(frames, pad:float=0.0, fill = 0):
 
 def vertical_concat(frames, pad:float=0.0, fill = 0):
     final_frames=[]
-    gap = np.full((int(frames[0].shape[0]*pad), frames[0].shape[1], 3), fill)
+    gap = np.full((int(frames[0].shape[0]*pad), frames[0].shape[1], 3), fill, dtype=np.uint8)  # Added dtype=np.uint8
     for i, frame in enumerate(frames):
         if i > 0 and i < len(frames):
             final_frames.append(gap)
@@ -267,7 +267,10 @@ def video_to_gif(video_path: str,
                 quality: int = 85,
                 optimize: bool = True,
                 loop: int = 0,
-                final_frame_duration: int = 1000) -> str:
+                final_frame_duration: int = 1000,
+                add_progress_bar: bool = False,
+                progress_bar_height: int = 5,
+                progress_bar_color: Tuple[int, int, int] = (0, 255, 0)) -> str:
     """
     Convert a video file to GIF format using OpenCV and PIL.
     
@@ -283,6 +286,9 @@ def video_to_gif(video_path: str,
         optimize: Whether to optimize the GIF (default: True)
         loop: Number of loops (0 = infinite, 1 = no loop, etc.)
         final_frame_duration: How long to display the final frame in milliseconds (default: 1000)
+        add_progress_bar: Whether to add a progress bar at the bottom of the GIF (default: False)
+        progress_bar_height: Height of the progress bar in pixels (default: 5)
+        progress_bar_color: RGB color tuple for the progress bar (default: green)
         
     Returns:
         Path to the created GIF file
@@ -341,14 +347,19 @@ def video_to_gif(video_path: str,
             output_height = max_height
             output_width = int(max_height * aspect_ratio)
     
+    # If progress bar is enabled, adjust output height
+    if add_progress_bar:
+        output_height += progress_bar_height
+    
     # Extract frames
     frames = []
     durations = []  # List to store duration for each frame
     frame_indices = range(start_frame, end_frame, frame_step)
     base_duration = int(1000 / fps)  # Duration in milliseconds
+    total_output_frames = len(range(start_frame, end_frame, frame_step))
     
-    for frame_idx in frame_indices:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+    for frame_idx, frame_num in enumerate(frame_indices):
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
         ret, frame = cap.read()
         if not ret:
             break
@@ -357,11 +368,24 @@ def video_to_gif(video_path: str,
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
         # Resize frame if dimensions changed
-        if output_width != width or output_height != height:
-            frame_resized = cv2.resize(frame_rgb, (output_width, output_height), 
+        if output_width != width or output_height != height - (progress_bar_height if add_progress_bar else 0):
+            frame_resized = cv2.resize(frame_rgb, (output_width, output_height - (progress_bar_height if add_progress_bar else 0)), 
                                      interpolation=cv2.INTER_LANCZOS4)
         else:
             frame_resized = frame_rgb
+        
+        # Add progress bar if enabled
+        if add_progress_bar:
+            # Create a new frame with extra height for progress bar
+            frame_with_bar = np.zeros((output_height, output_width, 3), dtype=np.uint8)
+            # Copy the video frame to the top portion
+            frame_with_bar[:-progress_bar_height] = frame_resized
+            # Calculate progress bar width - ensure it's full for the final frame
+            progress = 1.0 if frame_idx == total_output_frames - 1 else frame_idx / (total_output_frames - 1)
+            bar_width = int(output_width * progress)
+            # Draw progress bar
+            frame_with_bar[-progress_bar_height:, :bar_width] = progress_bar_color
+            frame_resized = frame_with_bar
         
         # Convert to PIL Image
         pil_image = Image.fromarray(frame_resized)
