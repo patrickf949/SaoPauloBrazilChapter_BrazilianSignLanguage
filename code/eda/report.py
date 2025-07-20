@@ -273,6 +273,8 @@ def video_to_gif(video_path: str,
                 progress_bar_color: Tuple[int, int, int] = (0, 255, 0)) -> str:
     """
     Convert a video file to GIF format using OpenCV and PIL.
+    The output GIF will maintain the same playback speed as the original video,
+    even when reducing the frame rate to manage file size.
     
     Args:
         video_path: Path to input video file
@@ -324,6 +326,10 @@ def video_to_gif(video_path: str,
     # Calculate frame step to achieve desired fps
     frame_step = max(1, int(video_fps / fps))
     
+    # Calculate frame duration to maintain original speed
+    # Duration = time between frames in original video * number of frames skipped
+    frame_duration = int((1000 / video_fps) * frame_step)  # Duration in milliseconds
+    
     # Calculate output dimensions
     output_width = width
     output_height = height
@@ -355,7 +361,6 @@ def video_to_gif(video_path: str,
     frames = []
     durations = []  # List to store duration for each frame
     frame_indices = range(start_frame, end_frame, frame_step)
-    base_duration = int(1000 / fps)  # Duration in milliseconds
     total_output_frames = len(range(start_frame, end_frame, frame_step))
     
     for frame_idx, frame_num in enumerate(frame_indices):
@@ -390,7 +395,7 @@ def video_to_gif(video_path: str,
         # Convert to PIL Image
         pil_image = Image.fromarray(frame_resized)
         frames.append(pil_image)
-        durations.append(base_duration)
+        durations.append(frame_duration)
     
     cap.release()
     
@@ -431,6 +436,7 @@ def video_to_gif(video_path: str,
     print(f"  - Duration: {(sum(durations) / 1000):.2f} seconds")
     print(f"  - Size: {output_width}x{output_height}")
     print(f"  - File size: {os.path.getsize(output_path) / 1024:.1f} KB")
+    print(f"  - Frame duration: {frame_duration}ms (to maintain original {video_fps:.1f} FPS speed)")
     
     return output_path
 
@@ -955,53 +961,143 @@ def draw_landmarks_on_video(video_path: str,
                           results_list: List[Dict],
                           output_path: str) -> None:
     """
-    Process a video and draw landmarks on each frame.
+    Process a video and draw landmarks on each frame, ensuring exact frame count preservation.
     
     Args:
         video_path: Path to input video file
         results_list: List of dictionaries containing detection results for each frame
         output_path: Path to save the processed video with landmarks drawn
+        
+    Raises:
+        ValueError: If video file cannot be opened or if results_list length doesn't match video frames
+        RuntimeError: If FFmpeg conversion fails
+        FileNotFoundError: If ffmpeg is not installed
     """
+    import os
+    import tempfile
+    import shutil
+    import subprocess
+    from pathlib import Path
+    
+    # Ensure output directory exists
+    output_dir = os.path.dirname(os.path.abspath(output_path))
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Check if ffmpeg is available
+    try:
+        subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
+    except (subprocess.SubprocessError, FileNotFoundError):
+        raise FileNotFoundError("ffmpeg is required but not found. Please install ffmpeg.")
+    
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise ValueError(f"Could not open video file: {video_path}")
     
     # Get video properties
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    if fps <= 0:
-        fps = 30
+    input_fps = cap.get(cv2.CAP_PROP_FPS)
+    if input_fps <= 0:
+        input_fps = 30
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     
-    # Initialize video writer
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+    # Validate results_list length
+    if len(results_list) < total_frames:
+        raise ValueError(
+            f"results_list length ({len(results_list)}) is less than video frame count ({total_frames})"
+        )
     
-    try:
+    print(f"Input video properties:")
+    print(f"- FPS: {input_fps:.3f}")
+    print(f"- Total frames: {total_frames}")
+    print(f"- Duration: {total_frames/input_fps:.3f}s")
+    print(f"- Resolution: {width}x{height}")
+    
+    # Create temporary directory for frames
+    with tempfile.TemporaryDirectory() as temp_dir:
         frame_idx = 0
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
+        processed_frames = 0
+        
+        print("\nProcessing frames...")
+        try:
+            while frame_idx < total_frames and frame_idx < len(results_list):
+                # Set frame position explicitly
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                ret, frame = cap.read()
+                
+                if not ret:
+                    print(f"Warning: Could not read frame {frame_idx}")
+                    break
+                
+                # Get results for this frame
+                results = results_list[frame_idx]
+                
+                # Draw landmarks on frame
+                annotated_frame = draw_landmarks_on_frame_no_padding(frame, results)
+                
+                # Save frame as PNG
+                frame_path = os.path.join(temp_dir, f'frame_{frame_idx:06d}.png')
+                cv2.imwrite(frame_path, annotated_frame)
+                
+                processed_frames += 1
+                frame_idx += 1
+                
+                # Show progress every 30 frames or at the end
+                if frame_idx % 30 == 0 or frame_idx == total_frames:
+                    progress = (frame_idx / total_frames) * 100
+                    print(f"Processed {frame_idx}/{total_frames} frames ({progress:.1f}%)")
             
-            if frame_idx >= len(results_list):
-                break
-            
-            # Get results for this frame
-            results = results_list[frame_idx]
-            
-            # Draw landmarks on frame
-            annotated_frame = draw_landmarks_on_frame(frame, results)
-            
-            # Write to output video
-            out.write(annotated_frame)
-            
-            frame_idx += 1
+        finally:
+            cap.release()
+        
+        if processed_frames == 0:
+            raise RuntimeError("No frames were processed")
+        
+        print("\nCreating video from frames...")
+        try:
+            # Create video from frames using FFmpeg
+            cmd = [
+                'ffmpeg', '-y',
+                '-framerate', str(input_fps),
+                '-i', os.path.join(temp_dir, 'frame_%06d.png'),
+                '-c:v', 'libx264',
+                '-preset', 'medium',
+                '-crf', '23',
+                '-pix_fmt', 'yuv420p',
+                '-frames:v', str(processed_frames),  # Explicitly set number of frames
+                output_path
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode != 0:
+                print("FFmpeg conversion failed. Error:")
+                print(result.stderr)
+                raise RuntimeError("FFmpeg conversion failed")
+                
+        except subprocess.SubprocessError as e:
+            print(f"FFmpeg error: {str(e)}")
+            raise RuntimeError("Video creation failed") from e
     
-    finally:
-        cap.release()
-        out.release()
-    print(f"Landmarks drawn video saved to {output_path}")
+    # Verify output video properties
+    verify_cap = cv2.VideoCapture(output_path)
+    if verify_cap.isOpened():
+        output_frames = int(verify_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        output_fps = verify_cap.get(cv2.CAP_PROP_FPS)
+        output_duration = output_frames / output_fps
+        verify_cap.release()
+        
+        print(f"\nOutput video properties:")
+        print(f"- FPS: {output_fps:.3f}")
+        print(f"- Total frames: {output_frames}")
+        print(f"- Duration: {output_duration:.3f}s")
+        print(f"- Processed frames: {processed_frames}")
+        
+        if output_frames != processed_frames:
+            print(f"\nWarning: Output frame count ({output_frames}) differs from processed frames ({processed_frames})")
+        
+        output_size_mb = os.path.getsize(output_path) / (1024 * 1024)
+        print(f"- File size: {output_size_mb:.1f}MB")
+    
+    print(f"\nLandmarks drawn video saved to {output_path}")
 
 def draw_landmarks_on_video_with_frame(results_list: List[Dict],
                                      output_path: str,
