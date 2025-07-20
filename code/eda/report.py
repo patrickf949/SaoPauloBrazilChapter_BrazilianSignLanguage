@@ -257,6 +257,109 @@ def four_signs_for_word_two_rows(frames, word):
 
     return new_frame
 
+def poses_for_word_two_rows(frames, word, dims=(480,480), horizontal_gap=100, vertical_gap=200):
+    """
+    Concatenate the first 4 frames for a word, adding a border and a text label.
+    Also add a second row of frames, that are each the same dimensions.
+    
+    Args:
+        frames: List of frames (numpy arrays) to concatenate
+        word: Word to display as title
+        
+    Returns:
+        Combined frame with all frames side by side, borders, and labels
+    """
+    font = cv2.FONT_HERSHEY_TRIPLEX
+
+    # Take the first half of the frames
+    top_frames = frames[:len(frames)//2]
+    bottom_frames = frames[len(frames)//2:]
+
+    target_height = dims[0]
+    target_width = dims[1]
+    
+    # pad frames to the target aspect ratio
+    final_frames_top = []
+    for i, frame in enumerate(top_frames):
+
+        resized_frame = cv2.resize(frame, (target_width, target_height))
+        padded_frame = cv2.copyMakeBorder(resized_frame, 0, 0, 0, 0, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+
+        color = color_list_rgb_int[i]
+        bordered_frame = cv2.copyMakeBorder(padded_frame, 10, 10, 10, 10, cv2.BORDER_CONSTANT, value=color)
+        
+        # annotated_frame = cv2.copyMakeBorder(bordered_frame, 0, 350, 0, 0, cv2.BORDER_CONSTANT, value=(255, 255, 255))
+        # data_source = data_source_list[i]
+        # font_size = 6
+        # font_thickness = 5
+        # textsize = cv2.getTextSize(data_source, font, font_size, font_thickness)[0]
+        # text_x = (target_width - textsize[0]) // 2
+        # annotated_frame = cv2.putText(annotated_frame, data_source, (text_x, target_height+100), font, font_size, (0, 0, 0), font_thickness)
+
+        final_frames_top.append(bordered_frame)
+        if i < len(top_frames) - 1:
+            gap = np.full((bordered_frame.shape[0], horizontal_gap, 3), 255, dtype=np.uint8)
+            final_frames_top.append(gap)
+
+    # add a second row of frames
+    final_frames_bottom = []
+    for i, frame in enumerate(bottom_frames):
+
+        resized_frame = cv2.resize(frame, (target_width, target_height))
+        padded_frame = cv2.copyMakeBorder(resized_frame, 0, 0, 0, 0, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+
+        color = color_list_rgb_int[i]
+        bordered_frame = cv2.copyMakeBorder(padded_frame, 10, 10, 10, 10, cv2.BORDER_CONSTANT, value=color)
+
+        annotated_frame = cv2.copyMakeBorder(bordered_frame, 0, 350, 0, 0, cv2.BORDER_CONSTANT, value=(255, 255, 255))
+        data_source = data_source_list[i]
+        font_size = 4
+        font_thickness = 3
+        textsize = cv2.getTextSize(data_source, font, font_size, font_thickness)[0]
+        text_x = (target_width - textsize[0]) // 2
+        annotated_frame = cv2.putText(annotated_frame, data_source, (text_x, target_height+200), font, font_size, (0, 0, 0), font_thickness)
+
+        final_frames_bottom.append(annotated_frame)
+
+        if i < len(bottom_frames) - 1:
+            gap = np.full((annotated_frame.shape[0], horizontal_gap, 3), 255, dtype=np.uint8)
+            final_frames_bottom.append(gap)
+
+    # concatenate the frames
+    new_frame_top_row = np.concatenate(final_frames_top, axis=1)
+    new_frame_bottom_row = np.concatenate(final_frames_bottom, axis=1)
+    middle_gap = np.full((vertical_gap, new_frame_top_row.shape[1], 3), 255, dtype=np.uint8)
+    # resize to smallest width, maintaining aspect ratio
+    min_width = min(new_frame_top_row.shape[1], new_frame_bottom_row.shape[1])
+    new_frame_top_row = cv2.resize(new_frame_top_row, (min_width, int(min_width/new_frame_top_row.shape[1]*new_frame_top_row.shape[0])))
+    new_frame_bottom_row = cv2.resize(new_frame_bottom_row, (min_width, int(min_width/new_frame_bottom_row.shape[1]*new_frame_bottom_row.shape[0])))
+    # concatenate the frames
+    side_pad = 300
+    title_pad = 600
+    new_frame = np.concatenate((new_frame_top_row, middle_gap, new_frame_bottom_row), axis=0)
+    new_frame = cv2.copyMakeBorder(new_frame, title_pad, 0, side_pad, side_pad, cv2.BORDER_CONSTANT, value=(255, 255, 255))
+    font_size = 10
+    font_thickness = 15
+    textsize = cv2.getTextSize(word, font, font_size, font_thickness)[0]
+    text_x = (new_frame.shape[1] - textsize[0]) // 2
+    new_frame = cv2.putText(new_frame, word, (text_x, 400), font, font_size, (0, 0, 0), font_thickness)
+
+    font_size = 5
+    font_thickness = 6
+    new_frame = cv2.copyMakeBorder(new_frame, 0, 0, dims[1], 0, cv2.BORDER_CONSTANT, value=(255, 255, 255))
+    text = "Original"
+    textsize = cv2.getTextSize(text, font, font_size, font_thickness)[0]
+    text_x = (dims[1] - textsize[0] + side_pad) // 2
+    text_y = title_pad + (dims[0] + 20)//2 + textsize[1]//2
+    new_frame = cv2.putText(new_frame, text, (text_x, text_y), font, font_size, (0, 0, 0), font_thickness)
+    text = "Preprocessed"
+    textsize = cv2.getTextSize(text, font, font_size, font_thickness)[0]
+    text_x = (dims[1] - textsize[0] + side_pad) // 2
+    text_y = title_pad + (dims[0] + 20)//2 + textsize[1]//2 + new_frame_top_row.shape[0] + vertical_gap
+    new_frame = cv2.putText(new_frame, text, (text_x, text_y), font, font_size, (0, 0, 0), font_thickness)
+
+    return new_frame
+
 def video_to_gif(video_path: str, 
                 output_path: str,
                 fps: int = 10,
