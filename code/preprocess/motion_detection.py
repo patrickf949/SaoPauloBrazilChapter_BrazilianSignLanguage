@@ -390,10 +390,10 @@ def create_frame_with_motion_graph(
     # Set up the plot for motion graph
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     ax.set_xlim(0, len(motion_data[0]))
-    ax.set_ylim(0, 1)  # Normalized data is between 0 and 1
-    ax.set_title("Motion Over Time (Normalized)", fontweight='bold')
+    ax.set_ylim(-0.05, 1.05)  # Normalized data is between 0 and 1
+    ax.set_title("Motion Measurement Over Time", fontweight='bold')
     ax.set_xlabel("Frame", fontweight='bold')
-    ax.set_ylabel("Motion Value", fontweight='bold')
+    ax.set_ylabel("Motion Measurement\n(0-1 normalized)", fontweight='bold')
     
     # Plot each motion data series with a legend
     lines = []
@@ -403,7 +403,7 @@ def create_frame_with_motion_graph(
         # Make all lines except the last one semi-transparent and dotted
         line_alpha = alpha if i < len(motion_data) - 1 else alpha
         line_style = '--' if i < len(motion_data) - 1 else '-'
-        line_width = 1 if i < len(motion_data) - 1 else 2
+        line_width = 1.5 if i < len(motion_data) - 1 else 3
         line, = ax.plot(range(len(series)), series, color=colors[i % len(colors)], 
                        lw=line_width, label=label, alpha=line_alpha, linestyle=line_style)
         lines.append(line)
@@ -415,7 +415,8 @@ def create_frame_with_motion_graph(
     # Create the vertical line that will move with the frames
     vertical_line, = ax.plot([0, 0], [0, 1], color="black", lw=2)
     vertical_line.set_xdata([frame_number, frame_number])
-
+    ax.hlines(1, 0, len(motion_data[0]), colors='gray', linestyles=':', linewidth=1, alpha=0.75)
+    ax.hlines(0, 0, len(motion_data[0]), colors='gray', linestyles=':', linewidth=1, alpha=0.75)
     # Disable the toolbar and set the figure to not block
     plt.tight_layout()
     plt.ion()
