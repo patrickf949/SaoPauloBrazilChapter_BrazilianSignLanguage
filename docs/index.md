@@ -296,15 +296,20 @@ Below, you can find the approach used to solve each of the issues above.
 
 ### Final dataset
 
+![alt text](assets/all_signs_for_banana.gif "placeholder")
+
+abc
+
+<img src="assets/all_signs_for_banana.gif" alt="isolated" width="200"/>
 
 ## Preprocessing
-
+<!-- 
 ![alt text](assets/placeholder.png "placeholder")
 
 
 <img src="assets/placeholder.png" alt="isolated" width="200"/>
 
-<img src="assets/placeholder.png" alt="isolated" title="hover hint" style="width: 75%;"/>
+<img src="assets/placeholder.png" alt="isolated" title="hover hint" style="width: 75%;"/> -->
 
 ### EDA
 
@@ -316,7 +321,16 @@ Below, you can find the approach used to solve each of the issues above.
     - durations
         - plot for each label
 
+
+
 #### Dimensions & FPS
+
+<img src="assets/fps_bar_chart.png" alt="isolated" title="hover hint" style="width: 75%;"/>
+
+<img src="assets/video_dimensions_for_animal.png" alt="isolated" title="hover hint" style="width: 75%;"/>
+
+<img src="assets/video_dimensions_bar_chart.png" alt="isolated" title="hover hint" style="width: 75%;"/>
+
 
 #### Durations
 
@@ -324,6 +338,10 @@ Below, you can find the approach used to solve each of the issues above.
 why:
     - will be used in preprocessing for motion detection, offset & scaling
     - Will be used as the base features that will be input to the model
+
+<img src="assets/pose_for_casa_on_orig_and_black_raw.gif" alt="isolated" title="hover hint" style="width: 75%;"/>
+
+
 
 ### Start/End Point Trimming
 
@@ -341,6 +359,9 @@ our first preprocessing step is to trim the videos. We will remove the periods f
 - Show some before & after
 - show some example via gifs
 - for some previous versions, we used a combination of multiple, but in the final version settled on just landmarks
+
+
+<img src="assets/motions_for_aniversario.gif" alt="isolated" title="hover hint" style="width: 75%;"/>
 
 #### Analysing Motion Start and End
 
@@ -367,6 +388,11 @@ our first preprocessing step is to trim the videos. We will remove the periods f
     - Simple was also robust to jittery motion
     - We would need some more development to deal with this in complex 
     - But in this limited time, just go for simple
+
+
+
+<img src="assets/video_durations_orig_boxplot.png" alt="isolated" title="hover hint" style="width: 75%;"/>
+<img src="assets/video_durations_proc_boxplot.png" alt="isolated" title="hover hint" style="width: 75%;"/>
 
 ### Scaling & Alignment
 
@@ -406,13 +432,18 @@ Context
         - (Plot showing None sequences)
     - A significant proportion of these problematic Nones are from the lowest resolution dataset, INES 
 
+### Summary
+
+<img src="assets/pose_for_casa_on_black_preproc.gif" alt="isolated" title="hover hint" style="width: 75%;"/>
 
 ## Model development
 ### Landmark -> LSTM method
 #### Overview
 #### Train / Validation / Test split
+- diagram from slides
 #### Feature Engineering
 #### Data Augmentation
+- diagram from slides??
 #### Models
 
 ## Results
