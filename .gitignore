@@ -25,6 +25,7 @@ __pycache__/
 /webapp/backend/data/interim/RawMotionMeasurements/*/**
 /webapp/backend/data/preprocessed/*/**
 !/webapp/backend/data/interim/*/.gitkeep
-
+**/data/interim/
+**/data/output/
 # MacOS system files
 .DS_Store
