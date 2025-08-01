@@ -13,13 +13,21 @@ from config import Config
 from dependencies import get_inference_engine, get_feature_processor, get_sampling_func
 from schemas import PredictionResponse
 from utils import save_uploaded_file, cleanup_files
-from data.download_videos import get_video_metadata
-from preprocess.video_analyzer import VideoAnalyzer
-from preprocess.preprocessor import Preprocessor
-from preprocess.visualization import draw_landmarks_on_video_with_frame
 
-from models.feature_processor import FeatureProcessor
-from models.inference import InferenceEngine
+script_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(os.path.dirname(script_dir))
+code_dir = os.path.join(root_dir, 'code')
+if code_dir not in sys.path:
+    sys.path.insert(0, code_dir)
+
+# Type ignore comments for Pylance
+from data.download_videos import get_video_metadata # type: ignore
+from preprocess.video_analyzer import VideoAnalyzer # type: ignore
+from preprocess.preprocessor import Preprocessor # type: ignore
+from preprocess.vizualisation import draw_landmarks_on_video_with_frame # type: ignore
+
+from model.features.feature_processor import FeatureProcessor # type: ignore
+from model.utils.inference import InferenceEngine # type: ignore
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -57,7 +65,7 @@ async def predict_video(
         logger.info(f"Uploaded video saved to {video_path}")
 
         # Get video metadata
-        metadata = await get_video_metadata(str(video_path))
+        metadata = get_video_metadata(str(video_path))
         if not metadata:
             raise HTTPException(status_code=500, detail="Failed to extract video metadata")
         metadata['data_source'] = 'app'
@@ -171,7 +179,7 @@ async def predict_video(
         # Prepare response
         return {
             "prediction": {
-                "class": int(prediction),
+                "class_id": int(prediction),
                 "label": label_encoding[str(int(prediction))]
             },
             "probabilities": probs_dict,
