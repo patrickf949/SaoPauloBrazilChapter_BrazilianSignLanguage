@@ -7,12 +7,14 @@ import logging
 from typing import Callable
 import os
 import sys
+from pathlib import Path
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.dirname(os.path.dirname(script_dir))
-code_dir = os.path.join(root_dir, 'code')
-if code_dir not in sys.path:
-    sys.path.insert(0, code_dir)
+# Add project root to sys.path
+current_dir = Path(__file__).resolve().parent
+root_dir = current_dir.parent.parent
+code_dir = root_dir / 'code'
+if str(code_dir) not in sys.path:
+    sys.path.insert(0, str(code_dir))
 
 # Type ignore comments for Pylance
 from model.utils.utils import load_obj # type: ignore
@@ -65,7 +67,7 @@ def get_feature_processor(config: Config = Depends(Config.get_instance)) -> Feat
             dataset_config=config.config_yaml.dataset,
             features_config=config.config_yaml.features,
             augmentation_config=config.config_yaml.augmentation,
-            landmarks_dir=os.path.join(script_dir, 'data', 'preprocessed', 'landmarks', 'v0'),
+            landmarks_dir=os.path.join(current_dir, 'data', 'preprocessed', 'landmarks', 'v0'),
             seed=0
         )
         logger.info("Initialized FeatureProcessor")
