@@ -9,14 +9,21 @@ import os
 import sys
 from pathlib import Path
 
-# Add project root to sys.path
+# Add /code modules dir to sys.path so imports work
 current_dir = Path(__file__).resolve().parent
 root_dir = current_dir.parent.parent
+
+# ------------------------------------------------------------
+# if /webapp doesn't need to be standalone, uncomment this line to import directly from /code:
 code_dir = root_dir / 'code'
+# ------------------------------------------------------------
+# if /webapp should be standalone, run sync_code.py script, and uncomment this line:
+# code_dir = current_dir / 'shared_code'
+
 if str(code_dir) not in sys.path:
     sys.path.insert(0, str(code_dir))
 
-# Type ignore comments for Pylance
+# Import /code modules. (Type ignore comments for Pylance)
 from model.utils.utils import load_obj # type: ignore
 from model.dataset.frame_sampling import get_sampling_function # type: ignore
 from model.utils.inference import InferenceEngine # type: ignore
