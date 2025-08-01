@@ -1,2 +1,4 @@
-filename,fps,frame_count,preprocess_version,start_frame,end_frame,output_path
-comer_uf_3.mp4,29.97002997002997,108,v0,17,65,/Users/fitzpatrick/Desktop/macdesktop/freelance/opensource/SaoPauloBrazilChapter_BrazilianSignLanguage/webapp/backend/data/preprocessed/landmarks/v0/comer_uf_3.npy
+filename,fps,frame_count,preprocess_version,start_frame,end_frame,output_path,label,data_source,original_fps,original_frame_count,original_duration_sec,processed_frame_count,processed_duration_sec,face_width,shoulders_width,face_midpoint_to_shoulders_height,left_hand_interpolated_none_frames,right_hand_interpolated_none_frames
+comer_uf_3.mp4,29.97002997002997,108.0,v0,17,65,/Users/fitzpatrick/Desktop/macdesktop/freelance/opensource/SaoPauloBrazilChapter_BrazilianSignLanguage/webapp/backend/data/preprocessed/landmarks/v0/comer_uf_3.npy,,,,,,,,,,,,
+ajudar_ne_1.mp4,12.0,44.0,v0,7,36,/home/ben/projects/SaoPauloBrazilChapter_BrazilianSignLanguage/webapp/backend/data/preprocessed/landmarks/v0/ajudar_ne_1.npy,,app,12.0,44.0,3.6666666666666665,30.0,2.5,0.1475760764186262,0.3334213753297522,0.2927764145887005,7.0,6.0
+aniversário_ne_1.mp4,,,v0,11,44,,,app,12.0,74.0,6.166666666666667,34.0,2.8333333333333335,0.1464765033842475,0.32917441076497445,0.2859351864110474,8.0,7.0
