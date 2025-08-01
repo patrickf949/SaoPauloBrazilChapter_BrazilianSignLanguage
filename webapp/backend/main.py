@@ -8,24 +8,24 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-from typing import Dict, Any
+from typing import Dict, Any, Callable
 from config import Config
 from dependencies import get_inference_engine, get_feature_processor, get_sampling_func
 from schemas import PredictionResponse
 from utils import save_uploaded_file, cleanup_files
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.dirname(os.path.dirname(script_dir))
-code_dir = os.path.join(root_dir, 'code')
-if code_dir not in sys.path:
-    sys.path.insert(0, code_dir)
+# Add project root to sys.path
+current_dir = Path(__file__).resolve().parent
+root_dir = current_dir.parent.parent
+code_dir = root_dir / 'code'
+if str(code_dir) not in sys.path:
+    sys.path.insert(0, str(code_dir))
 
 # Type ignore comments for Pylance
 from data.download_videos import get_video_metadata # type: ignore
 from preprocess.video_analyzer import VideoAnalyzer # type: ignore
 from preprocess.preprocessor import Preprocessor # type: ignore
 from preprocess.vizualisation import draw_landmarks_on_video_with_frame # type: ignore
-
 from model.features.feature_processor import FeatureProcessor # type: ignore
 from model.utils.inference import InferenceEngine # type: ignore
 
@@ -33,11 +33,6 @@ from model.utils.inference import InferenceEngine # type: ignore
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Add project root to sys.path
-root_dir = Path(__file__).resolve().parent.parent.parent
-code_dir = root_dir / 'code'
-if str(code_dir) not in sys.path:
-    sys.path.insert(0, str(code_dir))
 
 # Import project modules
 from typing import Callable
