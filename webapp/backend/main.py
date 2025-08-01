@@ -14,14 +14,21 @@ from dependencies import get_inference_engine, get_feature_processor, get_sampli
 from schemas import PredictionResponse
 from utils import save_uploaded_file, cleanup_files
 
-# Add project root to sys.path
+# Add /code modules dir to sys.path so imports work
 current_dir = Path(__file__).resolve().parent
 root_dir = current_dir.parent.parent
+
+# ------------------------------------------------------------
+# if /webapp doesn't need to be standalone, uncomment this line to import directly from /code:
 code_dir = root_dir / 'code'
+# ------------------------------------------------------------
+# if /webapp should be standalone, run sync_code.py script, and uncomment this line:
+# code_dir = current_dir / 'shared_code'
+
 if str(code_dir) not in sys.path:
     sys.path.insert(0, str(code_dir))
 
-# Type ignore comments for Pylance
+# Import /code modules. (Type ignore comments for Pylance)
 from data.download_videos import get_video_metadata # type: ignore
 from preprocess.video_analyzer import VideoAnalyzer # type: ignore
 from preprocess.preprocessor import Preprocessor # type: ignore
