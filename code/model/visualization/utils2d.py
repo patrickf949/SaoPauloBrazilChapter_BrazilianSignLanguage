@@ -107,6 +107,8 @@ def visualize_landmark_features(
     distances: List[Tuple[int, int]] = None,
     angles: List[Tuple[int, int, int]] = None,
     title: str = "Landmark Feature Visualization",
+    show_legs: bool = True,
+    show_waist: bool = True,
 ):
     """
     Visualizes a set of landmarks with optional skeleton, distances, and angles.
@@ -129,6 +131,12 @@ def visualize_landmark_features(
     title : str
         Title of the plot.
 
+    show_legs : bool
+        Whether to show leg landmarks and connections (points 23-32).
+
+    show_waist : bool
+        Whether to show waist landmarks and connections (points 23-24 and connections to shoulders).
+
     Notes:
     ------
     - The function automatically inverts the Y-axis to match image coordinates.
@@ -146,12 +154,45 @@ def visualize_landmark_features(
     y = [lm.y for lm in landmarks]
 
     plt.figure(figsize=(8, 10))
-    plt.scatter(x, y)
+    
+    # Filter which points to display based on show_legs and show_waist
+    if landmark_type == "pose":
+        visible_points = set(range(len(landmarks)))
+        if not show_legs:
+            # Remove leg points (25-32) but keep waist points (23-24)
+            for i in range(25, 33):
+                visible_points.discard(i)
+        if not show_waist:
+            # Remove only waist points (23-24)
+            visible_points.discard(23)
+            visible_points.discard(24)
+        
+        # Only plot visible points
+        visible_x = [x[i] for i in visible_points]
+        visible_y = [y[i] for i in visible_points]
+        plt.scatter(visible_x, visible_y)
+    else:
+        plt.scatter(x, y)
 
     # Draw main skeleton
     if landmark_type == "pose":
         connections = POSE_CONNECTIONS
         radius = 0.05
+        
+        # Filter connections based on show_legs and show_waist
+        filtered_connections = []
+        for start, end in connections:
+            # Skip leg connections (25-32)
+            if not show_legs and (start >= 25 or end >= 25):
+                continue
+            # Skip waist connections
+            if not show_waist and ((start == 23 and end == 24) or  # hip connection
+                                ((start in [11, 12] and end in [23, 24]) or  # shoulder to hip
+                                 (end in [11, 12] and start in [23, 24]))):  # hip to shoulder
+                continue
+            filtered_connections.append((start, end))
+        
+        connections = filtered_connections
     else:
         connections = HAND_CONNECTIONS
         radius = 0.005
@@ -162,12 +203,18 @@ def visualize_landmark_features(
     # Draw distances (green lines)
     if distances:
         for start, end in distances:
+            # Skip if either point is hidden
+            if landmark_type == "pose" and (start not in visible_points or end not in visible_points):
+                continue
             plt.plot([x[start], x[end]], [y[start], y[end]], "g--", linewidth=2)
 
     # Draw angle connections (orange V-shapes)
     if angles:
         ax = plt.gca()  # get current axis
         for a_idx, b_idx, c_idx in angles:
+            # Skip if any point is hidden
+            if landmark_type == "pose" and not all(idx in visible_points for idx in [a_idx, b_idx, c_idx]):
+                continue
             a = (x[a_idx], y[a_idx])
             b = (x[b_idx], y[b_idx])
             c = (x[c_idx], y[c_idx])
@@ -175,8 +222,12 @@ def visualize_landmark_features(
             draw_angle_arc(ax, a, b, c, color="orange", radius=radius)
 
     # Landmark indices
-    for i, (xi, yi) in enumerate(zip(x, y)):
-        plt.text(xi, yi, str(i), fontsize=8, color="red")
+    if landmark_type == "pose":
+        for i in visible_points:
+            plt.text(x[i], y[i], str(i), fontsize=8, color="red")
+    else:
+        for i, (xi, yi) in enumerate(zip(x, y)):
+            plt.text(xi, yi, str(i), fontsize=8, color="red")
 
     plt.gca().invert_yaxis()
     plt.title(title)
@@ -190,6 +241,8 @@ def visualize_differences(
     landmark_type: str,
     landmark_differences: List[int],
     title: str = "2D Landmark Differences",
+    show_legs: bool = True,
+    show_waist: bool = True,
 ):
     """
     Visualizes motion between two 2D landmark frames using red arrows.
@@ -209,6 +262,12 @@ def visualize_differences(
 
     title : str
         Title of the plot.
+
+    show_legs : bool
+        Whether to show leg landmarks and connections (points 23-32).
+
+    show_waist : bool
+        Whether to show waist landmarks and connections (points 23-24 and connections to shoulders).
     """
     prev_landmarks = prev_landmarks.landmark
     next_landmarks = next_landmarks.landmark
@@ -218,12 +277,48 @@ def visualize_differences(
     y2 = [lm.y for lm in next_landmarks]
 
     plt.figure(figsize=(8, 10))
-    plt.scatter(x1, y1, c="blue", label="Prev Frame")
-    plt.scatter(x2, y2, c="green", label="Next Frame")
+
+    # Filter which points to display based on show_legs and show_waist
+    if landmark_type == "pose":
+        visible_points = set(range(len(prev_landmarks)))
+        if not show_legs:
+            # Remove leg points (25-32) but keep waist points (23-24)
+            for i in range(25, 33):
+                visible_points.discard(i)
+        if not show_waist:
+            # Remove only waist points (23-24)
+            visible_points.discard(23)
+            visible_points.discard(24)
+        
+        # Only plot visible points
+        visible_x1 = [x1[i] for i in visible_points]
+        visible_y1 = [y1[i] for i in visible_points]
+        visible_x2 = [x2[i] for i in visible_points]
+        visible_y2 = [y2[i] for i in visible_points]
+        plt.scatter(visible_x1, visible_y1, c="blue", label="Prev Frame")
+        plt.scatter(visible_x2, visible_y2, c="green", label="Next Frame")
+    else:
+        plt.scatter(x1, y1, c="blue", label="Prev Frame")
+        plt.scatter(x2, y2, c="green", label="Next Frame")
 
     if landmark_type == "pose":
         connections = POSE_CONNECTIONS
         head_width = 0.01
+        
+        # Filter connections based on show_legs and show_waist
+        filtered_connections = []
+        for start, end in connections:
+            # Skip leg connections (25-32)
+            if not show_legs and (start >= 25 or end >= 25):
+                continue
+            # Skip waist connections
+            if not show_waist and ((start == 23 and end == 24) or  # hip connection
+                                ((start in [11, 12] and end in [23, 24]) or  # shoulder to hip
+                                 (end in [11, 12] and start in [23, 24]))):  # hip to shoulder
+                continue
+            filtered_connections.append((start, end))
+        
+        connections = filtered_connections
     else:
         connections = HAND_CONNECTIONS
         head_width = 0.005
@@ -238,6 +333,9 @@ def visualize_differences(
 
     # Arrows: movement from prev to next
     for i in landmark_differences:
+        # Skip if point is hidden
+        if landmark_type == "pose" and i not in visible_points:
+            continue
         plt.arrow(
             x1[i],
             y1[i],
