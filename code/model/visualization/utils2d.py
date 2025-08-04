@@ -345,7 +345,7 @@ def visualize_landmark_features(
     plt.yticks([])
     
     plt.gca().invert_yaxis()
-    plt.title(title)
+    plt.title(title, fontsize = 16)
     plt.axis("equal")
     
     # Create legend elements
@@ -533,10 +533,10 @@ def visualize_differences(
         visible_y1 = [y1[i] for i in visible_points]
         visible_x2 = [x2[i] for i in visible_points]
         visible_y2 = [y2[i] for i in visible_points]
-        plt.scatter(visible_x1, visible_y1, c=prev_point_color, label="Prev Frame", zorder=2, edgecolors=prev_connection_color)
+        plt.scatter(visible_x1, visible_y1, c=prev_point_color, label="Current Frame", zorder=2, edgecolors=prev_connection_color)
         plt.scatter(visible_x2, visible_y2, c=next_point_color, label="Next Frame", zorder=2, edgecolors=next_connection_color)
     else:
-        plt.scatter(x1, y1, c=prev_point_color, label="Prev Frame", zorder=2, edgecolors=prev_connection_color)
+        plt.scatter(x1, y1, c=prev_point_color, label="Current Frame", zorder=2, edgecolors=prev_connection_color)
         plt.scatter(x2, y2, c=next_point_color, label="Next Frame", zorder=2, edgecolors=next_connection_color)
 
     # Arrows: movement from prev to next
@@ -562,7 +562,7 @@ def visualize_differences(
     plt.xticks([])
     plt.yticks([])
     plt.gca().invert_yaxis()
-    plt.title(title)
+    plt.title(title, fontsize = 16)
     plt.axis("equal")
 
     # Create custom legend handles
@@ -597,14 +597,14 @@ def visualize_differences(
             return patch
 
     legend_elements = [
-        plt.Line2D([0], [0], marker='o', color=prev_connection_color, markerfacecolor=prev_point_color, markersize=6, label="Prev Frame", linewidth=2,linestyle=':'),
+        plt.Line2D([0], [0], marker='o', color=prev_connection_color, markerfacecolor=prev_point_color, markersize=6, label="Current Frame", linewidth=2,linestyle=':'),
         plt.Line2D([0], [0], marker='o', color=next_connection_color, markerfacecolor=next_point_color, markersize=6, label="Next Frame", linewidth=2,linestyle=':'),
         arrow_patch  # Our custom arrow patch
     ]
     
     legend = plt.legend(handles=legend_elements, 
                        handler_map={mpatches.FancyArrowPatch: ArrowHandler()},
-                       labels=["Prev Frame", "Next Frame", "Difference"],
+                       labels=["Current Frame", "Next Frame", "Difference"],
                        framealpha=1
                        )
     
