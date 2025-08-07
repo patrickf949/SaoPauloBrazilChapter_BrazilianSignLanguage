@@ -463,7 +463,7 @@ For Sign Language recognition from video, the most common  approach as of late i
 #### Train / Validation / Test split
 - diagram from slides
 #### Feature Engineering
-Using the pose landmark features alone is not sufficient for a model to understand the data. Since we understand what each pose landmark represents, we can imagine and engineer informative features from them. This is common wisdom when using pose landmarks to model Sign Languages. 
+Using the pose landmark features alone is not sufficient for a model to understand the data. Since we understand what each pose landmark represents, we can imagine and engineer informative features from them. This is common practice when using pose landmarks to model Sign Languages. 
 
 We engineered the following features directly from a single 
 frame of pose landmarks, to better represent the information 
@@ -475,19 +475,20 @@ in an individual frame. :
     - wrist & finger positions
     - arm position
 
+
 We engineered three main categories of features from the MediaPipe pose and hand landmarks:
 
-1. **Static Frame Features (Angles & Distances)**
+1. **Static Frame Features (Distances & Angles)**
    - Hand Features:
+     - Inter-finger distances (e.g., fingertip-to-fingertip distances, finger base spread distances)
      - Finger joint angles (base, bend, and tip angles for each finger)
      - Inter-finger spread angles (e.g., thumb-index spread, index-ring spread)
-     - Inter-finger distances (e.g., fingertip-to-fingertip distances, finger base spread distances)
    - Pose Features:
-     - Arm joint angles (shoulder, elbow, wrist angles)
      - Hand-to-body distances (hands to head, shoulders, and cross-body measurements)
+     - Arm joint angles (shoulder, elbow, wrist angles)
      - Upper body posture angles (shoulder tilt, neck tilt)
 
-2. **Dynamic Features (Frame-to-Frame Differences)**
+2. **Dynamic Frame-to-Frame Features (Landmark Motion Vectors)**
    - Hand motion vectors:
      - Wrist movement
      - Fingertip trajectories
@@ -497,27 +498,18 @@ We engineered three main categories of features from the MediaPipe pose and hand
      - Wrist and hand landmark movements
      - Head/nose position changes
 
-3. **Global Features (Sequence-Level Statistics)**
-   - Movement range statistics
-   - Velocity and acceleration profiles
-   - Spatial distribution metrics of hand positions
-   - Temporal pattern features
+3. **Metadata Features (Some had different values frame-to-frame, some were constant across the frame series)**
+   - Real-time duration between the detected motion start and end (constant)
+   - The relative position of the frame in the full series (variable)
+   - Mask indicating if the hand landmarks for the current frame are interpolated (variable)
+   - Mask indicating the degree of interpolation for the current frame (variable)
+
+<figure style="text-align: center;">
+<img src="assets/feature_all_h.png" alt="isolated" title="hover hint" style="width: 75%;"/>
+  <figcaption>Figure 1: A description of the image</figcaption>
+</figure>
 
 All features were computed in 2D space and normalized appropriately to ensure consistency across different video sources and signers. The combination of these feature types allows the model to capture both the static pose information and the dynamic aspects of sign language gestures.
-
-We engineered the follow features across sequential frames, 
-to better represent the information and relationship across 
-frames:
-- angle of the line between 3 landmarks representing:
-    - wrist & finger positions
-    - arm position
-- distance between 2 landmarks representing:
-    - wrist & finger positions
-    - arm position
-We added the following features from across the whole frame 
-series that would be constant across frame’s feature vector 
-in an individual series. The goal of these was to represent 
-traits about the whole serie
 
 #### Data Augmentation
 - diagram from slides??
