@@ -9,27 +9,17 @@ import os
 import sys
 from pathlib import Path
 
-# Add /code modules dir to sys.path so imports work
-current_dir = Path(__file__).resolve().parent
-root_dir = current_dir.parent.parent
+from services.model_references import (
+    load_obj,
+    get_sampling_function,
+    InferenceEngine,
+    FeatureProcessor,
+    current_dir
+)
 
-# ------------------------------------------------------------
-# if /webapp doesn't need to be standalone, uncomment this line to import directly from /code:
-code_dir = root_dir / 'code'
-# ------------------------------------------------------------
-# if /webapp should be standalone, run sync_code.py script, and uncomment this line:
-# code_dir = current_dir / 'shared_code'
-
-if str(code_dir) not in sys.path:
-    sys.path.insert(0, str(code_dir))
-
-# Import /code modules. (Type ignore comments for Pylance)
-from model.utils.utils import load_obj # type: ignore
-from model.dataset.frame_sampling import get_sampling_function # type: ignore
-from model.utils.inference import InferenceEngine # type: ignore
-from model.features.feature_processor import FeatureProcessor # type: ignore
 
 logger = logging.getLogger(__name__)
+
 
 def get_inference_engine(config: Config = Depends(Config.get_instance)) -> InferenceEngine:
     """
@@ -45,7 +35,8 @@ def get_inference_engine(config: Config = Depends(Config.get_instance)) -> Infer
         model_class = load_obj(config.config_yaml.model.class_name)
         model = model_class(**config.config_yaml.model.params)
         checkpoint_path = config.CHECKPOINT_PATH
-        model.load_state_dict(torch.load(checkpoint_path, map_location='cpu')['model_state_dict'])
+        model.load_state_dict(torch.load(
+            checkpoint_path, map_location='cpu')['model_state_dict'])
         model.eval()
         inference_engine = InferenceEngine(
             model=model,
@@ -57,6 +48,7 @@ def get_inference_engine(config: Config = Depends(Config.get_instance)) -> Infer
     except Exception as e:
         logger.error(f"Failed to initialize InferenceEngine: {str(e)}")
         raise
+
 
 def get_feature_processor(config: Config = Depends(Config.get_instance)) -> FeatureProcessor:
     """
@@ -74,7 +66,8 @@ def get_feature_processor(config: Config = Depends(Config.get_instance)) -> Feat
             dataset_config=config.config_yaml.dataset,
             features_config=config.config_yaml.features,
             augmentation_config=config.config_yaml.augmentation,
-            landmarks_dir=os.path.join(current_dir, 'data', 'preprocessed', 'landmarks', 'v0'),
+            landmarks_dir=os.path.join(
+                current_dir, 'data', 'preprocessed', 'landmarks', 'v0'),
             seed=0
         )
         logger.info("Initialized FeatureProcessor")
@@ -82,6 +75,7 @@ def get_feature_processor(config: Config = Depends(Config.get_instance)) -> Feat
     except Exception as e:
         logger.error(f"Failed to initialize FeatureProcessor: {str(e)}")
         raise
+
 
 def get_sampling_func(config: Config = Depends(Config.get_instance)) -> Callable:
     """
@@ -94,8 +88,10 @@ def get_sampling_func(config: Config = Depends(Config.get_instance)) -> Callable
         Callable: Frame sampling function.
     """
     try:
-        sampling_func = get_sampling_function(config.config_yaml.dataset.frame_sampling_test.method)
-        logger.info(f"Initialized sampling function: {config.config_yaml.dataset.frame_sampling_test.method}")
+        sampling_func = get_sampling_function(
+            config.config_yaml.dataset.frame_sampling_test.method)
+        logger.info(
+            f"Initialized sampling function: {config.config_yaml.dataset.frame_sampling_test.method}")
         return sampling_func
     except Exception as e:
         logger.error(f"Failed to initialize sampling function: {str(e)}")
