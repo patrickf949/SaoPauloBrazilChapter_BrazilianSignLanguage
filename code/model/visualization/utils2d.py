@@ -345,7 +345,7 @@ def visualize_landmark_features(
     plt.yticks([])
     
     plt.gca().invert_yaxis()
-    plt.title(title, fontsize = 16)
+    plt.title(title, fontsize = 20, y=1.025)
     plt.axis("equal")
     
     # Create legend elements
@@ -380,7 +380,9 @@ def visualize_landmark_features(
     
     # Always show legend since we always have landmark points
     plt.legend(handles=legend_elements,
-              framealpha=1)
+              framealpha=1,
+              fontsize=14,
+              loc="upper right")
     plt.tight_layout()
 
 def visualize_differences(
@@ -562,7 +564,7 @@ def visualize_differences(
     plt.xticks([])
     plt.yticks([])
     plt.gca().invert_yaxis()
-    plt.title(title, fontsize = 16)
+    plt.title(title, fontsize = 20, y=1.025)
     plt.axis("equal")
 
     # Create custom legend handles
@@ -605,7 +607,9 @@ def visualize_differences(
     legend = plt.legend(handles=legend_elements, 
                        handler_map={mpatches.FancyArrowPatch: ArrowHandler()},
                        labels=["Current Frame", "Next Frame", "Difference"],
-                       framealpha=1
+                       framealpha=1,
+                       fontsize=14,
+                       loc="upper right"
                        )
     
     plt.tight_layout()
