@@ -1,5 +1,12 @@
+import os
 from pathlib import Path
 from omegaconf import OmegaConf
+import cloudinary
+import logging
+# Configure logging
+
+logging.basicConfig(level=logging.INFO)
+
 
 class Config:
     # Base directories
@@ -41,6 +48,18 @@ class Config:
         # Ensure directories exist
         for directory in [self.INTERIM_DIR, self.PREPROCESSED_DIR, self.OUTPUT_DIR]:
             directory.mkdir(parents=True, exist_ok=True)
+        
+        cloudinary.config(
+            cloud_name=os.getenv("CLOUDINARY_NAME"),
+            api_key=os.getenv("CLOUDINARY_API_KEY"),
+            api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+            secure=True,
+        )
+
+        self.cloudinary_cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME")
+        self.cloudinary_base_url = f"https://res.cloudinary.com/{self.cloudinary_cloud_name}"
+        
+
 
     @classmethod
     def get_instance(cls):
