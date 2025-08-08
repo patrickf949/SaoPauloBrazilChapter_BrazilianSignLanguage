@@ -1,49 +1,29 @@
-import os
-import sys
-import json
 import logging
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
-from fastapi.responses import JSONResponse
-from pathlib import Path
+from fastapi import FastAPI, UploadFile, File, Depends
 import numpy as np
-import pandas as pd
-import torch
-from typing import Dict, Any, Callable
 from config import Config
 from dependencies import get_inference_engine, get_feature_processor, get_sampling_func
 from schemas import PredictionResponse
-from utils import save_uploaded_file, cleanup_files
+from utils import cleanup_files
+from services import (
+    PredictionService,
+    ResultsSaver,
+    FeaturePipeline,
+    VideoValidator,
+    VideoSaver,
+    MetadataExtractor,
+    VideoAnalyzerService,
+    PreprocessorService,
+    LandmarkDrawerService,
+    MetadataFilterService
+)
 
-# Add /code modules dir to sys.path so imports work
-current_dir = Path(__file__).resolve().parent
-root_dir = current_dir.parent.parent
 
-# ------------------------------------------------------------
-# if /webapp doesn't need to be standalone, uncomment this line to import directly from /code:
-code_dir = root_dir / 'code'
-# ------------------------------------------------------------
-# if /webapp should be standalone, run sync_code.py script, and uncomment this line:
-# code_dir = current_dir / 'shared_code'
+from services.model_references import FeatureProcessor
+from services.model_references import InferenceEngine
 
-if str(code_dir) not in sys.path:
-    sys.path.insert(0, str(code_dir))
 
-# Import /code modules. (Type ignore comments for Pylance)
-from data.download_videos import get_video_metadata # type: ignore
-from preprocess.video_analyzer import VideoAnalyzer # type: ignore
-from preprocess.preprocessor import Preprocessor # type: ignore
-from preprocess.vizualisation import draw_landmarks_on_video_with_frame # type: ignore
-from model.features.feature_processor import FeatureProcessor # type: ignore
-from model.utils.inference import InferenceEngine # type: ignore
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-# Import project modules
-from typing import Callable
-
 app = FastAPI(title="Video Sign Language Prediction API")
 
 @app.post("/predict/", response_model=PredictionResponse)
@@ -54,147 +34,54 @@ async def predict_video(
     feature_processor: FeatureProcessor = Depends(get_feature_processor),
     sampling_func: callable = Depends(get_sampling_func)
 ):
-    # """
-    # Endpoint to upload a video file, process it, and return sign language predictions.
-    # """
-    # try:
-        # Validate file extension
-        if not file.filename.lower().endswith('.mp4'):
-            raise HTTPException(status_code=400, detail="Only .mp4 files are supported")
+    # 1. Validate video
+    VideoValidator.validate_extension(file.filename)
 
-        # Save uploaded file
-        video_path = await save_uploaded_file(file, config.INTERIM_DIR)
-        logger.info(f"Uploaded video saved to {video_path}")
+    # 2. Save file
+    video_path = await VideoSaver.save(file, config.INTERIM_DIR)
 
-        # Get video metadata
-        metadata = get_video_metadata(str(video_path))
-        if not metadata:
-            raise HTTPException(status_code=500, detail="Failed to extract video metadata")
-        metadata['data_source'] = 'app'
-        metadata_row = pd.Series(metadata)
-        logger.info(f"Video metadata: {metadata}")
+    # 3. Extract metadata
+    metadata_row = MetadataExtractor.extract(str(video_path))
 
-        # Analyze video
-        analyzer = VideoAnalyzer(
-            metadata_row,
-            config.TIMESTAMP,
-            str(config.BASE_DIR),
-            verbose=False,
-            motion_detection_version=config.MOTION_VERSION,
-            pose_detection_version=config.POSE_VERSION
-        )
-        analyzer.pose_detect()
-        analyzer.pose_analyze()
-        analyzer.motion_detect()
-        motion_analysis = analyzer.motion_analyze()
-        analysis_info = analyzer.save_analysis_info()
-        logger.info("Video analysis completed")
+    # 4. Analyze video
+    analyzer = VideoAnalyzerService.analyze(metadata_row, config)
 
-        # Update preprocessing parameters
-        preprocess_params = config.PREPROCESSING_PARAMS.copy()
-        preprocess_params.update({
-            "start_frame": analysis_info['motion_analysis']['start_frame'],
-            "end_frame": analysis_info['motion_analysis']['end_frame'],
-        })
+    # 5. Preprocess
+    landmarks_path = PreprocessorService.preprocess(metadata_row, analyzer, config)
 
-        # Preprocess video
-        preprocessor = Preprocessor(
-            metadata_row,
-            preprocess_params,
-            str(config.BASE_DIR),
-            config.MOTION_VERSION,
-            config.POSE_VERSION,
-            config.PREPROCESS_VERSION,
-            verbose=False,
-            save_intermediate=False,
-        )
-        landmarks_path = preprocessor.preprocess_landmarks()
-        logger.info(f"Preprocessed landmarks saved to {landmarks_path}")
+    # 6. Annotate video
+    annotated_path = LandmarkDrawerService.draw(landmarks_path, metadata_row, config, file.filename)
 
-        # Generate skeleton video
-        landmarks = np.load(landmarks_path, allow_pickle=True)
-        output_video_path = config.OUTPUT_DIR / file.filename
-        annotated_frames = draw_landmarks_on_video_with_frame(
-            results_list=landmarks,
-            output_path=str(output_video_path),
-            fps=metadata_row['fps']
-        )
-        logger.info(f"Skeleton video saved to {output_video_path}")
+    # 7. Sample & process features
+    frames = np.load(landmarks_path, allow_pickle=True)
+    sample_indices = sampling_func(
+        num_frames=len(frames),
+        params=config.config_yaml.dataset.frame_sampling_test.params
+    )
+    metadata_row_proc = MetadataFilterService.load_and_filter(config, file.filename)
+    input_sample = FeaturePipeline.process(frames, sample_indices, metadata_row_proc, feature_processor)
 
-        # Process features
-        frames = np.load(landmarks_path, allow_pickle=True)
-        sample_indices = sampling_func(
-            num_frames=len(frames),
-            params=config.config_yaml.dataset.frame_sampling_test.params
-        )
+    # 8. Predict
+    prediction, probs, label_encoding = PredictionService.predict_and_format(
+        input_sample, inference_engine, config.LABEL_ENCODING_PATH
+    )
 
-        # Load preprocessed metadata
-        metadata_csv_path = config.PREPROCESSED_DIR / f"landmarks_metadata_{config.PREPROCESS_VERSION}.csv"
-        if not metadata_csv_path.exists():
-            raise HTTPException(status_code=500, detail="Metadata CSV not found")
-        preprocessed_metadata = pd.read_csv(metadata_csv_path)
-        metadata_row_filtered = preprocessed_metadata.loc[
-            preprocessed_metadata['filename'] == file.filename
-        ]
+    output_video_path = str(config.OUTPUT_DIR / file.filename)
+    # Upload skeleton video to Cloudinary
+    cloud_url = ResultsSaver.upload_video_to_cloudinary(output_video_path)
 
-        if len(metadata_row_filtered) == 0:
-            raise HTTPException(status_code=404, detail=f"No metadata found for video {file.filename}")
-        if len(metadata_row_filtered) > 1:
-            raise HTTPException(status_code=500, detail=f"Multiple metadata entries found for video {file.filename}")
+    # 9. Save results
+    ResultsSaver.save_txt(prediction, probs, label_encoding, file.filename, config.OUTPUT_DIR)
 
-        metadata_row_proc = metadata_row_filtered.iloc[0].copy()
-        metadata_row_proc['filename'] = metadata_row_proc['filename'].replace(".mp4", ".npy")
+    # 10. Cleanup
+    cleanup_files([video_path, landmarks_path,output_video_path])
 
-        sample_feature_tensors = []
-        for sample_idx_list in sample_indices:
-            sample_features = feature_processor.process_frames(
-                frames, sample_idx_list, metadata_row_proc, 'test'
-            )
-            sample_feature_tensors.append(sample_features)
-        input_sample = sample_feature_tensors[0]
-        logger.info("Feature processing completed")
-
-        # Perform inference
-        prediction, probs = inference_engine.predict(
-            inputs=input_sample,
-            return_full_probs=True
-        )
-        logger.info(f"Prediction: {prediction}, Probabilities: {probs.tolist()}")
-
-        # Format probabilities
-        with open(config.LABEL_ENCODING_PATH, "r") as f:
-            label_encoding = json.load(f)
-        probs_dict = {label_encoding[str(i)]: float(prob) for i, prob in enumerate(probs)}
-        probs_str = ", ".join(f"{label}: {prob:.3f}" for label, prob in probs_dict.items())
-
-        # Save results to text file
-        output_txt_path = config.OUTPUT_DIR / file.filename.replace(".mp4", ".txt")
-        with open(output_txt_path, "w") as f:
-            f.write(f"prediction: \n\tclass {prediction}: {label_encoding[str(int(prediction))]}\n")
-            f.write(f"probabilities: {probs_str}\n")
-        logger.info(f"Results saved to {output_txt_path}")
-
-        # Clean up interim files
-        cleanup_files([video_path, landmarks_path])
-        logger.info("Interim files cleaned up")
-
-        # Prepare response
-        return {
-            "prediction": {
-                "class_id": int(prediction),
-                "label": label_encoding[str(int(prediction))]
-            },
-            "probabilities": probs_dict,
-            "output_files": {
-                "skeleton_video": str(output_video_path),
-                "results_txt": str(output_txt_path)
-            }
+    # 11. Response
+    return PredictionResponse(
+        prediction={"class_id": int(prediction), "label": label_encoding[str(int(prediction))]},
+        probabilities={label_encoding[str(i)]: float(p) for i, p in enumerate(probs)},
+        output_files={
+            "skeleton_video": cloud_url,
+            "results_txt": str(config.OUTPUT_DIR / file.filename.replace(".mp4", ".txt"))
         }
-
-    # except HTTPException as e:
-    #     logger.error(f"HTTP error: {e.detail}")
-    #     raise
-    # except Exception as e:
-    #     logger.error(f"Unexpected error: {e}")
-    #     raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-    
+    )
