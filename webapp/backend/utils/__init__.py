@@ -14,13 +14,19 @@ async def save_uploaded_file(file: UploadFile, interim_dir: Path) -> Path:
         shutil.copyfileobj(file.file, f)
     return video_path
 
-def cleanup_files(file_paths: list[Path]) -> None:
+def cleanup_files(file_paths: list[str]) -> None:
     """
     Clean up interim files to free disk space.
     """
+    
     for file_path in file_paths:
+        path_obj = Path(file_path)
+
+        # Delete the file if it exists
+        if path_obj.exists():
+            path_obj.unlink()
         try:
-            file_path.unlink()
+            path_obj.unlink()
             logger.info(f"Deleted interim file: {file_path}")
         except Exception as e:
             logger.warning(f"Failed to delete {file_path}: {e}")
