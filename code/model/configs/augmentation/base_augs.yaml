@@ -9,7 +9,7 @@ train:
     class_name: model.dataset.augmentations.LandmarksNoise
     p: 0.5
     params:
-      noise_std: 0.01
+      noise_std: 0.05
 
 val:
 test: 

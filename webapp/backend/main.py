@@ -8,28 +8,38 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-from typing import Dict, Any
+from typing import Dict, Any, Callable
 from config import Config
 from dependencies import get_inference_engine, get_feature_processor, get_sampling_func
 from schemas import PredictionResponse
 from utils import save_uploaded_file, cleanup_files
-from data.download_videos import get_video_metadata
-from preprocess.video_analyzer import VideoAnalyzer
-from preprocess.preprocessor import Preprocessor
-from preprocess.visualization import draw_landmarks_on_video_with_frame
 
-from models.feature_processor import FeatureProcessor
-from models.inference import InferenceEngine
+# Add /code modules dir to sys.path so imports work
+current_dir = Path(__file__).resolve().parent
+root_dir = current_dir.parent.parent
+
+# ------------------------------------------------------------
+# if /webapp doesn't need to be standalone, uncomment this line to import directly from /code:
+code_dir = root_dir / 'code'
+# ------------------------------------------------------------
+# if /webapp should be standalone, run sync_code.py script, and uncomment this line:
+# code_dir = current_dir / 'shared_code'
+
+if str(code_dir) not in sys.path:
+    sys.path.insert(0, str(code_dir))
+
+# Import /code modules. (Type ignore comments for Pylance)
+from data.download_videos import get_video_metadata # type: ignore
+from preprocess.video_analyzer import VideoAnalyzer # type: ignore
+from preprocess.preprocessor import Preprocessor # type: ignore
+from preprocess.vizualisation import draw_landmarks_on_video_with_frame # type: ignore
+from model.features.feature_processor import FeatureProcessor # type: ignore
+from model.utils.inference import InferenceEngine # type: ignore
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Add project root to sys.path
-root_dir = Path(__file__).resolve().parent.parent.parent
-code_dir = root_dir / 'code'
-if str(code_dir) not in sys.path:
-    sys.path.insert(0, str(code_dir))
 
 # Import project modules
 from typing import Callable
@@ -57,7 +67,7 @@ async def predict_video(
         logger.info(f"Uploaded video saved to {video_path}")
 
         # Get video metadata
-        metadata = await get_video_metadata(str(video_path))
+        metadata = get_video_metadata(str(video_path))
         if not metadata:
             raise HTTPException(status_code=500, detail="Failed to extract video metadata")
         metadata['data_source'] = 'app'
@@ -171,7 +181,7 @@ async def predict_video(
         # Prepare response
         return {
             "prediction": {
-                "class": int(prediction),
+                "class_id": int(prediction),
                 "label": label_encoding[str(int(prediction))]
             },
             "probabilities": probs_dict,
