@@ -1,14 +1,33 @@
 from __future__ import annotations
 from fastapi import Depends
 from config import Config
-from models.dataset.frame_sampling import get_sampling_function
-from models.inference import InferenceEngine
-from utils.utils import load_obj
-from models.feature_processor import FeatureProcessor
 from omegaconf import DictConfig
 import torch
 import logging
 from typing import Callable
+import os
+import sys
+from pathlib import Path
+
+# Add /code modules dir to sys.path so imports work
+current_dir = Path(__file__).resolve().parent
+root_dir = current_dir.parent.parent
+
+# ------------------------------------------------------------
+# if /webapp doesn't need to be standalone, uncomment this line to import directly from /code:
+code_dir = root_dir / 'code'
+# ------------------------------------------------------------
+# if /webapp should be standalone, run sync_code.py script, and uncomment this line:
+# code_dir = current_dir / 'shared_code'
+
+if str(code_dir) not in sys.path:
+    sys.path.insert(0, str(code_dir))
+
+# Import /code modules. (Type ignore comments for Pylance)
+from model.utils.utils import load_obj # type: ignore
+from model.dataset.frame_sampling import get_sampling_function # type: ignore
+from model.utils.inference import InferenceEngine # type: ignore
+from model.features.feature_processor import FeatureProcessor # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +69,14 @@ def get_feature_processor(config: Config = Depends(Config.get_instance)) -> Feat
         FeatureProcessor: Configured feature processor.
     """
     try:
-        feature_processor = FeatureProcessor(config=config.config_yaml)
+        feature_processor = FeatureProcessor(
+            dataset_split='test',
+            dataset_config=config.config_yaml.dataset,
+            features_config=config.config_yaml.features,
+            augmentation_config=config.config_yaml.augmentation,
+            landmarks_dir=os.path.join(current_dir, 'data', 'preprocessed', 'landmarks', 'v0'),
+            seed=0
+        )
         logger.info("Initialized FeatureProcessor")
         return feature_processor
     except Exception as e:

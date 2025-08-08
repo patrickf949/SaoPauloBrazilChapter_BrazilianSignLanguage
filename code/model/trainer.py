@@ -55,6 +55,30 @@ def load_checkpoint(filepath: str) -> dict:
     print(f"Loaded checkpoint from: {filepath}")
     return checkpoint
 
+def save_done_file(run_dir: str, reason: str, final_epoch: int, total_epochs: int) -> None:
+    """Save a done.txt file indicating training completion.
+    
+    Args:
+        run_dir: Directory where the training run is saved
+        reason: Reason for completion ("epochs_finished" or "patience_reached")
+        final_epoch: The final epoch reached
+        total_epochs: Total number of epochs configured
+    """
+    done_file_path = os.path.join(run_dir, "done.txt")
+    completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    with open(done_file_path, "w") as f:
+        f.write(f"Training completed at: {completion_time}\n")
+        f.write(f"Reason: {reason}\n")
+        f.write(f"Final epoch: {final_epoch}\n")
+        f.write(f"Total epochs configured: {total_epochs}\n")
+        if reason == "patience_reached":
+            f.write(f"Early stopping triggered after {final_epoch} epochs\n")
+        else:
+            f.write(f"All {total_epochs} epochs completed successfully\n")
+    
+    print(f"Training completion marked in: {done_file_path}")
+
 def get_dataset(config: DictConfig):
     # Always generate fresh training metadata
     landmarks_dir, metadata_path = get_data_paths(config.dataset.data_version)
@@ -239,6 +263,9 @@ def train(config: DictConfig):
             print(f"Patience: {patience_counter}/{config.training.patience}")
             if patience_counter >= config.training.patience:
                 print("Early stopping triggered.")
+                # Save done file for early stopping
+                done_dir = run_dir if resume and run_dir else os.path.dirname(log_path)
+                save_done_file(done_dir, "patience_reached", epoch + 1, num_epochs)
                 break
 
         # Step the scheduler if it exists
@@ -352,8 +379,11 @@ def train(config: DictConfig):
     # Close logger
     logger.close()
 
-    # return metrics["sample_acc"], metrics.get("sample_loss", 0.0), best_epoch
+    # Save done file for normal completion
+    done_dir = run_dir if resume and run_dir else os.path.dirname(log_path)
+    save_done_file(done_dir, "epochs_finished", num_epochs, num_epochs)
 
+    # return metrics["sample_acc"], metrics.get("sample_loss", 0.0), best_epoch
 
 if __name__ == "__main__":
     train()

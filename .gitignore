@@ -29,3 +29,5 @@ __pycache__/
 **/data/output/
 # MacOS system files
 .DS_Store
+
+/docs
