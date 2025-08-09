@@ -171,16 +171,17 @@ The key technical points are:
 > - *Incorporate a specialized medical vocabulary of at least 1,000 terms*
 
 
-The scale of the project as written there and the other 4 points is very large, and very ambitious for a 3-month project. It is worth noting we did not begin the project with a high quality / quantity dataset. Considering that we didn't begin the project with a dataset, items in the 'Vocabulary Coverage' section were simply not feasible. So we knew we would have to focus on a subset of the problem statement and redefine the scope.
+The scale of the project as written there and the other 4 points is very large, and very ambitious for a 3-month project. It is worth noting we did not begin the project with a high quality / quantity dataset. 
 
-However we didn't abandon this problem statement, instead we used it's ambition to push ourselves to aim high, and it's vision as the basis for our decision making about the actual scope of the project. For example, when deciding which words in the dataset to focus on, we intentionally selected words that would be more likely to be used in a medical context over others. We also worked with the perspective that this is an initial proof-of-concept, of a solution we would like to develop further in future.
+Considering that we didn't begin the project with a dataset, items in the 'Vocabulary Coverage' section were simply not feasible. So we knew we would have to focus on a subset of the problem statement and redefine the scope.
 
+However we didn't abandon this problem statement, instead we used it's ambition to push ourselves to aim high, and it's vision as the basis for our decision making about the actual scope of the project. 
+
+For example, when deciding which words in the dataset to focus on, we intentionally selected words that would be more likely to be used in a medical context over others. We also worked with the perspective that this is an initial proof-of-concept, of a solution we would like to develop further in future.
 
 
 #  **Research & Planning**
-
-## **Research**
-To decide on the scope of the project and our plan for development, we began with research. 
+To decide on the scope of the project and our plan for development, the first task was to conduct research and share findings with each other. 
 
 We investigated:
 
@@ -196,11 +197,11 @@ We investigated:
     - What datasets did they use?
     - What were there results, and can we replicate or improve on them?
     
-### **Domain: Sign Language Processing (SLP)**
+## **Domain: Sign Language Processing (SLP)**
 
 Sign Language Processing (SLP) is a field of artificial intelligence that combines Natural Language Processing (NLP) and Computer Vision (CV) to automatically process and analyze sign language content. Unlike spoken languages that use audio signals, signed languages use visual-gestural modality through manual articulations combined with non-manual elements like facial expressions and body movements.
 
-**Key SLP Tasks Relevant to Our Project:**
+### **Key SLP Tasks Relevant to Our Project:**
 
 1. **Sign Language Recognition**: Identifying individual signs or sequences of signs from video input
 2. **Sign Language Translation**: Converting sign language videos into spoken language text (our primary focus)
@@ -208,13 +209,34 @@ Sign Language Processing (SLP) is a field of artificial intelligence that combin
 4. **Sign Language Detection**: Determining if a video contains sign language content
 5. **Sign Language Segmentation**: Identifying boundaries between different signs in continuous signing
 
-**Challenges in SLP:**
+### **Challenges in SLP:**
 - **Visual-gestural modality**: Unlike spoken languages, signed languages lack a written form, forcing researchers to work directly with raw video signals
 - **Simultaneity**: Multiple articulators (hands, face, body) can convey information simultaneously
 - **Spatial coherence**: Spatial relationships and movements are crucial for meaning
 - **Lack of standardization**: Limited annotated datasets, especially for languages like Brazilian Sign Language (Libras)
 
-*Reference: [Sign Language Processing Star](https://research.sign.mt/) - A comprehensive resource for SLP research and datasets*
+### **Common Approaches to SLP:**
+
+#### **1. Data Representation:**
+- **Video-based**: Process raw video directly (most common since sign languages have no written form)
+- **Pose estimation**: Extract hand, face, and body keypoints using tools like MediaPipe or OpenPose
+- **Symbolic notation**: Use intermediate representations like glosses (word-level labels)
+
+#### **2. Feature Extraction:**
+- **CNNs**: Extract visual features from video frames using deep learning models
+- **Pose landmarks**: Use hand shapes, movements, and facial expressions as input features
+- **Motion analysis**: Track movement patterns between video frames
+
+#### **3. Sequence Modeling:**
+- **LSTMs/RNNs**: Handle the time-dependent nature of sign language sequences
+- **Transformers**: Use attention mechanisms for understanding sign relationships
+- **Graph networks**: Model connections between different body parts
+
+### **Recommended Reads:** 
+- [Sign Language Processing - Overview of the Field](https://research.sign.mt/)
+    - A comprehensive and up-to-date resource covering the field of SLP research and the dataset landscape
+- [A review of deep learning-based approaches to sign language processing](https://www.tandfonline.com/doi/full/10.1080/01691864.2024.2442721)
+    - A recent paper from covering the current state of the art in SLP, data availability, and the challenges of the field.
 
 
 ## **Data Sources: LIBRAS Datasets**
@@ -230,21 +252,21 @@ table th, table td {
 }
 </style>
 <colgroup>
-<col style="width: 20%;">
+<col style="width: 25%;">
 <col style="width: 6%;">
-<col style="width: 15%;">
 <col style="width: 12%;">
-<col style="width: 15%;">
+<col style="width: 12%;">
+<col style="width: 14%;">
 <col style="width: 10%;">
-<col style="width: 12%;">
-<col style="width: 12%;">
+<col style="width: 10%;">
+<col style="width: 10%;">
 </colgroup>
 <tr>
 <th style="text-align: left;">Dataset</th>
 <th>Year</th>
 <th>Type</th>
 <th>Format</th>
-<th>Access</th>
+<th>Accessibility</th>
 <th>Number of Classes</th>
 <th>Examples per Class</th>
 <th>Total Examples</th>
@@ -256,7 +278,7 @@ table th, table td {
 <td>Images</td>
 <td><a href="https://www.kaggle.com/datasets/alvarole/brazilian-sign-language-words-recognition">Downloadable</a></td>
 <td>15</td>
-<td>~60 - 1000</td>
+<td>60 - 1000</td>
 <td>~5000</td>
 </tr>
 <tr>
@@ -310,7 +332,7 @@ table th, table td {
 <td>4089</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Federal University of Viçosa (UFV) – LIBRAS-Portuguese Dictionary Dataset</strong></td>
+<td style="text-align: left;"><strong>Federal University of Viçosa (UFV) - LIBRAS-Portuguese Dictionary Dataset</strong></td>
 <td>-</td>
 <td>Words</td>
 <td>Videos</td>
@@ -320,7 +342,7 @@ table th, table td {
 <td>1029</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>National Institute of Deaf Education (INES) – LIBRAS Dictionary Dataset</strong></td>
+<td style="text-align: left;"><strong>National Institute of Deaf Education (INES) - LIBRAS Dictionary Dataset</strong></td>
 <td>-</td>
 <td>Words</td>
 <td>Videos</td>
@@ -355,7 +377,7 @@ table th, table td {
 | **SignBank - LIBRAS Dataset (Universidade Federal de Santa Catarina)** | - | Words | Videos | [Scrapable](https://signbank.libras.ufsc.br/en) | 3090 | 1 | 3090 | -->
 
 
-### **Datasets selected for our task**
+### **Selecting datasets for our task**
 
 We decided that although it is more difficult, we wanted to focus on sign **videos**, not images. 
  - This would be more applicable to a real-world situation.
@@ -367,63 +389,96 @@ Sign sentences would be the most similar to real-world use, and also the most ch
   - However we didn't find any datasets with this type of data. 
   - Even in SLP more broadly, large high quality datasets of sentences are rare, so it is not surprising we couldn't find any for LIBRAS.
 
+With these criteria in mind, the datasets we selected for our task were:
+- [INES](https://www.ines.gov.br/dicionario-de-libras/)
+    - National Institute of Deaf Education (INES) – LIBRAS Dictionary Dataset
+- [Signbank](https://signbank.libras.ufsc.br/pt)
+    - SignBank - LIBRAS Dataset (Universidade Federal de Santa Catarina)
+- [UFV](https://sistemas.cead.ufv.br/capes/dicionario/)
+    - Federal University of Viçosa (UFV) – LIBRAS-Portuguese Dictionary Dataset
+- [V-Librasil](https://ieee-dataport.org/documents/v-librasil-new-dataset-signs-brazilian-sign-language-libras#files)
+    - V-Librasil - A New Dataset with Signs in Brazilian Sign Language (Libras)
 
+*(All 4 highlighted in bold in the table above)*
 
 ## **Exisiting Literature: Sign Language Processing with LIBRAS Data**
 
-We found a few papers working with LIBRAS data, but most were not directly relevant to our project, as they focussed on different tasks, like images instead of videos, or classification of movement types instead of words.
+We found a few papers working with LIBRAS data, but most were not directly relevant to our project, as they focussed on different tasks. Like images instead of videos, or classification of movement types instead of words.
+
+### **2023 Cross-Dataset Study**
 
 The most relevant paper we found was the 2023 paper [A Cross-Dataset Study on the Brazilian Sign Language Translation](https://openaccess.thecvf.com/content/ICCV2023W/CLVL/papers/de_Avellar_Sarmento_A_Cross-Dataset_Study_on_the_Brazilian_Sign_Language_Translation_ICCVW_2023_paper.pdf) by de Avellar & Sarmento.
 
-This paper was a cross-dataset study on the Brazilian Sign Language Translation task, and it was very relevant to the goals of our project. 
+Their work was a cross-dataset study on the Brazilian Sign Language Translation task, and it was very relevant to the goals of our project. The information in the paper was a good reference point for us to confirm our plan and approach was sound. 
 
-They combined the 4 datasets we selected for our task, and used an LSTM model to classify the signs. They tried two different methods for feature extraction: pre-trained Convolutional Neural Network (CNN) models, and Landmark Estimation. 
+#### **Dataset**
 
-This was a good reference point for us to confirm our plan and approach was sound. We investigated if any new datasets had become available since the publishing, or if any existing had been expanded. Based on our review of wider SLP lit, we concluded that the modelling approach they followed was still appropriate for us. We aimed to differentiate our approach from theirs with more detailed preprocessing to address the data source variation, expanding our data augmentation and engineering new features. 
+They combined the same 4 datasets we selected for our task, and made a lot of effort to scrape the data, clean, and preprocess it into one unified dataset. This is the 2023 'LIBRAS Cross-Dataset Study' dataset listed in the table above. Kindly the dataset is available on request, but unfortunately we didn't hear back from one of the authors. So we would have to scrape, clean, and preprocess the data ourselves.
 
-They made a lot of effort to scrape the data, clean, and preprocess it into one unified dataset. This is the 2023 'LIBRAS Cross-Dataset Study' dataset listed in the table above. Kindly the dataset is available on request, but unfortunately we didn't hear back from one of the authors. So we would have to scrape, clean, and preprocess the data ourselves.
+We investigated if any new datasets had become available since the paper's publishing, or if any of the existing datasets had been expanded. But it was not the case, so we would be using the same source datasets. We planned to differentiate our approach from theirs with more detailed preprocessing to address the data source variation. Also, our dataset selection was more focused on healthcare related words, in line with the original goal, adding another point of difference.
+
+#### **Modelling**
+
+After filtering the dataset down to 49 words, with an average of 6 videos per word, they used an LSTM model to classify the signs. They tried two different methods for feature extraction: pre-trained Convolutional Neural Network (CNN) models, and Landmark Estimation. Based on our review of wider SLP literature, we concluded that the modelling approach they followed was still appropriate for us.  We planned to deviate from their work by taking a different approach to data augmentation and spending time engineering new features.
+
+#### **Results**
+
+The results were better with the LSTM model than the CNN model.
+
+On the full 49 word dataset, the best model achieved:
+ - Test accuracy of 41%
+ - Test top-5 accuracy of 75%
+
+Looking at the commonly misclassified words, they saw that the signs had a lot of variation in the way they were signed. Removing these to have a lower variance dataset of 33 words, the best model achieved:
+ - Test accuracy of 66%
+ - Test top-5 accuracy of 94%
 
 ## **Plan**
+
 ### **Overview**
-- We will develop AI models to classify videos of LIBRAS word signs
-    - Not images of signs, and not alphabet signs
-- If possible, we will focus on healthcare related words, in line with the original goal
-    - But since we have to be realistic with the data available to us, and this is just a PoC, the scope is flexible
-    - If the data is limited in quantity or quality, we will focus on general words
-- 
-- We will follow a similar methodology to:
-    - 2023 paper collecting public LIBRAS datasets & applying SLT
-    - Key details and points:
-        - A Cross-Dataset Study on the Brazilian Sign Language Translation (2023)
-    - Omdena Indonesia's Sign Language Translation Project
-    - Key details and points:
-        - Omdena Indonesia - Report Summary
-- To understand our goal in this project, it would be helpful to read about them.
-    - 2023 paper - A Cross-Dataset Study
-### **Data**
+We will develop AI models to classify videos of LIBRAS word signs
+- Not images of signs, and not alphabet signs
 
-We will scrape videos of LIBRAS words from the following 4 data sources:
-* [INES](https://www.ines.gov.br/dicionario-de-libras/)
-* [Signbank (UFSC)](https://signbank.libras.ufsc.br/pt)
-* [UFV Dictionary](https://sistemas.cead.ufv.br/capes/dicionario/)
-* [V-Librasil Dataset](https://ieee-dataport.org/documents/v-librasil-new-dataset-signs-brazilian-sign-language-libras#files)
+If possible, we will focus on healthcare related words, in line with the original goal
+- But since we have to be realistic with the data available to us, and this is just a PoC, the scope is flexible
+- If the data is limited in quantity or quality, we will focus on general words
 
+We will create our own dataset by scraping videos from 4 public data sources.
 
-### **Method**
+We will extract pose landmarks with an open source estimation model, engineer additional features, and try using RNN, LSTM & Transformer model architectures to classify the signs.
+
+The deliverables will be a web hosted report and a demo application.
 
 ### **Tasks**
 
+The project work will be divided into key tasks, which are each managed by Task Leads.
 
+#### **Data Scraping** [Task Leader: Ayushya Pare]
+- Develop code to scrape videos and metadata from the following 4 data sources:
+    - [INES](https://www.ines.gov.br/dicionario-de-libras/)
+    - [Signbank (UFSC)](https://signbank.libras.ufsc.br/pt)
+    - [UFV Dictionary](https://sistemas.cead.ufv.br/capes/dicionario/)
+    - [V-Librasil Dataset](https://ieee-dataport.org/documents/v-librasil-new-dataset-signs-brazilian-sign-language-libras#files)
 
-### **Deliverables**
+#### **Data Cleaning & Organization** [Task Leader: Gustavo de Paula Santos]
+- Clean the metadata from each data source, and process them into a unified format for easy management and analysis of the dataset.
+- Define some criteria to narrow down the dataset, manually review the subset of potentially usable videos
+- Decide the minimum number of videos per word based on the available data, and finalize our project dataset.
 
+#### **Preprocessing & Data Augmentation** [Task Leader: Ben Thompson]
+- Implement an open source pose estimation model to extract hand, face, and body landmark keypoints from the videos
+- Develop a pre-processing pipeline for the landmark data for each video, retaining valuable information about the signer's position and movement, but reducing non-informative variation between data sources
+- Design appropriate data augmentation techniques to mitigate issues with having such a small number of examples per class
 
-We will try to use the same 4 source datasets as them
-We will try to also explore both CNN & Landmark Based feature extraction methods
-Omdena Indonesia's Sign Language Translation Project
-We might record our own videos like they did
-We will try to also explore both CNN & Landmark Based feature extraction methods
-We will try to create a similar Report & Demo App 
+#### **Landmark Features -> Model** [Task Leader: Anastasiia Derzhanskaia]
+- Engineer a variety of informative features from the landmark data
+- Develop a robust model training pipeline so that many members can contribute to running and evaluating experiments
+- Explore a variety of model architectures for the task: RNN, LSTM, and Transformer
+
+#### **Demo Application Development** [Task Leader: Patrick Fitz]
+- Develop and deploy a demo application that uses the final trained model to classify LIBRAS videos
+- The user can select from our library of words, or upload their own video
+
 
 # **Data Collection**
 
