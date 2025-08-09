@@ -126,15 +126,55 @@ The main work for this project took place over 4 months, from February to June 2
 # **Report**
 
 # **Contents**
-- 
+- [**Introduction**](#introduction)
+  - [Problem statement](#problem-statement)
+- [**Research & Planning**](#research--planning)
+  - [Research](#research)
+  - [Data Sources: LIBRAS Datasets](#data-sources-libras-datasets)
+  - [Existing Literature: Sign Language Processing with LIBRAS Data](#existing-literature-sign-language-processing-with-libras-data)
+  - [Plan](#plan)
+- [**Data Collection**](#data-collection)
+  - [Scraping](#scraping)
+  - [Cleaning](#cleaning)
+  - [Review steps](#review-steps)
+  - [Final dataset](#final-dataset)
+- [**Data Preprocessing**](#data-preprocessing)
+  - [EDA](#eda)
+  - [Pose estimation with MediaPipe Holistic](#pose-estimation-with-mediapipe-holistic)
+  - [Start/End Point Trimming](#startend-point-trimming)
+- [**Model Development**](#model-development)
+  - [Landmark -> LSTM method](#landmark---lstm-method)
+  - [Overview](#overview)
+  - [Train / Validation / Test split](#train--validation--test-split)
+  - [Feature Engineering](#feature-engineering)
+  - [Data Augmentation](#data-augmentation)
+  - [Models](#models)
+  - [Training Process](#training-process)
+- [**Results**](#results)
+  - [Overview](#overview-1)
+  - [Analysis](#analysis)
+<!-- - [**Demo Application Development**](#demo-application-development) -->
 
 # **Introduction**
 ## **Problem statement**
-*Similar to what we could find in the [Omdenas website](https://www.omdena.com/chapter-challenges/ai-assisted-sign-language-translation-for-brazilian-healthcare-settings)*
 
-The problem systems we started the project with is here.
+The problem statement we kicked the project off with can be found at [https://www.omdena.com/chapter-challenges/ai-assisted-sign-language-translation-for-brazilian-healthcare-settings](https://web.archive.org/web/20250403045320/https://www.omdena.com/chapter-challenges/ai-assisted-sign-language-translation-for-brazilian-healthcare-settings).
 
-The scope of this is quite broad and ambitious for a 3-month project. While still aiming high, we kept this in mind to inform our decision making. For example, when deciding which words in the dataset to focus on, we included words that would be most likely to be used in a medical context. And we worked with the thinking that this is an initial proof-of-concept, of a solution we would like to develop further in future.
+The key technical points are:
+> ***1. Accuracy:***
+> - *Achieve at least 90% accuracy in recognizing and translating common Libras signs to Portuguese text*
+> - *Reach 80% accuracy for medical-specific Libras terminology*
+
+&
+> ***3. Vocabulary Coverage:***
+> - *Include at least 5,000 common Libras signs in the initial model*
+> - *Incorporate a specialized medical vocabulary of at least 1,000 terms*
+
+
+The scale of the project as written there and the other 4 points is very large, and very ambitious for a 3-month project. It is worth noting we did not begin the project with a high quality / quantity dataset. Considering that we didn't begin the project with a dataset, items in the 'Vocabulary Coverage' section were simply not feasible. So we knew we would have to focus on a subset of the problem statement and redefine the scope.
+
+However we didn't abandon this problem statement, instead we used it's ambition to push ourselves to aim high, and it's vision as the basis for our decision making about the actual scope of the project. For example, when deciding which words in the dataset to focus on, we intentionally selected words that would be more likely to be used in a medical context over others. We also worked with the perspective that this is an initial proof-of-concept, of a solution we would like to develop further in future.
+
 
 
 #  **Research & Planning**
@@ -183,9 +223,15 @@ Sign Language Processing (SLP) is a field of artificial intelligence that combin
 We surveyed existing LIBRAS datasets, and reviewed their contents. This table contains details from the 9 most relevant datasets we found.
 
 <table style="font-size: smaller; text-align: center; table-layout: fixed; width: 100%;">
+<style>
+table th, table td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+</style>
 <colgroup>
 <col style="width: 20%;">
-<col style="width: 8%;">
+<col style="width: 6%;">
 <col style="width: 15%;">
 <col style="width: 12%;">
 <col style="width: 15%;">
@@ -608,14 +654,14 @@ Context
 <p><em>Figure 1: A description of the image</em></p>
 </div>
 
-## **Model Development**
-### **Landmark -> LSTM method**
+# **Model Development**
+## **Landmark -> LSTM method**
 For Sign Language recognition from video, the most common  approach as of late is to extract features from each frame, treat the data as a time series, and use a model like LSTM.
 
-### **Overview**
-### **Train / Validation / Test split**
+## **Overview**
+## **Train / Validation / Test split**
 - diagram from slides
-### **Feature Engineering**
+## **Feature Engineering**
 Using the pose landmark features alone is not sufficient for a model to understand the data. Since we understand what each pose landmark represents, we can imagine and engineer informative features from them. This is common practice when using pose landmarks to model Sign Languages. 
 
 We engineered the following features directly from a single 
@@ -664,10 +710,10 @@ We engineered three main categories of features from the MediaPipe pose and hand
 
 All features were computed in 2D space and normalized appropriately to ensure consistency across different video sources and signers. The combination of these feature types allows the model to capture both the static pose information and the dynamic aspects of sign language gestures.
 
-### **Data Augmentation**
+## **Data Augmentation**
 - diagram from slides??
-### **Models**
-### **Training Process**
+## **Models**
+## **Training Process**
 As this is an unfounded, open source project, we didn't have convenient access to GPUs for training. The training code was developed to be platform agnostic, but training on GPU was ~X times faster, taking the typical training process from ~Y hours to ~Z hours depending on the model architecture being used. 
 And as we are collaborating internationally, we needed to be able to track experiments results in one place. 
 We considered using a tool like DVC, but it typically requires setting up paid remote storage. 
