@@ -453,7 +453,7 @@ The deliverables will be a web hosted report and a demo application.
 
 The project work will be divided into key tasks, which are each managed by Task Leads.
 
-#### **Data Scraping** [Task Leader: Ayushya Pare]
+#### **Data Collection** [Task Leader: Ayushya Pare]
 - Develop code to scrape videos and metadata from the following 4 data sources:
     - [INES](https://www.ines.gov.br/dicionario-de-libras/)
     - [Signbank (UFSC)](https://signbank.libras.ufsc.br/pt)
@@ -494,93 +494,167 @@ We will define some criteria to narrow down the dataset, manually review the sub
 
 ## **Scraping**
 
-Due to the scale and structure of these 4 data sources, we implemented web automation tools—primarily **Selenium**—to efficiently extract video URLs and relevant metadata. For efficient processing, we initally just scraped metadata and download URLs for each video, rather than directly downloading thousands of video files that we might not use. 
+### **Web Scraping Automation Approach:**
 
-The scraped data from each source was compiled into a CSV file, which served as a foundational resource for later stages of data cleaning, preprocessing, and modeling.
+Due to the scale and structure of these 4 data sources, we implemented web automation tools—primarily **Selenium**—to efficiently extract video URLs and relevant metadata. Each website had different structures, and the patterns were often unclear or inconsistent. So the task required carefully considered scraping code development for each data source. 
 
-We scraped data from three Brazilian Sign Language (Libras) resources: INES, Signbank (UFSC), and VLibras. We used Python with Selenium to automate browsing and extract videos, words, and metadata. Each website had a different structure, so we customized the code for each. On INES, videos were downloaded directly. UFSC's Signbank had scattered links, which we cleaned using pandas. VLibras was slower and more complex, so we scraped it manually with help from browser tools. We saved all data in organized CSV files.
+For efficient processing, we initally just **scraped metadata and download URLs** for each video, rather than directly downloading thousands of video files that we might not use.  Then, later in the project, after filtering the dataset down only to words we will potentially use in our target dataset, we can use the URLs to download only the videos we actually need.
 
-**Web Automation Approach:**
-We used Selenium to automate the collection process, enabling consistent extraction of video files and associated metadata across varying site structures.
 
-**Extracted Metadata Fields:**
-The specific metadata varied slightly by source, but key fields included:
+### **Extracted Metadata:**
 
-* `alphabet_label`: the starting letter of the signed word
-* `label`: the word being signed in the video
-* `video_url`: direct link to the video file
+#### **Common Fields**
 
-This standardized structure allowed us to create a unified dataset for downstream processing.
+The available metadata varied slightly by source, but there were 4 common fields we made sure to include:
+- `label` - The label associated with the video. Could be a letter, word, or phrase depending on the source.
+- `video_url` - URL to the downloadable video file
+- `signer_number` - Identifier for the person performing the sign in the video.
+  - Sometimes taken directly from the source e.g. V-Librasil
+  - Sometimes assigned by us e.g. SignBank
+  - Left as 0 when it hasn't been reviewed
+- `data_source` - Lowercase, two character string, indicating which data-source the entry belongs to.
+  - `in` for INES
+  - `sb` for SignBank
+  - `uf` for UFV
+  - `vl` for V-librasil
 
-## **Cleaning**
+#### **Additional Useful Fields**
 
-With the metadata for each data source collected,  we began the cleaning step. This task should solve and help with a few issues:
+When a data source had additional metadata that was relevant to our task, we made sure to include it. Some examples of useful information:
+
+INES had various lingusitic information about the sign that would be helpful during the review process to confirm what the sign referred to when the label was a homograph.
+- `assuntos` - Subject/topic categories
+- `acepção` - Definition/meaning of the word
+- `exemplo` - Example sentence in Portuguese
+- `classe gramatical` - Grammatical class
+
+SignBank sometimes had multiple videos for the same word, indicating additional videos with numbering. We observed this usually meant there were multiple sign variants for the same word, and they had recorded a video for each variant.
+
+This would be important information to have when finalising our dataset, as we should try to include one sign variant per word, and make sure each data source is using the same variant. 
+- so we collected metadata about the `sign_variant`, by processing the `label` column
+- e.g. 'ABORTAR' -> `1` & 'ABORTAR-2' -> `2`
+- They might be different sign variants for the same word
+
+
+# **Data Cleaning & Organization**
+
+With the metadata for each data source collected, we spent time cleaning the data, and unifying it into a single file for easy management and analysis of the dataset.
+
+
+
+## **Overlap between data sources**
+
+Combining the 4 data sources, we had information for 8,490 videos. 
+
+After filtering out:
+- Sign labels that were not words
+- Sign variants 
+
+
+
+This task should solve and help with a few issues:
 
 1. **Homographs:** Like any other language, there are some cases of homographs in Portuguese, that is, words that have the same spelling and different meanings, an example of homograph in English is the word "bat" that could either refer to the animal or the object used to hit the ball in a baseball game. Due to the structure of the data, these words would be registered with the same label but have different signs.
 2. **Sign synonyms:** Some words could have more than one sign, depending on the region or signer. Similarly to the homographs, these words would be registred under the same label but have different signs in the videos.
 3. **Lack of video examples:** Even though there were videos for every registered word in the datasets, some of them had fewer videos than others. For the project to be successful, it was necessary to have at least a certain amount of example videos to train the models.
 4. **Healthcare related words:** The project's main goal was to act on translating LIBRAS specifically in healthcare settings. Therefore, it was necessary to select health related words to compose a target dataset.
 
-Below, you can find the approach used to solve each of the issues above.
+
 
 ### **Video reviewing**
-[comment]: <TODO: continue video reviewing and data cleaning steps from here>
+
 
 
 ## **Review steps**
 
 ## **Final dataset**
 
+Our final dataset consisted of 25 words, and a total of 150 videos.
 
-abc
+Each word had 6 videos, from the 4 data sources.
 
-<!-- <img src="assets/all_signs_for_banana.gif" alt="isolated" width="200"/> -->
+|---|---|---|---|---|
+| **Data Source** | INES | SignBank | UFV | V-Librasil |
+| **Number of Videos**   | 1 | 1 | 1 | 3 |
 
 <div align="center">
-<img src="assets/all_signs_for_banana.gif" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Figure 1: A description of the image</em></p>
+<img src="assets/all_signs_for_banana.gif" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+<p><em>All 6 videos in the dataset for the word 'banana'</em></p>
 </div>
+
+
+
+### **Table of the words in the final dataset**
+
+|---|---|---|---|---|
+| **Brazilian** | Ajudar | Animal | Aniversário | Ano | Banana |
+| ***English***   | *Help*   | *Animal* | *Birthday*    | *Year* | *Banana* |
+| **Brazilian** | Banheiro | Bebê | Cabeça | Café | Carne |
+| ***English***   | *Bathroom* | *Baby* | *Head* | *Coffee* | *Meat* |
+| **Brazilian** | Casa | Cebola | Comer | Cortar | Crescer |
+| ***English***   | *House* | *Onion* | *Eat* | *Cut* | *Grow* |
+| **Brazilian** | Família | Filho | Garganta | Homem | Jovem |
+| ***English***   | *Family* | *Son* | *Throat* | *Man* | *Young* |
+| **Brazilian** | Ouvir | Pai | Sopa | Sorvete | Vagina |
+| ***English***   | *Hear* | *Father* | *Soup* | *Ice Cream* | *Vagina* |
 
 # **Data Preprocessing**
 
 
-## **EDA**
+## **Exploring the videos in the dataset**
 
-- Dataset differences
-    - dimensions
-        - grid of data sources & dims
-    - frame rates
-        - on same grid as above?
-    - durations
-        - plot for each label
+There are significant differences in the videos between the data sources, and also some differences within data sources.
 
-
-
-### **Dimensions & FPS**
-
-<!-- <img src="assets/fps_bar_chart.png" alt="isolated" title="hover hint" style="width: 75%;"/>
-
-<img src="assets/video_dimensions_for_animal.png" alt="isolated" title="hover hint" style="width: 75%;"/>
-
-<img src="assets/video_dimensions_bar_chart.png" alt="isolated" title="hover hint" style="width: 75%;"/> -->
-
+### **FPS**
+Looking at the frame rate of the videos, we can see that the data sources have a wide range of frame rates.
 
 <div align="center">
 <img src="assets/fps_bar_chart.png" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Figure 1: A description of the image</em></p>
+<p><em>Stacked bar chart of the number of videos per frame rate for each data source</em></p>
 </div>
 
-<div align="center">
-<img src="assets/video_dimensions_for_animal.png" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Figure 1: A description of the image</em></p>
-</div>
+
+Across the full dataset, the majority of videos have a frame rate of 60 fps.
+
+For most data sources, all videos have the same frame rate. Except for V-Librasil, where we have examples with 24, 30, and 60 fps.
+
+### **Dimensions**
+
+Looking at the dimensions of the videos, we can see that the data sources also have a wide range of dimensions.
 
 <div align="center">
-<img src="assets/video_dimensions_bar_chart.png" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Figure 1: A description of the image</em></p>
+<img src="assets/video_dimensions_for_animal.png" alt="isolated" title="hover hint" style="width: 95%; border: 2px solid #ddd;"/>
+<p><em>Visualisation of the various video dimensions for the word 'animal'</em></p>
 </div>
+
+The range of dimensions is quite large, from 240x176 to 1920x1080. So we will need to take care to standardise the dimensions of the data, without losing information.
+
+<div align="center">
+<img src="assets/video_dimensions_bar_chart.png" alt="isolated" title="hover hint" style="width: 95%; border: 2px solid #ddd;"/>
+<p><em>Stacked bar chart of the number of videos per video dimensions for each data source</em></p>
+</div>
+
+Across the full dataset, the majority of videos are 1920x1080p.
+
+For most data sources, videos can have two different dimensions. Except for INES, where all examples are 240x176
 
 ### **Durations**
+
+<div align="center">
+<img src="assets/video_durations_orig_boxplot.png" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
+<p><em>Boxplot of the video durations for the unprocessed dataset</em></p>
+</div>
+
+Looking at the distribution of video durations for each data source, we can see that there is quite a difference between the data sources. 
+
+It is expected that there will be variation within data sources, because some signs are shorter than others, some longer. On this point, the range of durations is somwhat similar between INES, SignBank, and UFV. V-Librasil has a much wider range of durations.
+
+Inspecting the videos, we can quickly see what this plot is representing. The signing speed for INES is clearly much faster than the other data sources. But INES videos also usually have less time where the signer is paused at the beginning and end of the video compared to the other data sources. 
+
+We can also see that the V-Librasil signing speed is much slower than the other data sources, even across different signers. But this also seems to be due to the video speed. The videos appear to be in slow motion. to some degree.
+
+We will apply some preprocessing to the videos to remove the pauses at the beginning and end of the video, since they don't contain any information about the sign. We will also sample frames from the videos as part of the data augmentation process, mitigating the large difference in speed between the data sources.
+
 
 ## **Pose estimation with [MediaPipe Holistic](https://ai.google.dev/edge/mediapipe/solutions/guide)**
 why:
