@@ -482,17 +482,14 @@ The project work will be divided into key tasks, which are each managed by Task 
 
 # **Data Collection**
 
-To build a robust dataset of BSL videos, we will develop code to scrape videos and metadata from the following 4 data sources:
+
+## **Scraping**
+
+To build a robust dataset of BSL videos, we developed code to scrape videos and metadata from the following 4 data sources:
 * [INES](https://www.ines.gov.br/dicionario-de-libras/)
 * [Signbank (UFSC)](https://signbank.libras.ufsc.br/pt)
 * [UFV Dictionary](https://sistemas.cead.ufv.br/capes/dicionario/)
 * [V-Librasil Dataset](https://ieee-dataport.org/documents/v-librasil-new-dataset-signs-brazilian-sign-language-libras#files)
-
-We will then clean the metadata from each data source, and process them into a unified format for easy management and analysis of the dataset.
-
-We will define some criteria to narrow down the dataset, manually review the subset of potentially usable videos, and finalize our project dataset.
-
-## **Scraping**
 
 ### **Web Scraping Automation Approach:**
 
@@ -532,7 +529,7 @@ SignBank sometimes had multiple videos for the same word, indicating additional 
 
 This would be important information to have when finalising our dataset, as we should try to include one sign variant per word, and make sure each data source is using the same variant. 
 - so we collected metadata about the `sign_variant`, by processing the `label` column
-- e.g. 'ABORTAR' -> `1` & 'ABORTAR-2' -> `2`
+- e.g. 'FAMÍLIA' -> `1` & 'FAMÍLIA-2' -> `2`
 - They might be different sign variants for the same word
 
 
@@ -540,48 +537,103 @@ This would be important information to have when finalising our dataset, as we s
 
 With the metadata for each data source collected, we spent time cleaning the data, and unifying it into a single file for easy management and analysis of the dataset.
 
+We will then clean the metadata from each data source, and process them into a unified format for easy management and analysis of the dataset.
+
+We will define some criteria to narrow down the dataset, manually review the subset of potentially usable videos, and finalize our project dataset.
+
+## **Cleaning the Dataset**
+
+A lot of cleaning was done for each individual data source's `metadata.csv`, but some cleaning was also needed for the combined metadata:
+- Unifying labels
+- Removing duplicates
+- Removing videos with broken URLs
+
+### **Unifying labels**
+
+Cleaning and unifying the formatting of the labels would allow us to compare videos with the same label across data sources.
+
+- **INES**
+  - `FAMÍLIA` -> `família`
+- **SignBank**
+  - `FAMÍLIA` -> `família`
+  - `FAMÍLIA-2` -> `família`
+- **UFV**
+  - `Família` -> `família`
+- **V-Librasil**
+  - `Família` -> `família`
 
 
-## **Overlap between data sources**
+### **Reviewing the Dataset**
 
 Combining the 4 data sources, we had information for 8,490 videos. 
 
-After filtering out:
-- Sign labels that were not words
-- Sign variants 
+To clean the dataset further, we would need to go past the metadata, and review some videos in the dataset directly.
+
+#### **Homographs:**
+
+Like any other language, there are some cases of homographs in Portuguese, that is, words that have the same spelling and different meanings. An example of homograph in English is the word "bat" that could either refer to the animal or the object used to hit the ball in a baseball game. 
+
+Due to the structure of the data, these words would be registered with the same label but have different signs. So we had to review the videos, and determine which meaning the label referred to.
+
+We used the fact that V-Librasil does not have any possible intra-dataset homographs to our advantage- each label in the dataset has one set of sign videos. Because both SignBank and INES datasets have multiple signs corresponding to a label with the same spelling in Portuguese, it would be quite difficult to choose which signs to use based solely on the meaning of the words. 
+
+These are the steps taken to choose the version of the signs:
+1. Use V-Librasil as baseline dataset.
+2. Compare videos from both SB and NE to find the best match in the signs
+3. For every match, count as a possible word
+
+#### **Label Synonyms:** 
+
+Looking for ways to increase the number of videos for each word in our target dataset, we considered synonyms. Sign language signs do not have a 1-1 correspondence to words in spoken languages. For example, the same sign could be used for the word `big` and the word `large`. In this case, the same sign could be labelled as `big` in one data source, and `large` in another. Identifying these would allow us to find additional sign videos for a certain label.
+
+Reviewing this manually would have been very time consuming. We considered developing some approach to use LLM Tokenizer embeddings to find labels that were closest in meaning to narrow down the possible synonyms, and then potentially even a feature extractor on the videos to see if the signs were also similar.
+
+However since the potential increase in data for each word would be minimal, we decided to narrow down our target dataset first, assuming no synonyms, then review any synonyms for only those cases. In the end we didn't find any for our target dataset.
+
+#### **Sign Variants:**
+
+Some words could have more than one way to sign them, depending on the region or signer. Similarly to the homographs, these words would be registred under the same label but have different signs in the videos. Except in the case of SignBank, where they indicate multiple sign variants for the same word.
+
+For this we manually reviewed videos for some signs, and recorded which sign variant should be used for the label. This would be quite time consuming, so we did this after narrowing down the dataset to the candidates for the target dataset.
+
+Steps:
+1. Use SignBank as the reference dataset
+2. For all labels that have multiple sign variants in SignBank, review the videos from all other data sources 
+3. Determine if the other data sources all use the same sign variant for the label
+4. Determine which video in SignBank matches that sign variant
+
+## **Organizing the Dataset**
+
+With our cleaned & reviewed dataset, we could start narrowing down the dataset to the words we will use in our target dataset.
+
+#### **Number of videos per word**
+
+Even though there were videos for every registered word in the datasets, some of them had fewer videos than others. For the project to be successful, it was necessary to have at least a certain amount of example videos to train the models.
+
+We also cared about having a variety of data sources for each word. V-Librasil always had 3 videos per word, but we didn't want to rely on just one data source, so if a word wasn't also present in the other data sources, the variety of features in the videos would be limited.
+
+So first we narrowed down the dataset with 2 criteria:
+- Words that appear in at least 3 data sources
+- Words that have at least 5 videos
+
+This gave us 170 words which were candidates for our target dataset.
+
+#### **Healthcare related words:** 
+
+The project's main goal was to translate LIBRAS specifically in healthcare settings. Therefore, it was necessary to select health related words to compose the target dataset.
+
+Focusing on food, body parts, medical things, and other common words, the candidates were narrowed down to 46 words.
 
 
+### **Final dataset**
 
-This task should solve and help with a few issues:
+Among the words in these 46 candidates, the majority had 6 videos, so we made our criteria a bit stricter, first removing the words that had less than 6 videos.
 
-1. **Homographs:** Like any other language, there are some cases of homographs in Portuguese, that is, words that have the same spelling and different meanings, an example of homograph in English is the word "bat" that could either refer to the animal or the object used to hit the ball in a baseball game. Due to the structure of the data, these words would be registered with the same label but have different signs.
-2. **Sign synonyms:** Some words could have more than one sign, depending on the region or signer. Similarly to the homographs, these words would be registred under the same label but have different signs in the videos.
-3. **Lack of video examples:** Even though there were videos for every registered word in the datasets, some of them had fewer videos than others. For the project to be successful, it was necessary to have at least a certain amount of example videos to train the models.
-4. **Healthcare related words:** The project's main goal was to act on translating LIBRAS specifically in healthcare settings. Therefore, it was necessary to select health related words to compose a target dataset.
-
-
-
-### **Video reviewing**
-
-
-
-## **Review steps**
-
-## **Final dataset**
+Then with this shorter list, we spent time reviewing the videos, to ensure the signs were all the same variant. Removing words with less than 6 videos of the same sign, we confirmed our final target dataset.
 
 Our final dataset consisted of 25 words, and a total of 150 videos.
 
 Each word had 6 videos, from the 4 data sources.
-
-|---|---|---|---|---|
-| **Data Source** | INES | SignBank | UFV | V-Librasil |
-| **Number of Videos**   | 1 | 1 | 1 | 3 |
-
-<div align="center">
-<img src="assets/all_signs_for_banana.gif" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
-<p><em>All 6 videos in the dataset for the word 'banana'</em></p>
-</div>
-
 
 
 ### **Table of the words in the final dataset**
@@ -597,6 +649,16 @@ Each word had 6 videos, from the 4 data sources.
 | ***English***   | *Family* | *Son* | *Throat* | *Man* | *Young* |
 | **Brazilian** | Ouvir | Pai | Sopa | Sorvete | Vagina |
 | ***English***   | *Hear* | *Father* | *Soup* | *Ice Cream* | *Vagina* |
+
+|---|---|---|---|---|
+| **Data Source** | INES | SignBank | UFV | V-Librasil |
+| **Number of Videos**   | 1 | 1 | 1 | 3 |
+
+<div align="center">
+<img src="assets/all_signs_for_banana.gif" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+<p><em>All 6 videos in the dataset for the word 'banana'</em></p>
+</div>
+
 
 # **Data Preprocessing**
 
