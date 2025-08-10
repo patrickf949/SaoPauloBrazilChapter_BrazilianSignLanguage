@@ -14,8 +14,16 @@ __pycache__/
 
 # Specifically ignore all video directories
 **/videos/
+
+# Docs
 docs/assets/*.mp4
 docs/assets/interim/*
+docs copy
+docs/*
+!docs/assets
+!docs/_config.yml
+!docs/index.md
+!docs/README.md
 
 # Data
 /data/interim/*/**
@@ -27,6 +35,7 @@ docs/assets/interim/*
 /webapp/backend/data/interim/RawMotionMeasurements/*/**
 /webapp/backend/data/preprocessed/*/**
 !/webapp/backend/data/interim/*/.gitkeep
+/webapp/backend/shared_code
 
 # MacOS system files
 .DS_Store
