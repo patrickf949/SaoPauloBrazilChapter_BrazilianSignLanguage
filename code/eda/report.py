@@ -28,7 +28,7 @@ color_list_rgb = [colors.to_rgb(color) for color in color_list]
 color_list_rgb_int = [(int(color[0]*255), int(color[1]*255), int(color[2]*255)) for color in color_list_rgb]
 data_source_list = ['INES', 'SignBank', 'UFV', 'V-Librasil', 'V-Librasil', 'V-Librasil']
 
-def horizontal_concat(frames, pad:float=0.0, fill=0, side_pad:float=0.0, top_pad:float=0.0):
+def horizontal_concat(frames, pad:float=0.0, fill=0, side_pad:float=0.0, top_pad:float=0.0, bottom_pad:float=0.0):
     final_frames=[]
     gap = np.full((frames[0].shape[0], int(frames[0].shape[1]*pad), 3), fill, dtype=np.uint8)
     for i, frame in enumerate(frames):
@@ -38,14 +38,15 @@ def horizontal_concat(frames, pad:float=0.0, fill=0, side_pad:float=0.0, top_pad
     horizontal = np.concatenate(final_frames, axis=1)
     
     # Add padding
-    if side_pad > 0 or top_pad > 0:
+    if side_pad > 0 or top_pad > 0 or bottom_pad > 0:
         side_pixels = int(horizontal.shape[1] * side_pad)
         top_pixels = int(horizontal.shape[0] * top_pad)
-        horizontal = cv2.copyMakeBorder(horizontal, top_pixels, 0, side_pixels, side_pixels, 
+        bottom_pixels = int(horizontal.shape[0] * bottom_pad)
+        horizontal = cv2.copyMakeBorder(horizontal, top_pixels, bottom_pixels, side_pixels, side_pixels, 
                                       cv2.BORDER_CONSTANT, value=(fill, fill, fill))
     return horizontal
 
-def vertical_concat(frames, pad:float=0.0, fill=0, side_pad:float=0.0, top_pad:float=0.0):
+def vertical_concat(frames, pad:float=0.0, fill=0, side_pad:float=0.0, top_pad:float=0.0, bottom_pad:float=0.0):
     final_frames=[]
     gap = np.full((int(frames[0].shape[0]*pad), frames[0].shape[1], 3), fill, dtype=np.uint8)
     for i, frame in enumerate(frames):
@@ -55,10 +56,11 @@ def vertical_concat(frames, pad:float=0.0, fill=0, side_pad:float=0.0, top_pad:f
     vertical = np.concatenate(final_frames, axis=0)
     
     # Add padding
-    if side_pad > 0 or top_pad > 0:
+    if side_pad > 0 or top_pad > 0 or bottom_pad > 0:
         side_pixels = int(vertical.shape[1] * side_pad)
         top_pixels = int(vertical.shape[0] * top_pad)
-        vertical = cv2.copyMakeBorder(vertical, top_pixels, 0, side_pixels, side_pixels,
+        bottom_pixels = int(vertical.shape[0] * bottom_pad)
+        vertical = cv2.copyMakeBorder(vertical, top_pixels, bottom_pixels, side_pixels, side_pixels,
                                     cv2.BORDER_CONSTANT, value=(fill, fill, fill))
     return vertical
 
