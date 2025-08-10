@@ -717,57 +717,131 @@ We can also see that the V-Librasil signing speed is much slower than the other 
 
 We will apply some preprocessing to the videos to remove the pauses at the beginning and end of the video, since they don't contain any information about the sign. We will also sample frames from the videos as part of the data augmentation process, mitigating the large difference in speed between the data sources.
 
+## **Summary of the Pre-processing Pipeline**
 
-## **Pose estimation with [MediaPipe Holistic](https://ai.google.dev/edge/mediapipe/solutions/guide)**
-why:
-    - will be used in preprocessing for motion detection, offset & scaling
-    - Will be used as the base features that will be input to the model
+Our preprocessing pipeline transforms raw video data into standardized landmark sequences suitable for machine learning. The pipeline consists of four main steps:
 
-<!-- <img src="assets/pose_for_casa_on_orig_and_black_raw.gif" alt="isolated" title="hover hint" style="width: 75%;"/> -->
+1. **Pose Estimation**: Extract 543 landmarks (pose, face, hands) from each video frame using MediaPipe Holistic
+2. **Motion Detection & Trimming**: Measure motion between frames, use thresholds to detect sign start/end points, then trim videos to include only the actual signing performance
+3. **Scaling & Alignment**: Normalize signer scale and position across all data sources while preserving relative motion within each video
+4. **Interpolation**: Fill missing landmarks (`None` values) using forward/backward fill for start/end frames and linear interpolation for middle frames
+
 
 <div align="center">
-<img src="assets/pose_for_casa_on_orig_and_black_raw.gif" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Figure 1: A description of the image</em></p>
+<img src="assets/pose_for_casa_on_black_preproc.gif" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+<p><em>MediaPipe Holistic landmarks after preprocessing for the word 'casa' across different data sources</em></p>
 </div>
+
+## **Pose estimation with MediaPipe Holistic**
+
+The first pre-processing step was pose estimation on the videos. No pre-processing was done on the videos themselves. The resulting pose landmarks would be used:
+- In pre-processing for motion detection, offsetting, and scaling
+- As the base features that will be input to the model
+
+We used the [MediaPipe Holistic](https://ai.google.dev/edge/mediapipe/solutions/guide) model to estimate pose landmarks for each frame.
+
+<div align="center">
+<img src="assets/pose_for_casa_on_orig_and_black_raw.gif" alt="isolated" title="hover hint" style="width: 95%; border: 2px solid #ddd;"/>
+<p><em>MediaPipe Holistic detected landmarks for the word 'casa' for a video from each data source.</em></p>
+</div>
+
+### **MediaPipe Holistic Features:**
+- **Open Source:** Freely available under Apache 2.0 license for development and modification
+- **Multi-Model Integration:** Combines pose estimation, face landmark detection, and hand tracking into a unified pipeline.
+- **Comprehensive Detection:** Detects 543 total landmarks (33 pose, 468 face, 21 per hand) for full-body analysis. Returns landmarks for each frame, and uses the information across all frames to improve the accuracy for each individual frame.
+- **Landmark Precision:** Each landmark includes x, y, z coordinates with confidence scores for reliability assessment. Low confidence landmarks will be returned as `None`, so quality can be assured.
+- **Structured Output:** Provides landmark coordinates in a standardized format for consistent data processing, with coordinates normalized between 0.0 and 1.0 relative to image dimensions. Ensuring videos with different resolutions produce results in the same format.
+
+<!-- 
+We didn't do any pre-processing on the videos themselves. We wanted our classification pipeline to be compatible with a wide range of videos, and most open source pose estimation models are flexible to a wide range of outputs, while giving a standard output. We also thought that Pose Landmark information would be more easy to work with during pre-processing, giving us more flexibility to unify the features of the data sources. -->
 
 
 ## **Start/End Point Trimming**
 
-our first preprocessing step is to trim the videos. We will remove the periods from the start and end of the video where the signer is stationary. Resulting in shorter videos where to the actual sign performance takes up the majority of the time.
+The next pre-processing step was to trim each video to include only the actual sign performance, not the pause before and after. To do this, we developed a method to automatically detect the start and end points of signing based on motion. This allowed us to remove the periods at the beginning and end where the signer is stationary, resulting in shorter clips focused on the sign itself.
 
 ### **Motion Detection**
 
-- to do this we explored various different methods for measuring motion between frames:
-    - bg sub
-    - Basic
-    - Landmarks
-- Each normalised and moving avgd for smooth results, and consistency between datasets
-    - we are mainly interested in peaks, so normalising makes sense
-    - We don't have some sense of the correct 'absolute value' across datasets
-- Show some before & after
-- show some example via gifs
-- for some previous versions, we used a combination of multiple, but in the final version settled on just landmarks
+#### **Exploring Motion Detection Methods**
 
-
-<!-- <img src="assets/motions_for_aniversario.gif" alt="isolated" title="hover hint" style="width: 75%;"/> -->
+We explored various different methods for measuring motion between frames. You can see the results of the three main measurement methods we used for the word 'aniversário' from the INES data source below.
 
 <div align="center">
-<img src="assets/motions_for_aniversario.gif" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Figure 1: A description of the image</em></p>
+<h3><em>Motion Detection for "Aniversário"</em></h3>
+<img src="assets/motion_for_aniversario_all_ma.gif" alt="isolated" title="hover hint" style="width: 75%; border: 2px solid #ddd;"/>
+<p><em>Motion detection for the word 'aniversário' from the INES data source.</em></p>
 </div>
+
+1. Absolute Frame Difference
+- Simple and computationally efficient
+- Compares consecutive frames using cv2.absdiff() to find pixel-wise differences
+- Sensitive to camera shake & lighting changes, and can detect noise as motion
+2. Background Subtraction
+- Uses OpenCV's MOG2 (Mixture of Gaussians) background subtractor to build a statistical model of the background over time
+- Identifies foreground objects by comparing current frame against learned background over time
+- Measures motion intensity by counting non-zero pixels in the foreground mask
+3. Landmarks Difference
+- Analyzes Euclidean distance changes between MediaPipe landmark positions across consecutive frames
+- Supports pose, face, and hand landmarks with configurable inclusion/exclusion
+- Combines landmark distances using methods: mean, median, max, or RMS (root mean square)
+
+Exploring each method individually, we found that while they all had slight differences in the type of motion they were best at detecting, they were all generally good at detecting the peaks in motion at the beginning and end of the sign. We also explored using weighted combinations of all methods, to try to have a more robust method by having the best of each.
+
+
+#### **Final Motion Detection Method**
+
+In the end, we settled on using the **landmarks difference method only**. It was the most robust and consistent across data sources. We also preferred the simplicity of using one method over trying to find the best combination of multiple.
+
+<div align="center">
+<h3><em>Motion Detection for "Aniversário"</em></h3>
+<img src="assets/motion_for_aniversario_lm.gif" alt="isolated" title="hover hint" style="width: 75%; border: 2px solid #ddd;"/>
+<p><em>Motion detection for the word 'aniversário' from the INES data source.</em></p>
+</div>
+
+We **used the `mean` combination method**, taking a simple average of all the frame-to-frame landmark distances for each frame to measure the motion. The other options were `median` (robust to outliers), `max` (considers only the largest movement) and `root mean square` (emphasizes larger movements).
+
+We **excluded the face landmarks** from the computation, since those are 468 landmarks that generally don't move much in our dataset- the signer is standing still, with only slight head movements that don't always align with the start or end of the sign. For almost all of the combination methods (except `max`), the small distances for the 468 face landmarks would dominate the results over the 33 pose landmarks and 42 hand landmarks.
+
+Since we cared more about identifying peaks in motion, rather than measuring the absolute value of the motion, we **normalised the motion measurements** for each individual series between 0 and 1. 
+
+Since we had such a variety of frame rates, we also **applied a moving average to the motion measurements**, to smooth out the series and make the results more consistent between data sources. The window duration was chosen to be 0.334 seconds, which would be converted into the actual window size in frames based on the frame rate of the video.
+
 
 
 ### **Analysing Motion Start and End**
 
-- basic method is just taking an absolute threshold for the start & end
-- complex method involves 
-    - detecting the first and last peak to get the correct general location 
-    - taking the rate of change of the motion 
-    - Search back/forward from the peaks for the index where the slope has an inflection point 
-        - this should show when the movement really started 
-    - Go 0.X seconds before this as a buffer
-        - seconds rather than frames to be robust to different datasets
-- in the final version we just went for the simple version 
+Now we had a series of motion measurements for each frame, we had to develop methods that use them to identify the start and end points of the sign. 
+
+We explored various methods, but in the end we settled on a basic approach using thresholds to detect the start and end points of the sign.
+- Set an motion threshold for the start & end
+  - We found 0.2 for both was quite robust to the differences in each data source.
+- From the beginning of the series, find the first frame where the motion crosses the threshold, return the previous frame as the start point
+- From the end of the series, find the first frame where the motion crosses the threshold, return the next frame as the end point
+
+
+<!-- We developed two different methods:
+
+1. **Simple Method:**
+- Set an motion threshold for the start & end
+- From the beginning of the series, find the first frame where the motion crosses the threshold, return the previous frame as the start point
+- From the end of the series, find the first frame where the motion crosses the threshold, return the next frame as the end point
+
+2. **Complex Method:**
+- Detects the first and last peak in motion data to get the general location of significant motion
+- Calculates slopes (rate of change) of the motion data using a sliding window approach
+- Finds peaks in the absolute slope values to identify inflection points where motion changes direction
+- Searches backward from the first motion peak to find the nearest slope peak before it
+- Searches forward from the last motion peak to find the nearest slope peak after it
+- Applies configurable time buffers (default 0.15 seconds) before/after the detected slope peaks
+- Falls back to the simple threshold method if no motion peaks or slope peaks are found 
+
+In the end, we settled on using the **simple method** with start & end motion thresholds of 0.2. 
+- Both methods have threshold parameters that need tuned
+  - The simple method has only 2, and they are more intuitive to tune
+  - The complex method has 6, and they are more difficult to tune -->
+
+
+<!-- - in the final version we just went for the simple version 
     - both have threshold params that need tuned 
     - But simple has less and is more intuitive 
     - Without annotating our ground truth desired start / end, it is hard to tune this
@@ -781,12 +855,13 @@ our first preprocessing step is to trim the videos. We will remove the periods f
     - with more time / annotations we could tune complex to be significantly better
     - Simple was also robust to jittery motion
     - We would need some more development to deal with this in complex 
-    - But in this limited time, just go for simple
+    - But in this limited time, just go for simple -->
 
+### **Trimming the Series to their Sign start and end**
 
+Using our detected start and end points, we trimmed each series of landmark data to only include the sign performance.
 
-<!-- <img src="assets/video_durations_orig_boxplot.png" alt="isolated" title="hover hint" style="width: 75%;"/>
-<img src="assets/video_durations_proc_boxplot.png" alt="isolated" title="hover hint" style="width: 75%;"/> -->
+You can see the difference in distribution of the durations for the original and trimmed series, for each data source, in the boxplots below:
 
 <div align="center">
 <img src="assets/video_durations_orig_boxplot.png" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
@@ -798,9 +873,35 @@ our first preprocessing step is to trim the videos. We will remove the periods f
 <p><em>Figure 1: A description of the image</em></p>
 </div>
 
+The difference in duration between the original and trimmed series was quite significant for some data sources. 
+- The durations of both INES & UFV decreased significantly, and they ended up with much more similar distributions.
+- The interquartile range of durations decreased quite a lot for INES, and decreased slightly for UFV and V-Librasil.
+- SignBank already had very short durations, with little pause before and after the sign, so the durations only decreased slightly.
+- V-Librasil had a wide range of long durations, and didn't decrease much.
+  - This is probably because the videos appear to be in slow motion, with the signer moving very slowly. 
+  - In real time, the sign duration, and the pause before and after, is more similar to the other data sources.
+
 ### **Scaling & Alignment**
 
-The next 2 steps are unifying the scale and position alignment of the data. They are separate steps but quite similar and related.
+The next 2 steps were unifying the scale and position alignment of the signers from across the data sources. They are separate steps but quite similar and related.
+
+The basic process is to define some **reference points that represent the target scale / alignment**. Then by comparing the raw landmark data to the reference points, we can **calculate the scale factor and the horizontal & vertical shifts to be applied**.
+
+**For example**, for the horizontal alignment:
+- We want the signers to be horizontally in the center of the frame
+  - So the target horizontal position is 0.5
+- We use some heuristic to estimate the horizontal position of the signer:
+  - We take the midpoint of the x values for the 2 shoulder landmarks
+  - We take the midpoint of the x values for the leftmost and rightmost face landmarks
+  - We take the average of the two midpoints to get a value representing the horizontal position of the signer
+  - We do this for the whole series of frames and take the mean to get a value representing the horizontal position of the signer
+- We then calculate the horizontal offset as the difference between 0.5 and the horizontal position of the signer
+- We then apply the offset to the full series
+
+An important point to mention, is that we calculate one set of transformation parameters per video series from aggregated landmark positions, then apply these same parameters to every frame. This preserves the relative motion within each video - signers aren't artificially recentered during signing.
+
+
+<!-- The next 2 steps are unifying the scale and position alignment of the data. They are separate steps but quite similar and related.
 The basic process is to define some reference points that represent the target scale / alignment.
 plot?
 then by comparing a samples points to the reference points, we can calculate the scale factor to be applied, and the horizontal and vertical shifts to be applied.
@@ -821,29 +922,31 @@ An important point to mention is that for each series, we calculate these sfs an
 Originally we used the median of all frames to calculate the reference points. The thinking was that the median would be less sensitive to outlier points due to something like above, the signer moving to the left. Or more commonly, their head tilting
 - [insert highest variance videos vs lowest variance videos]
 In the final iteration of the preprocessing, we moved to using the mean, not of the full series, but of just the frames before start/end frame.
-Our logic was that these frames are supposed to be when the signer is most stationary. So they will provide a better reference point for approximating the signers base position. As expected the variance of these points is less then the full video.
+Our logic was that these frames are supposed to be when the signer is most stationary. So they will provide a better reference point for approximating the signers base position. As expected the variance of these points is less then the full video. -->
 
-### **Interpolating `none` frames**
+### **Interpolating `None` frames**
 
-Context
+#### **Context: `None` Landmarks in MediaPipe Output**
 - Format of MediaPipe output
-    - For a frame, individual landmarks can't be none. Only the full group of landmarks can be none
-    - There are a few reasons to be None, and they also depend on the type
-- 99% of the time we have Nones, they are hand landmarks being None
-    - This is because of how they are detected
-    - A significant proportion of these are justified, the hand is not in the frame at the beginning or end
-        - Ignoring sequences of Nones at the start / end, we still have quite a lot of Nones
-        - (Plot showing None sequences)
-    - A significant proportion of these problematic Nones are from the lowest resolution dataset, INES 
+    - For a frame, individual landmarks can't be none. 
+      - Only the full group of landmarks (face, pose, left hand, right hand) can be none
+    - There are a few reasons to be `None`, and they also depend on the landmark type
+- 99% of the time we have `None`s, they are hand landmarks 
+    - A significant proportion of these are justified. The hand is not in the frame at the beginning or end of most videos in our dataset.
+      - When the hand is outside the frame, the hand landmarks are `None`
+    - Ignoring sequences of `None`s at the start / end, we still have quite a lot of `None`s
+      - A significant proportion of these problematic `None`s are from the lowest resolution dataset, INES.
+      - Even when they are in the frame, MediaPipe's confidence score is sometimes low enough, that the landmark is returned as `None`
+        - We assume this is because the hand landmarks are quite detailed, so MediaPipe requires a higher resolution to detect them consistently.
 
-### **Summary**
+#### **Remedy: Interpolation Process**
 
-<!-- <img src="assets/pose_for_casa_on_black_preproc.gif" alt="isolated" title="hover hint" style="width: 75%;"/> -->
+We developed a custom interpolation process to fill in the `None`s in the landmark data.
+- For `None` landmarks at the start / end of the series, we applied a forward fill (repeating the first non-`None` landmark) and a backward fill (repeating the last non-`None` landmark)
+- For `None` landmarks in the middle of the series, we applied a linear interpolation between the nearest non-`None` landmarks
+- We also record the information about which frames were interpolated, and the degree of interpolation, so that we can pass it as a feature to the model
 
-<div align="center">
-<img src="assets/pose_for_casa_on_black_preproc.gif" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Figure 1: A description of the image</em></p>
-</div>
+
 
 # **Model Development**
 ## **Landmark -> LSTM method**
