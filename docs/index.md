@@ -12,7 +12,31 @@ This project aimed to address this by developing a sign language translation mod
 # **Project Summary**
 
 ## **Domain - Sign Language Processing**
-https://research.sign.mt/
+
+
+### **What is Sign Language Processing?**
+
+Sign Language Processing (SLP) is an AI field that combines Natural Language Processing and Computer Vision to automatically process and analyze sign language content. Unlike most spoken languages sign languages lack a standard written representation, and they use a combination of hand movements, facial expressions, and body gestures to communicate meaning.
+
+There are a variety of SLP tasks, like sign language recognition, sign language translation, sign language production, sign language detection, and sign language segmentation. In this project we focused on **sign language recognition**.
+
+### **Some SLP Domain Challenges:**
+- **No written form**: Not having a standard written representation means there is also not a standard representation for AI tasks, which makes data collection and annotation difficult
+- **Multiple modalities of communication**: Hands, face, and body can all convey information like meaning, tone, and subject at the same time, requiring complex analysis
+- **Limited training data**: There are very few annotated sign language datasets available, especially for Brazilian Sign Language (Libras).
+
+### **Approaches to SLP:**
+
+The best approach for modelling sign language depends on the specific task, and has evolved over time as the field advanced, and incorporated the latest advances in Natural Language Processing and Computer Vision.
+
+Common techniques used for data representation, are processing raw video directly, pose estimation using tools like MediaPipe or OpenPose, and symbolic notation with 'glosses'. For feature extraction,  CNNs, pose landmark analysis, and motion tracking between frames are often used. For model architecture, LSTMs/RNNs, Transformers, and graph networks are used when modelling sequence data.
+
+For our sign language recognition task, we focused on **pose estimation combined with sequence modeling to classify sign language videos**.
+
+### **Recommended Reads:** 
+
+- For a comprehensive and up-to-date resource covering the field of SLP research and the dataset landscape, see [Sign Language Processing - Overview of the Field](https://research.sign.mt/)
+- For a recent paper from covering the current state of the art in SLP, data availability, and the challenges of the field, see [A review of deep learning-based approaches to sign language processing](https://www.tandfonline.com/doi/full/10.1080/01691864.2024.2442721)
 
 ## **Outline:**
 - Scraped data from 4 different sources
@@ -45,80 +69,106 @@ You can read more details about the project in the report below: [Jump to the re
 The main work for this project took place over 4 months, from February to June 2025. Below is a list of the people that contributed to the project. Feel free to reach out to them if you have questions about any aspect of the project. Some members have also made additional changes & improvements since the end of the main project period.
 
 ## **Project Leader**
+<p><a href="https://www.linkedin.com/in/ben-d-thompson/"><strong>Ben Thompson</strong></a></p>
+<ul>
+<li>Tasks: Research Resources, Data Scraping, Data Preprocessing, Model Development, Demo App Development</li>
+<li>Omdena Role: Project Leader & Lead ML Engineer</li>
+</ul>
 
-[Ben Thompson](https://www.linkedin.com/in/ben-d-thompson/) 
-- Tasks: Research Resources, Data Scraping, Data Preprocessing, Model Development, Demo App Development
-- Omdena Role: Project Leader & Lead ML Engineer
+<h2><strong>Task Leaders</strong></h2>
 
-## **Task Leaders**
-<table>
-<tr>
-</tr>
-<tr>
-<td>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
 
-[**Ayushya Pare**](https://www.linkedin.com/in/ayushya-pare/)
-- Tasks: Research Resources, Data Scraping
-- Omdena Role: Lead ML Engineer
+<div>
 
-[**Gustavo Santos**](https://www.linkedin.com/in/gustavopsantos) 
-- Tasks: Data Scraping, Data Cleaning & Organisation
-- Omdena Role: Lead ML Engineer
-</td>
-<td>
+<p><a href="https://www.linkedin.com/in/ayushya-pare/"><strong>Ayushya Pare</strong></a></p>
+<ul>
+<li>Tasks: Research Resources, Data Scraping</li>
+<li>Omdena Role: Lead ML Engineer</li>
+</ul>
 
-[**Anastasiia Derzhanskaia**](https://www.linkedin.com/in/anastasiia-derzhanskaia/) 
-- Tasks: Model Development
-- Omdena Role: Lead ML Engineer
+<p><a href="https://www.linkedin.com/in/gustavopsantos"><strong>Gustavo Santos</strong></a></p>
+<ul>
+<li>Tasks: Data Scraping, Data Cleaning & Organisation</li>
+<li>Omdena Role: Lead ML Engineer</li>
+</ul>
 
-[**Patrick Fitz**](https://www.linkedin.com/in/patrick-fitz-b2186a11b/) 
-- Tasks: Demo App Development
-- Omdena Role: Lead ML Engineer
-</td>
-</tr>
-</table>
+</div>
 
-## **Task Contributors**
-<table>
-<tr>
-</tr>
-<tr>
-<td>
+<div>
 
-[**Michael Spurgeon Jr**](https://www.linkedin.com/in/michael-spurgeon-jr-ab3661321/) 
-- Tasks: Data Scraping, Model Development
-- Omdena Role: ML Engineer
+<p><a href="https://www.linkedin.com/in/anastasiia-derzhanskaia/"><strong>Anastasiia Derzhanskaia</strong></a></p>
+<ul>
+<li>Tasks: Model Development</li>
+<li>Omdena Role: Lead ML Engineer</li>
+</ul>
 
-[**Pooja Prasad**](https://github.com/prajinip13) 
-- Tasks: Data Review & Cleaning
-- Omdena Role: Junior ML Engineer
-</td>
-<td>
+<p><a href="https://www.linkedin.com/in/patrick-fitz-b2186a11b/"><strong>Patrick Fitz</strong></a></p>
+<ul>
+<li>Tasks: Demo App Development</li>
+<li>Omdena Role: Lead ML Engineer</li>
+</ul>
 
-[**Wafa Basudan**](https://www.linkedin.com/in/wafa-basoodan-9447616a/) 
-- Tasks: Model Development
-- Omdena Role: ML Engineer
+</div>
 
-[**Kunal Sood**](https://www.linkedin.com/in/kunal-sood-3b993225b/) 
-- Tasks: Model Development
-- Omdena Role: Junior ML Engineer
-</td>
-<td>
+</div>
 
-[**Ethel Phiri**](https://www.linkedin.com/in/ethel-phiri261312/) 
-- Tasks: Data Scraping
-- Omdena Role: Junior ML Engineer
+<h2><strong>Task Contributors</strong></h2>
 
-[**Gulzar Helvaci**](https://github.com/guluzar-gb) 
-- Tasks: Data Review & Cleaning
-- Omdena Role: Junior ML Engineer
-</td>
-</tr>
-</table>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
 
-[**Damla Helvaci**](https://www.linkedin.com/in/damla-helvaci/) 
-- Tasks: Data Review & Cleaning
-- Omdena Role: Junior ML Engineer
+<div>
+
+<p><a href="https://www.linkedin.com/in/michael-spurgeon-jr-ab3661321/"><strong>Michael Spurgeon Jr</strong></a></p>
+<ul>
+<li>Tasks: Data Scraping, Model Development</li>
+<li>Omdena Role: ML Engineer</li>
+</ul>
+
+<p><a href="https://github.com/prajinip13"><strong>Pooja Prasad</strong></a></p>
+<ul>
+<li>Tasks: Data Review & Cleaning</li>
+<li>Omdena Role: Junior ML Engineer</li>
+</ul>
+
+<p><a href="https://www.linkedin.com/in/ethel-phiri261312/"><strong>Ethel Phiri</strong></a></p>
+<ul>
+<li>Tasks: Data Scraping</li>
+<li>Omdena Role: Junior ML Engineer</li>
+</ul>
+
+<p><a href="https://www.linkedin.com/in/damla-helvaci/"><strong>Damla Helvaci</strong></a></p>
+<ul>
+<li>Tasks: Data Review & Cleaning</li>
+<li>Omdena Role: Junior ML Engineer</li>
+</ul>
+
+</div>
+
+<div>
+
+<p><a href="https://www.linkedin.com/in/wafa-basoodan-9447616a/"><strong>Wafa Basudan</strong></a></p>
+<ul>
+<li>Tasks: Model Development</li>
+<li>Omdena Role: ML Engineer</li>
+</ul>
+
+<p><a href="https://www.linkedin.com/in/kunal-sood-3b993225b/"><strong>Kunal Sood</strong></a></p>
+<ul>
+<li>Tasks: Model Development</li>
+<li>Omdena Role: Junior ML Engineer</li>
+</ul>
+
+<p><a href="https://github.com/guluzar-gb"><strong>Gulzar Helvaci</strong></a></p>
+<ul>
+<li>Tasks: Data Review & Cleaning</li>
+<li>Omdena Role: Junior ML Engineer</li>
+</ul>
+
+</div>
+
+</div>
+
 ------------------
 
 
