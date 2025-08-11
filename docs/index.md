@@ -2,59 +2,48 @@
 
 # **Sign Language Translation for Brazilian Healthcare - Omdena Project Page**
 
-# **Background**
-This project was done as part of an Omdena local chapter challenge with the Sao Paulo chapter. These challenges are open source collaborations between volunteer developers around the world, working to create AI application that solve social issues for local communities. 
+## **Background**
+This project was done as part of an Omdena local chapter challenge with the São Paulo chapter. These challenges are open source collaborations between volunteer developers around the world, working to create AI application that solve social issues for local communities. 
 
 Brazil has a significant deaf community, with Brazilian Sign Language (Libras) recognized as an official language. However, communication barriers often exist in healthcare settings, potentially compromising the quality of care for deaf patients. This potentially lead to misdiagnoses, treatment errors, or a compromised patient experience.
 
 This project aimed to address this by developing a sign language translation model for Brazilian Sign Language (LIBRAS), and a demo web app to showcase the model.
 
-# **Project Summary**
 
 ## **Domain - Sign Language Processing**
 
 
 ### **What is Sign Language Processing?**
 
-Sign Language Processing (SLP) is an AI field that combines Natural Language Processing and Computer Vision to automatically process and analyze sign language content. Unlike most spoken languages sign languages lack a standard written representation, and they use a combination of hand movements, facial expressions, and body gestures to communicate meaning.
+Sign Language Processing (SLP) is an AI field that combines Natural Language Processing and Computer Vision to process and analyze sign language content. 
+
+Unlike most spoken languages sign languages lack a standard written representation, and they use a combination of hand movements, facial expressions, and body gestures to communicate meaning. These characteristics, and other details about the lingusitics of sign languages make SLP a very interesting, but also challenging field.
 
 There are a variety of SLP tasks, like sign language recognition, sign language translation, sign language production, sign language detection, and sign language segmentation. In this project we focused on **sign language recognition**.
-
-### **Some SLP Domain Challenges:**
-- **No written form**: Not having a standard written representation means there is also not a standard representation for AI tasks, which makes data collection and annotation difficult
-- **Multiple modalities of communication**: Hands, face, and body can all convey information like meaning, tone, and subject at the same time, requiring complex analysis
-- **Limited training data**: There are very few annotated sign language datasets available, especially for Brazilian Sign Language (Libras).
 
 ### **Approaches to SLP:**
 
 The best approach for modelling sign language depends on the specific task, and has evolved over time as the field advanced, and incorporated the latest advances in Natural Language Processing and Computer Vision.
 
-Common techniques used for data representation, are processing raw video directly, pose estimation using tools like MediaPipe or OpenPose, and symbolic notation with 'glosses'. For feature extraction,  CNNs, pose landmark analysis, and motion tracking between frames are often used. For model architecture, LSTMs/RNNs, Transformers, and graph networks are used when modelling sequence data.
+<!-- Common techniques used for data representation, are processing raw video directly, pose estimation using tools like MediaPipe or OpenPose, and symbolic notation with 'glosses'. For feature extraction,  CNNs, pose landmark analysis, and motion tracking between frames are often used. For model architecture, LSTMs/RNNs, Transformers, and graph networks are used when modelling sequence data. -->
 
-For our sign language recognition task, we focused on **pose estimation combined with sequence modeling to classify sign language videos**.
+In this project, our approach was **pose estimation for feature extraction, modelled with RNN, LSTM, and Transformer models**.
 
 ### **Recommended Reads:** 
 
 - For a comprehensive and up-to-date resource covering the field of SLP research and the dataset landscape, see [Sign Language Processing - Overview of the Field](https://research.sign.mt/)
 - For a recent paper from covering the current state of the art in SLP, data availability, and the challenges of the field, see [A review of deep learning-based approaches to sign language processing](https://www.tandfonline.com/doi/full/10.1080/01691864.2024.2442721)
 
-## **Outline:**
-- Scraped data from 4 different sources
-- Cleaned the data to create a dataset of 1000+ videos of LIBRAS signs
-- Reviewed the data to find words with the most videos
-- Created a target dataset of 25 words with high quality videos, and words related to the healthcare domain
-- Developed an advanced preprocessing pipeline that allowed us to use data from multiple sources
-- Developed a modelling code base that allowed us to experiment with different data sampling, data augmentation, model architectures and training strategies
-- Ran a range of model experiments, and found the best performing model
-- Developed a demo web app to showcase the model
-- Created a report summarizing the project and the results
+## **Project Summary**
+### **Goal**
 
-## **Results**
+### **Results**
 - a
 - b
 - c
 
-## **Deliverables**
+
+### **Deliverables**
 The deliverables for this project consisted of a live demo application, the open source code, and a report of our work and results.
 
 You can see the model in action and test it on your own videos in the [demo app](link-to-be-added).
@@ -64,18 +53,18 @@ You can find the code for the project and instructions for setup/usage in our Gi
 You can read more details about the project in the report below: [Jump to the report](#report)
 
 
-# **Contributors**
+### **Contributors**
 
 The main work for this project took place over 4 months, from February to June 2025. Below is a list of the people that contributed to the project. Feel free to reach out to them if you have questions about any aspect of the project. Some members have also made additional changes & improvements since the end of the main project period.
 
-## **Project Leader**
+#### **Project Leader**
 <p><a href="https://www.linkedin.com/in/ben-d-thompson/"><strong>Ben Thompson</strong></a></p>
 <ul>
 <li>Tasks: Research Resources, Data Scraping, Data Preprocessing, Model Development, Demo App Development</li>
 <li>Omdena Role: Project Leader & Lead ML Engineer</li>
 </ul>
 
-<h2><strong>Task Leaders</strong></h2>
+#### **Task Leaders**
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
 
@@ -113,7 +102,7 @@ The main work for this project took place over 4 months, from February to June 2
 
 </div>
 
-<h2><strong>Task Contributors</strong></h2>
+#### **Task Contributors**
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
 
@@ -168,6 +157,65 @@ The main work for this project took place over 4 months, from February to June 2
 </div>
 
 </div>
+
+### **Project Work**
+
+- Scraped data from 4 different sources
+- Cleaned the data to create a dataset of 1000+ videos of LIBRAS signs
+- Reviewed the data to find words with the most videos
+- Created a target dataset of 25 words with high quality videos, and words related to the healthcare domain
+- Developed an advanced preprocessing pipeline that allowed us to use data from multiple sources
+- Developed a modelling code base that allowed us to experiment with different data sampling, data augmentation, model architectures and training strategies
+- Ran a range of model experiments, and found the best performing model
+- Developed a demo web app to showcase the model
+- Created a report summarizing the project and the results
+
+
+
+#### **Research & Planning**
+
+To decide on the scope of the project and our plan for development, we conducted research and shared findings with each other. We investigated the SLP domain generally, the datasets available for LIBRAS, and the existing literature about SLP for LIBRAS.
+
+#### **Data Collection**
+
+We used Selenium and BeautifulSoup to scrape videos and metadata from 4 different public sources to get a large dataset of ~8500 videos corresponding to ~2100 labels. After cleaning and excluding labels with less than 5 videos, we had 170 labels that were candidates for our target dataset. After reviewing the videos, and removing some labels that were not relevant to the healthcare domain, we had our target dataset of 25 words, with 6 videos per word.
+
+<div align="center">
+<img src="assets/all_signs_for_banana.gif" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+<p><em>-</em></p>
+</div>
+
+#### **Data Preprocessing**
+
+The videos from each data source had a lot of variety in their format (framerate, dimensions, etc.), and the conditions of the recorded signs (position of the signer, lighting, scale, etc.). We used Google's open source model MediaPipe Holistic to get pose estimation landmarks. 
+
+<div align="center">
+<img src="assets/pose_for_casa_on_orig_and_black_raw.gif" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
+<p><em>-</em></p>
+</div>
+
+We used developed a detailed pre-processing pipeline with OpenCV and NumPy to standardize the conditions between each data source. The pipeline would trim the series to the start and end of the sign, adjust signers to the same scale,  align the signers to the same central position, and apply interpolation to fill in frames where landmark detection failed. 
+
+<div align="center">
+<img src="assets/pose_for_casa_on_black_preproc.gif" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
+<p><em>-</em></p>
+</div>
+
+
+#### **Model Development**
+
+We used PyTorch to code the models (RNN, LSTM & Transformer) and training pipeline. The training pipeline was engineered to be platform agnostic, and resumable since we were collaborating internationally. We used Hydra & Tensorboard for managing and tracking model experiments. We used Google Colab for collaboratively training and testing models on both GPU and CPU
+
+#### **Report**
+
+The first deliverable for this project was a report of our work and results. We used Seaborn and Matplotlib to create all the plots, visualizations, and gifs in the report. We used Jekyll and Github Pages to host the report as a static website.
+
+#### **Demo App**
+
+The second deliverable for this project was a demo application. We developed the Backend with Python & FastAPI, and the Frontend with React. We deployed the application using Vercel, with the model backend running on Hugging Face
+
+
+
 
 ------------------
 

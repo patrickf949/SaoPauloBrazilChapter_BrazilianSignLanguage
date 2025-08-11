@@ -101,9 +101,9 @@ If you get "gems not found" errors when running `bundle exec jekyll serve`, you 
 export GEM_HOME="$HOME/.gem"
 export PATH="$HOME/.gem/bin:$PATH"
 
-# Make permanent (add to ~/.zshrc or ~/.bashrc)
-echo 'export GEM_HOME="$HOME/.gem"' >> ~/.zshrc
-echo 'export PATH="$HOME/.gem/bin:$PATH"' >> ~/.zshrc
+# Make permanent (add to ~/.bashrc)
+echo 'export GEM_HOME="$HOME/.gem"' >> ~/.bashrc
+echo 'export PATH="$HOME/.gem/bin:$PATH"' >> ~/.bashrc
 ```
 
 Setting these environment variables will allow your local environment to find the installed gems.
