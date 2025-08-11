@@ -31,26 +31,74 @@ In this project, our approach was **pose estimation for feature extraction, mode
 
 ### **Recommended Reads:** 
 
-- For a comprehensive and up-to-date resource covering the field of SLP research and the dataset landscape, see [Sign Language Processing - Overview of the Field](https://research.sign.mt/)
-- For a recent paper from covering the current state of the art in SLP, data availability, and the challenges of the field, see [A review of deep learning-based approaches to sign language processing](https://www.tandfonline.com/doi/full/10.1080/01691864.2024.2442721)
+- For a comprehensive and up-to-date resource covering the field of SLP research and the dataset landscape, see [research.sign.mt](https://research.sign.mt/)
+- For a recent paper from covering the current state of the art in SLP, data availability, and the challenges of the field, see [A review of deep learning-based approaches to sign language processing - 2024](https://www.tandfonline.com/doi/full/10.1080/01691864.2024.2442721)
 
 ## **Project Summary**
+
 ### **Goal**
 
+To address the problem of communication barriers in healthcare settings for the deaf community in Brazil, we would develop a sign language translation model for Brazilian Sign Language (LIBRAS). The deliverable will be a report of our work and results, and a demo web app to showcase the model & make it accessible to the public.
+
 ### **Results**
-- a
-- b
-- c
+
+We used a combination of 4 public LIBRAS datasets to create a target dataset of 25 words related to the healthcare domain, with 6 videos each.
+
+We developed a detailed pre-processing pipeline to standardize the conditions between each data source, and a training pipeline that allowed us to experiment with different feature engineering, data augmentation, model architectures and training strategies.
+
+With 6 videos per word, for each word we used 4 videos for training, 1 for validation, and 1 for testing. We had an even distribution of data sources in each split to avoid bias. 
+
+#### **Details about the best performing model:**
+- **LSTM architecture:**
+  - 2 layers
+  - 256 hidden units
+- **20 frames per sample:**
+  - Randomly sampled from the preprocessed frame series
+- **189 input features per frame:**
+  - Dropped the raw landmark positions
+  - Engineered X distances between landmarks in a frame
+  - Engineered Y angles between landmarks in a frame
+  - Engineered Z movements between landmarks in consecutive frames
+  - Additional N features representing various metadata
+- **Data augmentation:**
+  - Rotation (±10 degrees, applied to an entire series)
+  - Gaussian Noise on Landmark coordinates (0.05 std, applied to each landmark on each frame)
+
+#### **Best model performance:**
+
+<!-- | Evaluation Set         | Accuracy  | top-2 Accuracy  | top-3 Accuracy  | top-4 Accuracy  | top-5 Accuracy  | Loss  |
+|----------------|--------|--------|--------|--------|--------|--------|
+| Validation Set  | 66.37%   | 77.88%   | 84.07%   | 89.38%   | 93.81%   | 0.01231   |
+| Test Set  | 66.37%   | 77.88%   | 84.07%   | 89.38%   | 93.81%   | 2.66401   | -->
+
+| Metric | Value  |
+|----------------|--------|
+| Accuracy  | 66.37%   |
+| Top-2 Accuracy  | 77.88%   |
+| Top-3 Accuracy  | 84.07%   |
+| Top-4 Accuracy  | 89.38%   |
+| Top-5 Accuracy  | 93.81%   |
+| Loss  | 2.66401   |
+
+The training loss and validation loss for this model were `0.02336` and `0.00660` respectively. These are significantly lower than the test loss, **indicating overfitting**. 
+
+We took **measures to prevent overfitting**: like randomly sampling frames, applying data augmentation, and stratifying the data sources in each split. The data augmentation is the reason the training loss is higher than the validation loss. However the model still overfits in the end. 
+
+We expect that the small dataset size is a large reason the model overfits. To remedy this, a larger dataset would of course help, but in lieu of that, we could apply **more aggresive data augmentation** to help the model generalize better to new features in unseen data.
+
 
 
 ### **Deliverables**
 The deliverables for this project consisted of a live demo application, the open source code, and a report of our work and results.
 
-You can see the model in action and test it on your own videos in the [demo app](link-to-be-added).
+**Demo App:**
+You can see the model in action and test it on your own videos in the [**Demo App**](link-to-be-added).
 
-You can find the code for the project and instructions for setup/usage in our Github Repository: [https://github.com/OmdenaAI/SaoPauloBrazilChapter_BrazilianSignLanguage](https://github.com/OmdenaAI/SaoPauloBrazilChapter_BrazilianSignLanguage)
+**Open Source Code:**
+You can find the project code and instructions for setup/usage in our  [**Github Repo**](https://github.com/OmdenaAI/SaoPauloBrazilChapter_BrazilianSignLanguage)
 
-You can read more details about the project in the report below: [Jump to the report](#report)
+**Detailed Report:**
+You can read more details about the project in the report below: [**Jump to the report**](#report)
 
 
 ### **Contributors**
@@ -158,9 +206,9 @@ The main work for this project took place over 4 months, from February to June 2
 
 </div>
 
-### **Project Work**
+### **Summary of Project Tasks**
 
-- Scraped data from 4 different sources
+<!-- - Scraped data from 4 different sources
 - Cleaned the data to create a dataset of 1000+ videos of LIBRAS signs
 - Reviewed the data to find words with the most videos
 - Created a target dataset of 25 words with high quality videos, and words related to the healthcare domain
@@ -168,15 +216,15 @@ The main work for this project took place over 4 months, from February to June 2
 - Developed a modelling code base that allowed us to experiment with different data sampling, data augmentation, model architectures and training strategies
 - Ran a range of model experiments, and found the best performing model
 - Developed a demo web app to showcase the model
-- Created a report summarizing the project and the results
+- Created a report summarizing the project and the results -->
 
+The project work was divided into separate tasks, with some of them able to be done in parallel. A task leader was assigned to each task, who would lead the work, coordinate with task contributors, and align with the project leader weekly about progress and direction.
 
-
-#### **Research & Planning**
+#### **1. Research & Planning**
 
 To decide on the scope of the project and our plan for development, we conducted research and shared findings with each other. We investigated the SLP domain generally, the datasets available for LIBRAS, and the existing literature about SLP for LIBRAS.
 
-#### **Data Collection**
+#### **2. Data Collection**
 
 We used Selenium and BeautifulSoup to scrape videos and metadata from 4 different public sources to get a large dataset of ~8500 videos corresponding to ~2100 labels. After cleaning and excluding labels with less than 5 videos, we had 170 labels that were candidates for our target dataset. After reviewing the videos, and removing some labels that were not relevant to the healthcare domain, we had our target dataset of 25 words, with 6 videos per word.
 
@@ -185,7 +233,7 @@ We used Selenium and BeautifulSoup to scrape videos and metadata from 4 differen
 <p><em>-</em></p>
 </div>
 
-#### **Data Preprocessing**
+#### **3. Data Preprocessing**
 
 The videos from each data source had a lot of variety in their format (framerate, dimensions, etc.), and the conditions of the recorded signs (position of the signer, lighting, scale, etc.). We used Google's open source model MediaPipe Holistic to get pose estimation landmarks. 
 
@@ -202,19 +250,17 @@ We used developed a detailed pre-processing pipeline with OpenCV and NumPy to st
 </div>
 
 
-#### **Model Development**
+#### **4. Model Development**
 
 We used PyTorch to code the models (RNN, LSTM & Transformer) and training pipeline. The training pipeline was engineered to be platform agnostic, and resumable since we were collaborating internationally. We used Hydra & Tensorboard for managing and tracking model experiments. We used Google Colab for collaboratively training and testing models on both GPU and CPU
 
-#### **Report**
+#### **5. Report**
 
 The first deliverable for this project was a report of our work and results. We used Seaborn and Matplotlib to create all the plots, visualizations, and gifs in the report. We used Jekyll and Github Pages to host the report as a static website.
 
-#### **Demo App**
+#### **6. Demo App**
 
-The second deliverable for this project was a demo application. We developed the Backend with Python & FastAPI, and the Frontend with React. We deployed the application using Vercel, with the model backend running on Hugging Face
-
-
+The second deliverable for this project was a demo application. We developed the Backend with Python & FastAPI, and the Frontend with React. We deployed the application using Vercel, with the model backend running on Hugging Face.
 
 
 ------------------
@@ -1048,7 +1094,7 @@ We developed a custom interpolation process to fill in the `None`s in the landma
 
 # **Model Development**
 ## **Landmark -> LSTM method**
-For Sign Language recognition from video, the most common  approach as of late is to extract features from each frame, treat the data as a time series, and use a model like LSTM.
+For Sign Language recognition from video, the most common approach as of late is to extract features from each frame, treat the data as a time series, and use a model like LSTM.
 
 ## **Overview**
 ## **Train / Validation / Test split**
@@ -1121,6 +1167,30 @@ Be able to resume interrupted runs from the same place with the same environment
 
 
 # **Results**
+
+
+
+#### **Details about the best performing model:**
+- **LSTM architecture:**
+  - 2 layers
+  - 256 hidden units
+- **189 Input Features for 20 frames per sample:**
+  - Dropped the raw landmark positions
+  - Engineered X distances between landmarks in a frame
+  - Engineered Y angles between landmarks in a frame
+  - Engineered Z movements between landmarks in consecutive frames
+  - Additional N features representing various metadata
+- **Data augmentation:**
+  - Rotation (+- 10 degrees)
+  - Noise (0.05 std)
+- **Training configuration:**
+  - 300 epochs
+  - 64 batch size
+  - 5-fold cross validation
+  - AdamW optimizer
+  - ReduceLROnPlateau learning rate scheduler
+  - Early stopping with patience = 20
+  
 ## **Overview**
 ## **Analysis**
 ### **Future ideas**
