@@ -55,11 +55,9 @@ With 6 videos per word, for each word we used 4 videos for training, 1 for valid
 - **20 frames per sample:**
   - Randomly sampled from the preprocessed frame series
 - **189 input features per frame:**
-  - Dropped the raw landmark positions
-  - Engineered X distances between landmarks in a frame
-  - Engineered Y angles between landmarks in a frame
-  - Engineered Z movements between landmarks in consecutive frames
-  - Additional N features representing various metadata
+  - Dropped the 150 landmark position coordinates
+  - Engineered 181 features capturing distances & angles between landmarks, and movements  across consecutive frames
+  - Additional 8 features representing various metadata
 - **Data augmentation:**
   - Rotation (±10 degrees, applied to an entire series)
   - Gaussian Noise on Landmark coordinates (0.05 std, applied to each landmark on each frame)
@@ -1108,9 +1106,17 @@ So to make sure our model generalised, we stratified each data source, to make s
 
 With just 6 videos for each class, this meant dividing the training and testing sets like this:
 
+<div align="center">
+<img src="assets/train_test_split.svg" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+<p><em>-</em></p>
+</div>
 
 And within the training set, dividing for 5-fold cross validation like this:
 
+<div align="center">
+<img src="assets/train_val_split.svg" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+<p><em>-</em></p>
+</div>
 
 We achieved this using scikit-learn's `StratifiedGroupKFold` class.
 >This cross-validation object is a variation of StratifiedKFold [which] attempts to return stratified folds with non-overlapping groups. The folds are made by preserving the percentage of samples for each class in y in a binary or multiclass classification setting.\
@@ -1253,22 +1259,28 @@ We engineered three main categories of features from the MediaPipe pose and hand
 
 All features were computed in 2D space and normalized appropriately to ensure consistency across different video sources and signers. The combination of these feature types allows the model to capture both the static pose information and the dynamic aspects of sign language gestures.
 
+
+
 ## **Data Augmentation**
 - diagram from slides??
 ## **Models**
 ## **Training Process**
-As this is an unfounded, open source project, we didn't have convenient access to GPUs for training. The training code was developed to be platform agnostic, but training on GPU was ~X times faster, taking the typical training process from ~Y hours to ~Z hours depending on the model architecture being used. 
+As this is an unfounded, open source project, we didn't have convenient access to GPUs for training. 
+<!-- The training code was developed to be platform agnostic, but training on GPU was ~X times faster, taking the typical training process from ~Y hours to ~Z hours depending on the model architecture being used.  -->
 And as we are collaborating internationally, we needed to be able to track experiments results in one place. 
 We considered using a tool like DVC, but it typically requires setting up paid remote storage. 
 
-The solution we decided on was using Google Colab.  It would be cost effective as even free accounts can access GPU runtimes. And it would be time effective as it is relatively easy to set up. The setup consisted of developing a notebook with cells to:
-install any necessary dependencies
-clone the repository code into the runtime
-mount the project google drive folder to the session storage
-Allow the user to easily edit key config params
-Begin the training process with live monitoring
-Log epoch results and best model files directly to a runs folder on google drive
-Be able to resume interrupted runs from the same place with the same environment, and switch between GPu or cpu (v important as Colab reserves the right to disconnect your runtime for a variety of reasons, even with Pro)
+The solution we decided on was using Google Colab.  It would be cost effective as even free accounts can access GPU runtimes. And it would be time effective as it is relatively easy to set up. 
+
+The setup consisted of developing a notebook with cells to:
+- Install any necessary dependencies
+- Clone the repository code into the runtime
+- Mount the project google drive folder to the session storage
+- Allow the user to easily edit key config params
+- Begin the training process with live monitoring
+- Log epoch results and best model files directly to a runs folder on google drive
+- Be able to resume interrupted runs from the same place with the same environment, and switch between GPU or CPU
+  - Important as Colab reserves the right to disconnect your runtime for a variety of reasons, even with Pro, and GPU usage is limited
 
 
 # **Results**
@@ -1300,11 +1312,11 @@ We ran experiments with all three model types.
 We ran experiments with 2 different sets of input features.
 
 - 189 features for 20 frames per sample
-  - Dropped the raw landmark positions
-  - Engineered X distances between landmarks in a frame
-  - Engineered Y angles between landmarks in a frame
-  - Engineered Z movements between landmarks in consecutive frames
-  - Additional N features representing various metadata
+  - Dropped the 150 landmark position coordinates
+  - Engineered 33 distances between landmarks in a frame
+  - Engineered 86 angles between landmarks in a frame
+  - Engineered 62 movements between landmarks in consecutive frames
+  - Additional 8 features representing various metadata
 
 ### **Data Augmentation**
 
