@@ -1,1 +1,47 @@
-theme: minima
+remote_theme: sighingnow/jekyll-gitbook
+
+# Site settings
+title: "AI Sign Language Translation - Omdena"
+# title: "AI LIBRAS Recognition"
+# longtitle: "Sign Language Translation for Brazilian Healthcare"
+description: "Omdena São Paulo Chapter - Brazilian Sign Language Translation Project"
+author: "Ben Thompson"
+
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+syntax_highlighter_style: colorful
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Table of Contents
+toc:
+  enabled: true
+  h_min: 1
+  h_max: 2
+  collapse: false
+
+collections:
+  pages:
+    output: true
+    permalink: /:collection/:path/
+    sort_by: order
+
+# Navigation order
+ordered_collections:
+  - pages
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
