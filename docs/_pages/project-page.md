@@ -4,9 +4,10 @@ title: Project Page
 permalink: /
 author: Ben Thompson
 ---
-# **Sign Language Translation for Brazilian Healthcare - Omdena Project Page**
+# **AI Sign Language Translation for Brazilian Healthcare - Omdena Project**
 
-# **Background**
+## **Introduction**
+
 This project was done as part of an Omdena local chapter challenge with the São Paulo chapter. These challenges are **open source collaborations** between volunteer developers around the world, working to **create AI applications that solve social issues** for local communities. 
 
 Brazil has a significant deaf community, with **Brazilian Sign Language (Libras)** recognized as an official language. However, **communication barriers** often exist in healthcare settings, potentially compromising the quality of care for deaf patients. This potentially lead to misdiagnoses, treatment errors, or a compromised patient experience.
@@ -14,10 +15,26 @@ Brazil has a significant deaf community, with **Brazilian Sign Language (Libras)
 This project aimed to address this by **developing a sign language translation model for Brazilian Sign Language (LIBRAS)**, and a demo web app to showcase the model.
 
 
-# **Domain - Sign Language Processing**
+This page contains an overview of the project work, and links to the other deliverables. You can navigate to the various sections of this "Project Page", and the more detailed "Report Page" using the side bar on the left.
+
+## **Other pages**
+The deliverables for this project consisted of a live demo application, the open source code, and a report of our work and results.
+
+**Demo Application:**
+[You can see the model in action and test it on your own videos in the **Demo App**](link-to-be-added).
+
+**Open Source Code:**
+[You can find the project code and instructions for setup/usage in our  **Github Repo**](https://github.com/OmdenaAI/SaoPauloBrazilChapter_BrazilianSignLanguage)
+
+**Detailed Report:**
+[This page has an overview of the project. For more details, jump to the **Report Page**](report)
 
 
-## **What is Sign Language Processing?**
+
+# **Domain - Sign Language Processing (SLP)**
+
+
+## **What is SLP?**
 
 Sign Language Processing (SLP) is an AI field that combines Natural Language Processing and Computer Vision to process and analyze sign language content. 
 
@@ -25,7 +42,7 @@ Unlike most spoken languages sign languages lack a standard written representati
 
 There are a variety of SLP tasks, like sign language recognition, sign language translation, sign language production, sign language detection, and sign language segmentation. In this project we focused on **sign language recognition**.
 
-## **Approaches to SLP:**
+## **Approaches to SLP**
 
 The best approach for modelling sign language depends on the specific task, and has evolved over time as the field advanced, and incorporated the latest advances in Natural Language Processing and Computer Vision.
 
@@ -33,10 +50,11 @@ The best approach for modelling sign language depends on the specific task, and 
 
 In this project, our approach was **pose estimation for feature extraction, modelled with RNN, LSTM, and Transformer models**.
 
-## **Recommended Reads:** 
+## **Recommended Reads** 
 
-- For a comprehensive and up-to-date resource covering the field of SLP research and the dataset landscape, see [research.sign.mt](https://research.sign.mt/)
-- For a recent paper from covering the current state of the art in SLP, data availability, and the challenges of the field, see [A review of deep learning-based approaches to sign language processing - 2024](https://www.tandfonline.com/doi/full/10.1080/01691864.2024.2442721)
+For a comprehensive and up-to-date resource covering the field of SLP research and the dataset landscape, see [research.sign.mt](https://research.sign.mt/)
+
+For a recent paper from covering the current state of the art in SLP, data availability, and the challenges of the field, see [A review of deep learning-based approaches to sign language processing - 2024](https://www.tandfonline.com/doi/full/10.1080/01691864.2024.2442721)
 
 # **Project Summary**
 
@@ -73,34 +91,48 @@ With 6 videos per word, for each word we used 4 videos for training, 1 for valid
 | Validation Set  | 66.37%   | 77.88%   | 84.07%   | 89.38%   | 93.81%   | 0.01231   |
 | Test Set  | 66.37%   | 77.88%   | 84.07%   | 89.38%   | 93.81%   | 2.66401   | -->
 
-| Metric | Value  |
-|----------------|--------|
-| Accuracy  | 66.37%   |
-| Top-2 Accuracy  | 77.88%   |
-| Top-3 Accuracy  | 84.07%   |
-| Top-4 Accuracy  | 89.38%   |
-| Top-5 Accuracy  | 93.81%   |
-| Loss  | 2.66401   |
+<div style="width: 65%; margin: 0 auto;">
+<table>
+  <thead>
+    <tr>
+      <th style="width: 20%; text-align: left;">Metric</th>
+      <th style="width: 45%; text-align: center;">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Accuracy</td>
+      <td style="text-align: center;">66.37%</td>
+    </tr>
+    <tr>
+      <td>Top-2 Accuracy</td>
+      <td style="text-align: center;">77.88%</td>
+    </tr>
+    <tr>
+      <td>Top-3 Accuracy</td>
+      <td style="text-align: center;">84.07%</td>
+    </tr>
+    <tr>
+      <td>Top-4 Accuracy</td>
+      <td style="text-align: center;">89.38%</td>
+    </tr>
+    <tr>
+      <td>Top-5 Accuracy</td>
+      <td style="text-align: center;">93.81%</td>
+    </tr>
+    <tr>
+      <td>Loss</td>
+      <td style="text-align: center;">2.66401</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 The training loss and validation loss for this model were `0.02336` and `0.00660` respectively. These are significantly lower than the test loss, **indicating overfitting**. 
 
 We took **measures to prevent overfitting**: like randomly sampling frames, applying data augmentation, and stratifying the data sources in each split. The data augmentation is the reason the training loss is higher than the validation loss. However the model still overfits in the end. 
 
 We expect that the small dataset size is a large reason the model overfits. To remedy this, a larger dataset would of course help, but in lieu of that, we could apply **more aggresive data augmentation** to help the model generalize better to new features in unseen data.
-
-
-
-## **Deliverables**
-The deliverables for this project consisted of a live demo application, the open source code, and a report of our work and results.
-
-**Demo App:**
-You can see the model in action and test it on your own videos in the [**Demo App**](link-to-be-added).
-
-**Open Source Code:**
-You can find the project code and instructions for setup/usage in our  [**Github Repo**](https://github.com/OmdenaAI/SaoPauloBrazilChapter_BrazilianSignLanguage)
-
-**Detailed Report:**
-You can read more details about the project in the report below: [**Jump to the report**](#report)
 
 
 ## **Contributors**
