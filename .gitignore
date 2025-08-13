@@ -21,9 +21,10 @@ docs/assets/interim/*
 docs copy
 docs/*
 !docs/assets
-!docs/_config.yml
-!docs/index.md
-!docs/README.md
+!docs/*.yml
+!docs/*.md
+!docs/Gemfile
+!docs/_pages
 
 # Data
 /data/interim/*/**
