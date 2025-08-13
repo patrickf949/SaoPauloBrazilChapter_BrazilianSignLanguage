@@ -228,7 +228,7 @@ We used Selenium and BeautifulSoup to scrape videos and metadata from 4 differen
 
 <div align="center">
 <img src="assets/all_signs_for_banana.gif" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
-<p><em>-</em></p>
+<p><em>GIF showing all sign videos in the dataset for the word 'banana'</em></p>
 </div>
 
 #### **3. Data Preprocessing**
@@ -237,14 +237,14 @@ The videos from each data source had a lot of variety in their format (framerate
 
 <div align="center">
 <img src="assets/pose_for_casa_on_orig_and_black_raw.gif" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>-</em></p>
+<p><em>GIF showing raw pose estimation landmarks for the sign 'casa'</em></p>
 </div>
 
 We used developed a detailed preprocessing pipeline with OpenCV and NumPy to standardize the conditions between each data source. The pipeline would trim the series to the start and end of the sign, adjust signers to the same scale,  align the signers to the same central position, and apply interpolation to fill in frames where landmark detection failed. 
 
 <div align="center">
 <img src="assets/pose_for_casa_on_black_preproc.gif" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>-</em></p>
+<p><em>GIF showing pose estimation landmarks before and after preprocessing for the sign 'casa'</em></p>
 </div>
 
 
@@ -784,7 +784,7 @@ Looking at the frame rate of the videos, we can see that the data sources have a
 
 <div align="center">
 <img src="assets/fps_bar_chart.png" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Stacked bar chart of the number of videos per frame rate for each data source</em></p>
+<p><em>Stacked bar chart showing the distribution of frame rates, categorized by data source</em></p>
 </div>
 
 
@@ -805,7 +805,7 @@ The range of dimensions is quite large, from 240x176 to 1920x1080. So we will ne
 
 <div align="center">
 <img src="assets/video_dimensions_bar_chart.png" alt="isolated" title="hover hint" style="width: 95%; border: 2px solid #ddd;"/>
-<p><em>Stacked bar chart of the number of videos per video dimensions for each data source</em></p>
+<p><em>Stacked bar chart showing the distribution of video dimensions, categorized by data source</em></p>
 </div>
 
 Across the full dataset, the majority of videos are 1920x1080p.
@@ -816,7 +816,7 @@ For most data sources, videos can have two different dimensions. Except for INES
 
 <div align="center">
 <img src="assets/video_durations_orig_boxplot.png" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Boxplot of the video durations for the unprocessed dataset</em></p>
+<p><em>Boxplot of the video durations for the unprocessed dataset, categorized by data source</em></p>
 </div>
 
 Looking at the distribution of video durations for each data source, we can see that there is quite a difference between the data sources. 
@@ -841,7 +841,7 @@ Our preprocessing pipeline transforms raw video data into standardized landmark 
 
 <div align="center">
 <img src="assets/pose_for_casa_on_black_preproc.gif" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
-<p><em>MediaPipe Holistic landmarks after preprocessing for the word 'casa' across different data sources</em></p>
+<p><em>GIF showing pose estimation landmarks before and after preprocessing for the sign 'casa'</em></p>
 </div>
 
 ## **Pose estimation with MediaPipe Holistic**
@@ -854,7 +854,7 @@ We used the [MediaPipe Holistic](https://ai.google.dev/edge/mediapipe/solutions/
 
 <div align="center">
 <img src="assets/pose_for_casa_on_orig_and_black_raw.gif" alt="isolated" title="hover hint" style="width: 95%; border: 2px solid #ddd;"/>
-<p><em>MediaPipe Holistic detected landmarks for the word 'casa' for a video from each data source.</em></p>
+<p><em>GIF showing raw pose estimation landmarks for the sign 'casa'</em></p>
 </div>
 
 ### **MediaPipe Holistic Features:**
@@ -879,20 +879,22 @@ The next preprocessing step was to trim each video to include only the actual si
 We explored various different methods for measuring motion between frames. You can see the results of the three main measurement methods we used for the word 'aniversário' from the INES data source below.
 
 <div align="center">
-<h3><em>Motion Detection for "Aniversário"</em></h3>
-<img src="assets/motion_for_aniversario_all_ma.gif" alt="isolated" title="hover hint" style="width: 75%; border: 2px solid #ddd;"/>
-<p><em>Motion detection for the word 'aniversário' from the INES data source.</em></p>
+<h3><b><i>Motion Detection for "Aniversário" (INES data source)</i></b></h3>
+<img src="assets/motion_for_aniversario_all_ma.gif" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
+<p><em></em></p>
 </div>
 
-1. Absolute Frame Difference
+**1. Absolute Frame Difference**
 - Simple and computationally efficient
 - Compares consecutive frames using cv2.absdiff() to find pixel-wise differences
 - Sensitive to camera shake & lighting changes, and can detect noise as motion
-2. Background Subtraction
+
+**2. Background Subtraction**
 - Uses OpenCV's MOG2 (Mixture of Gaussians) background subtractor to build a statistical model of the background over time
 - Identifies foreground objects by comparing current frame against learned background over time
 - Measures motion intensity by counting non-zero pixels in the foreground mask
-3. Landmarks Difference
+
+**3. Landmarks Difference**
 - Analyzes Euclidean distance changes between MediaPipe landmark positions across consecutive frames
 - Supports pose, face, and hand landmarks with configurable inclusion/exclusion
 - Combines landmark distances using methods: mean, median, max, or RMS (root mean square)
@@ -905,9 +907,9 @@ Exploring each method individually, we found that while they all had slight diff
 In the end, we settled on using the **landmarks difference method only**. It was the most robust and consistent across data sources. We also preferred the simplicity of using one method over trying to find the best combination of multiple.
 
 <div align="center">
-<h3><em>Motion Detection for "Aniversário"</em></h3>
-<img src="assets/motion_for_aniversario_lm.gif" alt="isolated" title="hover hint" style="width: 75%; border: 2px solid #ddd;"/>
-<p><em>Motion detection for the word 'aniversário' from the INES data source.</em></p>
+<h3><b><i>Motion Detection for "Aniversário" (INES data source)</i></b></h3>
+<img src="assets/motion_for_aniversario_lm.gif" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
+<p><em></em></p>
 </div>
 
 We **used the `mean` combination method**, taking a simple average of all the frame-to-frame landmark distances for each frame to measure the motion. The other options were `median` (robust to outliers), `max` (considers only the largest movement) and `root mean square` (emphasizes larger movements).
@@ -924,7 +926,7 @@ Since we had such a variety of frame rates, we also **applied a moving average t
 
 Now we had a series of motion measurements for each frame, we had to develop methods that use them to identify the start and end points of the sign. 
 
-We explored various methods, but in the end we settled on a basic approach using thresholds to detect the start and end points of the sign.
+We explored various methods, but in the end we settled on a basic approach using thresholds to detect the start and end points of the sign:
 - Set an motion threshold for the start & end
   - We found 0.2 for both was quite robust to the differences in each data source.
 - From the beginning of the series, find the first frame where the motion crosses the threshold, return the previous frame as the start point
@@ -977,12 +979,12 @@ You can see the difference in distribution of the durations for the original and
 
 <div align="center">
 <img src="assets/video_durations_orig_boxplot.png" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Figure 1: A description of the image</em></p>
+<p><em>Boxplot of Duration by Data Source - Original Data</em></p>
 </div>
 
 <div align="center">
 <img src="assets/video_durations_proc_boxplot.png" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Figure 1: A description of the image</em></p>
+<p><em>Boxplot of Duration by Data Source - Preprocessed Data</em></p>
 </div>
 
 The difference in duration between the original and trimmed series was quite significant for some data sources. 
@@ -1074,18 +1076,20 @@ As much as we made an effort in preprocessing to remove significant differences 
 
 So to make sure our model generalised, we stratified each data source, to make sure an equal proportion of each was in each training / validation / testing split. We also wanted to do 5-fold cross validation, again to make sure our model generalised well. 
 
-With just 6 videos for each class, this meant dividing the training and testing sets like this:
+
 
 <div align="center">
+<p><h3><b><i>Train / Test Split</i></b></h3></p>
 <img src="assets/train_test_split.svg" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
-<p><em>-</em></p>
+<p>With just 6 videos for each class, this meant dividing the training and testing sets like this.</p>
 </div>
 
-And within the training set, dividing for 5-fold cross validation like this:
+
 
 <div align="center">
+<p><h3><b><i>Cross Validation Split</i></b></h3></p>
 <img src="assets/train_val_split.svg" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
-<p><em>-</em></p>
+<p>And within the training set, dividing for 5-fold cross validation like this.</p>
 </div>
 
 We achieved this using scikit-learn's `StratifiedGroupKFold` class.
@@ -1118,7 +1122,7 @@ There should be some natural variation in sequence length, each signer signs at 
 
 <div align="center">
 <img src="assets/framecount_by_word.png" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
-<p><em>Figure 1: A description of the image</em></p>
+<p><em></em></p>
 </div>
 
 <!-- <div align="center">
@@ -1183,16 +1187,7 @@ There should be some natural variation in sequence length, each signer signs at 
 ## **Feature Engineering**
 Using the **pose landmark features alone is not sufficient** for a model to understand the data. Since we understand what each pose landmark represents, we can imagine and engineer informative features from them. This is common practice when using pose landmarks to model Sign Languages. 
 
-We engineered the following features directly from a single 
-frame of pose landmarks, to better represent the information 
-in an individual frame. :
-- angle of the line between 3 landmarks representing:
-    - wrist & finger positions
-    - arm position
-- distance between 2 landmarks representing:
-    - wrist & finger positions
-    - arm position
-
+### **Types of Features**
 
 We engineered three main categories of features from the MediaPipe pose and hand landmarks:
 
@@ -1221,20 +1216,22 @@ We engineered three main categories of features from the MediaPipe pose and hand
    - The relative position of the frame in the full series (variable)
    - Mask indicating if the hand landmarks for the current frame are interpolated (variable)
    - Mask indicating the degree of interpolation for the current frame (variable)
-   
+
+### **Result**
+
 <div align="center">
-<img src="assets/feature_all_h.png" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
-<p><em>Figure 1: A description of the image</em></p>
+<img src="assets/feature_all_h.png" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+<p><em>Visualization of the features engineered for frame 18 of the sign 'cortar' (SignBank data source)</em></p>
 </div>
 
 All features were computed in 2D space and normalized appropriately to ensure consistency across different video sources and signers. The combination of these feature types allows the model to capture both the static pose information and the dynamic aspects of sign language gestures.
 
-
-  - Dropped the 150 landmark position coordinates
-  - Engineered 33 distances between landmarks in a frame
-  - Engineered 86 angles between landmarks in a frame
-  - Engineered 62 movements between landmarks in consecutive frames
-  - Additional 8 features representing various metadata
+**The resulting number of features for each type was:**
+- 50 landmark position coordinates
+- 33 distances between landmarks in a frame
+- 86 angles between landmarks in a frame
+- 62 movements between landmarks in consecutive frames
+- 8 features representing various metadata
 
 
 ## **Models**
@@ -1265,7 +1262,7 @@ We executed multiple training experiments, with different model types, input fea
 
 ### **Model Types**
 
-We ran experiments with all three model types.
+We ran experiments with these three model types and configurations:
 
 **RNN**
 - 2 layers
@@ -1283,7 +1280,7 @@ We ran experiments with all three model types.
 
 ### **Input Features**
 
-We ran experiments with 2 different sets of input features.
+We ran experiments with 2 different sets of input features:
 - Including the 150 landmark position coordinates
   - 339 input features for each frame
 - Excluding the 150 landmark position coordinates
@@ -1291,7 +1288,7 @@ We ran experiments with 2 different sets of input features.
 
 ### **Data Augmentation**
 
-All experiments used the same data augmentation settings.
+All experiments used the same data augmentation settings:
 
 - Rotation (+- 10 degrees)
   - 0.5 probability of applying the rotation
@@ -1300,7 +1297,7 @@ All experiments used the same data augmentation settings.
 
 ### **Training Configuration**
 
-All experiments used the same training configuration.
+All experiments used the same training configuration:
 
 - 300 epochs
 - 64 batch size
@@ -1399,7 +1396,7 @@ All experiments used the same training configuration.
 </table>
 <br/>
 
-**LSTM has the best results**, although the difference in performance between the 3 model types is not so significant.
+**LSTM models had the best results**, although the difference in performance between the 3 model types is not so significant.
 
 Most models have **Top-5 Accuracy > 90%**, but we care more about the basic accuracy.
 
