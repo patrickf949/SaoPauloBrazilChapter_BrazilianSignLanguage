@@ -44,7 +44,7 @@ To address the problem of communication barriers in healthcare settings for the 
 
 We used a combination of 4 public LIBRAS datasets to create a target dataset of 25 words related to the healthcare domain, with 6 videos each.
 
-We developed a detailed pre-processing pipeline to standardize the conditions between each data source, and a training pipeline that allowed us to experiment with different feature engineering, data augmentation, model architectures and training strategies.
+We developed a detailed preprocessing pipeline to standardize the conditions between each data source, and a training pipeline that allowed us to experiment with different feature engineering, data augmentation, model architectures and training strategies.
 
 With 6 videos per word, for each word we used 4 videos for training, 1 for validation, and 1 for testing. We had an even distribution of data sources in each split to avoid bias. 
 
@@ -242,7 +242,7 @@ The videos from each data source had a lot of variety in their format (framerate
 <p><em>-</em></p>
 </div>
 
-We used developed a detailed pre-processing pipeline with OpenCV and NumPy to standardize the conditions between each data source. The pipeline would trim the series to the start and end of the sign, adjust signers to the same scale,  align the signers to the same central position, and apply interpolation to fill in frames where landmark detection failed. 
+We used developed a detailed preprocessing pipeline with OpenCV and NumPy to standardize the conditions between each data source. The pipeline would trim the series to the start and end of the sign, adjust signers to the same scale,  align the signers to the same central position, and apply interpolation to fill in frames where landmark detection failed. 
 
 <div align="center">
 <img src="assets/pose_for_casa_on_black_preproc.gif" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
@@ -611,7 +611,7 @@ The project work will be divided into key tasks, which are each managed by Task 
 
 #### **Preprocessing & Data Augmentation** [Task Leader: Ben Thompson]
 - Implement an open source pose estimation model to extract hand, face, and body landmark keypoints from the videos
-- Develop a pre-processing pipeline for the landmark data for each video, retaining valuable information about the signer's position and movement, but reducing non-informative variation between data sources
+- Develop a preprocessing pipeline for the landmark data for each video, retaining valuable information about the signer's position and movement, but reducing non-informative variation between data sources
 - Design appropriate data augmentation techniques to mitigate issues with having such a small number of examples per class
 
 #### **Landmark Features -> Model** [Task Leader: Anastasiia Derzhanskaia]
@@ -861,7 +861,7 @@ We can also see that the V-Librasil signing speed is much slower than the other 
 
 We will apply some preprocessing to the videos to remove the pauses at the beginning and end of the video, since they don't contain any information about the sign. We will also sample frames from the videos as part of the data augmentation process, mitigating the large difference in speed between the data sources.
 
-## **Summary of the Pre-processing Pipeline**
+## **Summary of the Preprocessing Pipeline**
 
 Our preprocessing pipeline transforms raw video data into standardized landmark sequences suitable for machine learning. The pipeline consists of four main steps:
 
@@ -878,8 +878,8 @@ Our preprocessing pipeline transforms raw video data into standardized landmark 
 
 ## **Pose estimation with MediaPipe Holistic**
 
-The first pre-processing step was pose estimation on the videos. No pre-processing was done on the videos themselves. The resulting pose landmarks would be used:
-- In pre-processing for motion detection, offsetting, and scaling
+The first preprocessing step was pose estimation on the videos. No preprocessing was done on the videos themselves. The resulting pose landmarks would be used:
+- In preprocessing for motion detection, offsetting, and scaling
 - As the base features that will be input to the model
 
 We used the [MediaPipe Holistic](https://ai.google.dev/edge/mediapipe/solutions/guide) model to estimate pose landmarks for each frame.
@@ -897,12 +897,12 @@ We used the [MediaPipe Holistic](https://ai.google.dev/edge/mediapipe/solutions/
 - **Structured Output:** Provides landmark coordinates in a standardized format for consistent data processing, with coordinates normalized between 0.0 and 1.0 relative to image dimensions. Ensuring videos with different resolutions produce results in the same format.
 
 <!-- 
-We didn't do any pre-processing on the videos themselves. We wanted our classification pipeline to be compatible with a wide range of videos, and most open source pose estimation models are flexible to a wide range of outputs, while giving a standard output. We also thought that Pose Landmark information would be more easy to work with during pre-processing, giving us more flexibility to unify the features of the data sources. -->
+We didn't do any preprocessing on the videos themselves. We wanted our classification pipeline to be compatible with a wide range of videos, and most open source pose estimation models are flexible to a wide range of outputs, while giving a standard output. We also thought that Pose Landmark information would be more easy to work with during preprocessing, giving us more flexibility to unify the features of the data sources. -->
 
 
 ## **Start/End Point Trimming**
 
-The next pre-processing step was to trim each video to include only the actual sign performance, not the pause before and after. To do this, we developed a method to automatically detect the start and end points of signing based on motion. This allowed us to remove the periods at the beginning and end where the signer is stationary, resulting in shorter clips focused on the sign itself.
+The next preprocessing step was to trim each video to include only the actual sign performance, not the pause before and after. To do this, we developed a method to automatically detect the start and end points of signing based on motion. This allowed us to remove the periods at the beginning and end where the signer is stationary, resulting in shorter clips focused on the sign itself.
 
 ### **Motion Detection**
 
@@ -1093,14 +1093,119 @@ We developed a custom interpolation process to fill in the `None`s in the landma
 
 
 # **Model Development**
-## **Landmark -> LSTM method**
-For Sign Language recognition from video, the most common approach as of late is to extract features from each frame, treat the data as a time series, and use a model like LSTM.
+## **Overall Method: Landmark Feature Extraction -> Sequence Model**
 
-## **Overview**
-## **Train / Validation / Test split**
-- diagram from slides
+For Sign Language recognition from video, the most conventional approach as of late is to extract features from each frame, treat the data as a time series, and use a model architecture that handles sequence data, like LSTM.
+
+As discussed earlier in the report, we used pose estimation landmarks to develop the features for the model. For the model architecture, we experimented with RNN, LSTM, and Transformer and compared the results. 
+
+
+## **Train / Test Set split & Cross Validation**
+
+As much as we made an effort in preprocessing to remove significant differences between the data source like scale and position, some differences will still remain. Each signer will have their own style that has slightly different characteristics to the others- like speed movement, fluidity of movement, etc. 
+
+So to make sure our model generalised, we stratified each data source, to make sure an equal proportion of each was in each training / validation / testing split. We also wanted to do 5-fold cross validation, again to make sure our model generalised well. 
+
+With just 6 videos for each class, this meant dividing the training and testing sets like this:
+
+
+And within the training set, dividing for 5-fold cross validation like this:
+
+
+We achieved this using scikit-learn's `StratifiedGroupKFold` class.
+>This cross-validation object is a variation of StratifiedKFold [which] attempts to return stratified folds with non-overlapping groups. The folds are made by preserving the percentage of samples for each class in y in a binary or multiclass classification setting.\
+>\- [StratifiedGroupKFold documentation](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedGroupKFold.html)
+
+## **Frame Sampling**
+
+We decided to implement **random frame sampling from each series** as part of the training process. This was to:
+- Get a consistent sequence length for the input
+- Reduce the computational cost of the model without losing too much information
+- Act as a form of data augmentation to make the most of our small dataset
+
+### **Why not use the full sequences?**
+
+RNN, LSTM, and Transformer models can all **handle variable-length input** sequences if you use Padding + Masking, although each in slightly different ways. However the **variation in sequence lengths** in our dataset was very large.
+
+The shortest series in our dataset was for `Cortar` from the `INES` data source, which was 21 frames long. The longest series was for `Sorvete` from the `V-Librasil` data source, which was 408 frames long.
+
+There should be some natural variation in sequence length, each signer signs at different speeds. This will be somewhat associated with the data source, since most data sources had the same signer(s) for all their videos. But in our case, each data source also had **different framerates**, which has a significant impact on the sequence length. 
+
+
+<!-- <div align="center">
+<img src="assets/framecount_scatterplot.png" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+</div> -->
+
+<!-- <div align="center">
+<img src="assets/framecount_scatterplot_log.png" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+</div> -->
+
+<div align="center">
+<img src="assets/framecount_by_word.png" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+<p><em>Figure 1: A description of the image</em></p>
+</div>
+
+<!-- <div align="center">
+<img src="assets/framecount_by_word_log.png" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+</div> -->
+
+
+**Using the full series of frames for each data point would:**
+- **Be more computationally expensive**
+  - Particulary for Transformer, because every token 'attends' to every other token, meaning computation scales with O(n^2) where n is the sequence length
+- **Have diminishing returns on longer sequences**
+  - The difference between each frame at a higher framerate is much smaller, leading to repetitive information. It's likely we could skip some frames, and still have enough information to classify the sign.
+  - With RNN & LSTM, past a certain length, earlier information is essentially 'forgetten' 
+    - The gating mechanism in LSTM helps retain information for longer, but it it still finite
+  - With Transformer, self-attention means the model can access all tokens directly, so there's no 'forgetten' information
+    - But still, tasks have intrinsic context limits- past a certain length, extra tokens add noise instead of signal
+- **Introduce data source specific bias**
+  - With our small dataset, the model could learn to associate long sequences with a specific data source
+  - For example, the `INES` data source always has the shortest sequences.
+    - For the classes with their 1 `INES` series in the test set, the model could learn to disassociate long sequences with those classes during training.
+
+
+### **How to sample the frames?**
+
+**Set sample sequence length to 20 frames**
+- We couldn't go much shorter without losing too much information.
+  - The shortest series in our dataset was 21 frames (`Cortar` from the `INES` data source)
+- We couldn't go much longer without having to repeat frames for series that were shorter than 20 frames.
+
+**Randomly sample from a uniform distribution**
+- Sometimes this technique is used with a normal distribution, focusing on the center of the sequence
+- In our case, we had already trimmed the series to the sign performance, so we thought the uniform distribution would be more appropriate
+
+**Sample multiple times from each series**
+- In order to leverage the amount of information in the longer series, we decided to sample multiple times from each series.
+- Each series was sampled up to 5 times, with a replacement rate of 0.2
+- For shorter series, when there were insufficient remaining frames for a complete sample, they were combined with random frames that had already been sampled, to create one final complete sample
+- This resulted in roughly 4.5 samples per series per epoch
+
+**Resample at the start of each training epoch**
+- The random sampling was performed at the start of each training epoch, using the epoch number as a random seed.
+- This acts as a form of data augmentation
+  - 1 series turns into ~4.5 series
+  - Each epoch sees different frame combinations from the same videos
+- Using the epoch number as the seed ensures reproducibility while still providing variety
+
+
+## **Drawbacks**
+
+**One drawback of this approach is that we lose temporal information.**
+- We have already trimmed each series to the sign performance, and are sampling 20 frames from that
+  - In theory, this means the speed of the sign is not preserved
+  - All signs appear to take 20 frames to complete
+- To remedy this, we included the original frame count and real-time duration of each series as features
+- In future, we would like to combine the frame sampling with variable sequence length. For example:
+  - Set a target framerate, and determine the number of frames to sample based on the source duration
+  - So for 10fps, 30 frames are sampled from a 3 second sign, and 50 frames are sampled from a 5 second sign
+  - This way we remove the data source bias, without losing the temporal information
+
+
+
 ## **Feature Engineering**
-Using the pose landmark features alone is not sufficient for a model to understand the data. Since we understand what each pose landmark represents, we can imagine and engineer informative features from them. This is common practice when using pose landmarks to model Sign Languages. 
+Using the **pose landmark features alone is not sufficient** for a model to understand the data. Since we understand what each pose landmark represents, we can imagine and engineer informative features from them. This is common practice when using pose landmarks to model Sign Languages. 
 
 We engineered the following features directly from a single 
 frame of pose landmarks, to better represent the information 
@@ -1168,34 +1273,268 @@ Be able to resume interrupted runs from the same place with the same environment
 
 # **Results**
 
+## **Experiments**
 
+We executed multiple training experiments, with different model types, input features, and data augmentation techniques.
 
-#### **Details about the best performing model:**
-- **LSTM architecture:**
-  - 2 layers
-  - 256 hidden units
-- **189 Input Features for 20 frames per sample:**
+### **Model Types**
+
+We ran experiments with all three model types.
+
+**RNN**
+- 2 layers
+- 256 hidden units
+
+**LSTM**
+- 2 layers
+- 256 hidden units
+
+**Transformer**
+- 2 encoder layers
+- 128-dimensional hidden size
+- 8 attention heads
+- Feedforward hidden size: 256
+
+### **Input Features**
+
+We ran experiments with 2 different sets of input features.
+
+- 189 features for 20 frames per sample
   - Dropped the raw landmark positions
   - Engineered X distances between landmarks in a frame
   - Engineered Y angles between landmarks in a frame
   - Engineered Z movements between landmarks in consecutive frames
   - Additional N features representing various metadata
-- **Data augmentation:**
-  - Rotation (+- 10 degrees)
-  - Noise (0.05 std)
-- **Training configuration:**
-  - 300 epochs
-  - 64 batch size
-  - 5-fold cross validation
-  - AdamW optimizer
-  - ReduceLROnPlateau learning rate scheduler
-  - Early stopping with patience = 20
+
+### **Data Augmentation**
+
+All experiments used the same data augmentation settings.
+
+- Rotation (+- 10 degrees)
+- Noise (0.05 std)
+
+### **Training Configuration**
+
+All experiments used the same training configuration.
+
+- 300 epochs
+- 64 batch size
+- 5-fold cross validation
+- AdamW optimizer
+- ReduceLROnPlateau learning rate scheduler
+- Early stopping with patience = 20
+
+## **Summary of results**
+
+<table style="font-size: smaller; text-align: center; table-layout: fixed; width: 100%;">
+  <colgroup>
+    <col style="width: 16%;">
+    <col style="width: 10%;">
+    <col style="width: 14%;">
+    <col style="width: 12%;">
+    <col style="width: 12%;">
+    <col style="width: 10%;">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Model Type</th>
+      <th>n_features</th>
+      <th>Including position</th>
+      <th>Loss</th>
+      <th>Acc</th>
+      <th>Top-2 Acc</th>
+      <th>Top-3 Acc</th>
+      <th>Top-4 Acc</th>
+      <th>Top-5 Acc</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>RNN</td>
+      <td>189</td>
+      <td>False</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>RNN</td>
+      <td>339</td>
+      <td>False</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td><b>LSTM</b></td>
+      <td><b>189</b></td>
+      <td><b>False</b></td>
+      <td><b>0.0000</b></td>
+      <td><b>0.0000</b></td>
+      <td><b>0.0000</b></td>
+      <td><b>0.0000</b></td>
+      <td><b>0.0000</b></td>
+      <td><b>0.0000</b></td>
+    </tr>
+    <tr>
+      <td>LSTM</td>
+      <td>339</td>
+      <td>False</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>Transformer</td>
+      <td>189</td>
+      <td>False</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>Transformer</td>
+      <td>339</td>
+      <td>False</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+    </tr>
+  </tbody>
+</table>
+<br/>
+
+
+<table style="font-size: smaller; text-align: center; table-layout: fixed; width: 100%;">
+  <colgroup>
+    <col style="width: 16%;">
+    <col style="width: 10%;">
+    <col style="width: 14%;">
+    <col style="width: 12%;">
+    <col style="width: 12%;">
+    <col style="width: 10%;">
+    <col style="width: 10%;">
+    <col style="width: 8%;">
+    <col style="width: 8%;">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Model Type</th>
+      <th>n_features</th>
+      <th>Including position</th>
+      <th>Best epoch</th>
+      <th>Train Loss</th>
+      <th>Val Loss</th>
+      <th>Test Loss</th>
+      <th>Test Acc</th>
+      <th>Test Top-5 Acc</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>RNN</td>
+      <td>189</td>
+      <td>False</td>
+      <td>100</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>RNN</td>
+      <td>339</td>
+      <td>False</td>
+      <td>100</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>LSTM</td>
+      <td>189</td>
+      <td>False</td>
+      <td>100</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>LSTM</td>
+      <td>339</td>
+      <td>False</td>
+      <td>100</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>Transformer</td>
+      <td>189</td>
+      <td>False</td>
+      <td>100</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>Transformer</td>
+      <td>339</td>
+      <td>False</td>
+      <td>100</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+    </tr>
+  </tbody>
+</table>
+<br/>
+
+
+## **Best Model Results**
+
+The training loss and validation loss for this model were `0.02336` and `0.00660` respectively. These are significantly lower than the test loss, **indicating overfitting**. 
+
+We took **measures to prevent overfitting**: like randomly sampling frames, applying data augmentation, and stratifying the data sources in each split. The data augmentation is the reason the training loss is higher than the validation loss. However the model still overfits in the end. 
+
+We expect that the small dataset size is a large reason the model overfits. To remedy this, a larger dataset would of course help, but in lieu of that, we could apply **more aggresive data augmentation** to help the model generalize better to new features in unseen data.
   
-## **Overview**
-## **Analysis**
-### **Future ideas**
+## **Future ideas**
 leverage the power of hydra to Gridsearch exp params
 Leverage the power of hydra and optuna to find best prams 
-
+engineer more features
+more aggressive data augmentation
+expanding dataset
+sample number of frames based on duration and set fps (to capture temporal info like speed of sign / amount of movement between each frame)
 
 # **Demo Application Development**
+
+
+# TODO
+- titles & captions for plots
+- 
