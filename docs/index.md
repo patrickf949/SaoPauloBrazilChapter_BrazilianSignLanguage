@@ -267,36 +267,6 @@ The second deliverable for this project was a demo application. We developed the
 
 # **Report**
 
-# **Contents**
-- [**Introduction**](#introduction)
-  - [Problem statement](#problem-statement)
-- [**Research & Planning**](#research--planning)
-  - [Research](#research)
-  - [Data Sources: LIBRAS Datasets](#data-sources-libras-datasets)
-  - [Existing Literature: Sign Language Processing with LIBRAS Data](#existing-literature-sign-language-processing-with-libras-data)
-  - [Plan](#plan)
-- [**Data Collection**](#data-collection)
-  - [Scraping](#scraping)
-  - [Cleaning](#cleaning)
-  - [Review steps](#review-steps)
-  - [Final dataset](#final-dataset)
-- [**Data Preprocessing**](#data-preprocessing)
-  - [EDA](#eda)
-  - [Pose estimation with MediaPipe Holistic](#pose-estimation-with-mediapipe-holistic)
-  - [Start/End Point Trimming](#startend-point-trimming)
-- [**Model Development**](#model-development)
-  - [Landmark -> LSTM method](#landmark---lstm-method)
-  - [Overview](#overview)
-  - [Train / Validation / Test split](#train--validation--test-split)
-  - [Feature Engineering](#feature-engineering)
-  - [Data Augmentation](#data-augmentation)
-  - [Models](#models)
-  - [Training Process](#training-process)
-- [**Results**](#results)
-  - [Overview](#overview-1)
-  - [Analysis](#analysis)
-<!-- - [**Demo Application Development**](#demo-application-development) -->
-
 # **Introduction**
 ## **Problem statement**
 
@@ -809,7 +779,7 @@ Each word had 6 videos, from the 4 data sources.
 
 There are significant differences in the videos between the data sources, and also some differences within data sources.
 
-### **FPS**
+### **Frame Rate**
 Looking at the frame rate of the videos, we can see that the data sources have a wide range of frame rates.
 
 <div align="center">
@@ -822,7 +792,7 @@ Across the full dataset, the majority of videos have a frame rate of 60 fps.
 
 For most data sources, all videos have the same frame rate. Except for V-Librasil, where we have examples with 24, 30, and 60 fps.
 
-### **Dimensions**
+### **Video Dimensions**
 
 Looking at the dimensions of the videos, we can see that the data sources also have a wide range of dimensions.
 
@@ -842,7 +812,7 @@ Across the full dataset, the majority of videos are 1920x1080p.
 
 For most data sources, videos can have two different dimensions. Except for INES, where all examples are 240x176
 
-### **Durations**
+### **Video Durations**
 
 <div align="center">
 <img src="assets/video_durations_orig_boxplot.png" alt="isolated" title="hover hint" style="width: 85%; border: 2px solid #ddd;"/>
@@ -1260,9 +1230,13 @@ We engineered three main categories of features from the MediaPipe pose and hand
 All features were computed in 2D space and normalized appropriately to ensure consistency across different video sources and signers. The combination of these feature types allows the model to capture both the static pose information and the dynamic aspects of sign language gestures.
 
 
+  - Dropped the 150 landmark position coordinates
+  - Engineered 33 distances between landmarks in a frame
+  - Engineered 86 angles between landmarks in a frame
+  - Engineered 62 movements between landmarks in consecutive frames
+  - Additional 8 features representing various metadata
 
-## **Data Augmentation**
-- diagram from slides??
+
 ## **Models**
 ## **Training Process**
 As this is an unfounded, open source project, we didn't have convenient access to GPUs for training. 
@@ -1310,20 +1284,19 @@ We ran experiments with all three model types.
 ### **Input Features**
 
 We ran experiments with 2 different sets of input features.
-
-- 189 features for 20 frames per sample
-  - Dropped the 150 landmark position coordinates
-  - Engineered 33 distances between landmarks in a frame
-  - Engineered 86 angles between landmarks in a frame
-  - Engineered 62 movements between landmarks in consecutive frames
-  - Additional 8 features representing various metadata
+- Including the 150 landmark position coordinates
+  - 339 input features for each frame
+- Excluding the 150 landmark position coordinates
+  - 189 features for 20 frames per sample
 
 ### **Data Augmentation**
 
 All experiments used the same data augmentation settings.
 
 - Rotation (+- 10 degrees)
+  - 0.5 probability of applying the rotation
 - Noise (0.05 std)
+  - 0.5 probability of applying the noise
 
 ### **Training Configuration**
 
@@ -1338,215 +1311,282 @@ All experiments used the same training configuration.
 
 ## **Summary of results**
 
-<table style="font-size: smaller; text-align: center; table-layout: fixed; width: 100%;">
+<table style="font-size: medium; text-align: center; table-layout: fixed; width: 100%;">
   <colgroup>
     <col style="width: 16%;">
-    <col style="width: 10%;">
-    <col style="width: 14%;">
     <col style="width: 12%;">
     <col style="width: 12%;">
-    <col style="width: 10%;">
+    <col style="width: 12%;">
+    <col style="width: 12%;">
+    <col style="width: 12%;">
+    <col style="width: 12%;">
+    <col style="width: 12%;">
   </colgroup>
   <thead>
     <tr>
       <th>Model Type</th>
-      <th>n_features</th>
-      <th>Including position</th>
+      <th>No. of Features</th>
       <th>Loss</th>
-      <th>Acc</th>
-      <th>Top-2 Acc</th>
-      <th>Top-3 Acc</th>
-      <th>Top-4 Acc</th>
-      <th>Top-5 Acc</th>
+      <th>Accuracy </th>
+      <th>Top-2 Accuracy</th>
+      <th>Top-3 Accuracy</th>
+      <th>Top-4 Accuracy</th>
+      <th>Top-5 Accuracy</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>RNN</td>
       <td>189</td>
-      <td>False</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
+      <td>2.802</td>
+      <td>51.33%</td>
+      <td>70.80%</td>
+      <td>75.22%</td>
+      <td>85.84%</td>
+      <td>89.38%</td>
     </tr>
     <tr>
       <td>RNN</td>
       <td>339</td>
-      <td>False</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
+      <td>2.673</td>
+      <td>62.83%</td>
+      <td>81.42%</td>
+      <td>86.73%</td>
+      <td>92.04%</td>
+      <td>94.69%</td>
     </tr>
     <tr>
       <td><b>LSTM</b></td>
       <td><b>189</b></td>
-      <td><b>False</b></td>
-      <td><b>0.0000</b></td>
-      <td><b>0.0000</b></td>
-      <td><b>0.0000</b></td>
-      <td><b>0.0000</b></td>
-      <td><b>0.0000</b></td>
-      <td><b>0.0000</b></td>
+      <td><b>2.664</b></td>
+      <td><b>66.37%</b></td>
+      <td><b>77.88%</b></td>
+      <td><b>84.07%</b></td>
+      <td><b>89.38%</b></td>
+      <td><b>93.81%</b></td>
     </tr>
     <tr>
       <td>LSTM</td>
       <td>339</td>
-      <td>False</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
+      <td>2.694</td>
+      <td>63.72%</td>
+      <td>75.22%</td>
+      <td>84.96%</td>
+      <td>93.81%</td>
+      <td>95.58%</td>
     </tr>
     <tr>
       <td>Transformer</td>
       <td>189</td>
-      <td>False</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
+      <td>2.715</td>
+      <td>61.06%</td>
+      <td>75.22%</td>
+      <td>84.96%</td>
+      <td>86.73%</td>
+      <td>92.92%</td>
     </tr>
     <tr>
       <td>Transformer</td>
       <td>339</td>
-      <td>False</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
+      <td>2.695</td>
+      <td>60.18%</td>
+      <td>81.42%</td>
+      <td>86.73%</td>
+      <td>90.27%</td>
+      <td>91.15%</td>
     </tr>
   </tbody>
 </table>
 <br/>
 
+**LSTM has the best results**, although the difference in performance between the 3 model types is not so significant.
 
-<table style="font-size: smaller; text-align: center; table-layout: fixed; width: 100%;">
-  <colgroup>
-    <col style="width: 16%;">
-    <col style="width: 10%;">
-    <col style="width: 14%;">
-    <col style="width: 12%;">
-    <col style="width: 12%;">
-    <col style="width: 10%;">
-    <col style="width: 10%;">
-    <col style="width: 8%;">
-    <col style="width: 8%;">
-  </colgroup>
-  <thead>
-    <tr>
-      <th>Model Type</th>
-      <th>n_features</th>
-      <th>Including position</th>
-      <th>Best epoch</th>
-      <th>Train Loss</th>
-      <th>Val Loss</th>
-      <th>Test Loss</th>
-      <th>Test Acc</th>
-      <th>Test Top-5 Acc</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>RNN</td>
-      <td>189</td>
-      <td>False</td>
-      <td>100</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-    </tr>
-    <tr>
-      <td>RNN</td>
-      <td>339</td>
-      <td>False</td>
-      <td>100</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-    </tr>
-    <tr>
-      <td>LSTM</td>
-      <td>189</td>
-      <td>False</td>
-      <td>100</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-    </tr>
-    <tr>
-      <td>LSTM</td>
-      <td>339</td>
-      <td>False</td>
-      <td>100</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-    </tr>
-    <tr>
-      <td>Transformer</td>
-      <td>189</td>
-      <td>False</td>
-      <td>100</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-    </tr>
-    <tr>
-      <td>Transformer</td>
-      <td>339</td>
-      <td>False</td>
-      <td>100</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-      <td>0.0000</td>
-    </tr>
-  </tbody>
-</table>
-<br/>
+Most models have **Top-5 Accuracy > 90%**, but we care more about the basic accuracy.
+
+For LSTM & Transformer, removing position features actually **improves test performance**. This is probably because removing them causes the model to overfit less, since for all models, including the position features resulted in lower Training Loss.
+
+
 
 
 ## **Best Model Results**
+
+The best performing model was the **LSTM model with 189 features**
+
+### **Overfitting**
 
 The training loss and validation loss for this model were `0.02336` and `0.00660` respectively. These are significantly lower than the test loss, **indicating overfitting**. 
 
 We took **measures to prevent overfitting**: like randomly sampling frames, applying data augmentation, and stratifying the data sources in each split. The data augmentation is the reason the training loss is higher than the validation loss. However the model still overfits in the end. 
 
 We expect that the small dataset size is a large reason the model overfits. To remedy this, a larger dataset would of course help, but in lieu of that, we could apply **more aggresive data augmentation** to help the model generalize better to new features in unseen data.
+
+### **Misclassification**
+ 
+Inspecting the results on the test set in more detail, we can which signs are being consistently misclassified by the model. Random sampling of 20-frame sequences was done on the test set too. So although there was just one source video for each sign, these results are based on the model's predictions on multiple samples from each.
+
+<div align="center">
+<img src="assets/confusion_matrix.png" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+<p><em></em></p>
+</div>
+
+**Examples of misclassifications:**
+- `banana` and `ajudar` were usually misclassified as `ano`
+- `casa` and sometimes `cafe` were misclassified as `familia`
+- `sopa` was always misclassified, as either `animal` or `cafe`
+
+<!-- <div align="center">
+<img src="assets/probability_heatmap.png" alt="isolated" title="hover hint" style="width: 100%; border: 2px solid #ddd;"/>
+<p><em>Figure 1: A description of the image</em></p>
+</div> -->
+
+<!-- ### **Feature Importance** -->
+
+
+
+
+
+
   
 ## **Future ideas**
-leverage the power of hydra to Gridsearch exp params
-Leverage the power of hydra and optuna to find best prams 
-engineer more features
-more aggressive data augmentation
-expanding dataset
-sample number of frames based on duration and set fps (to capture temporal info like speed of sign / amount of movement between each frame)
+
+We are very proud of what we managed to achieve in such a short time with this project. We were able to develop a model with performance matching similar projects in the LIBRAS domain. But we also saw many opportunities for improvement, giving us lots of promising ideas for future improvements.
+
+### **Run a wider range of experiments**
+
+We would leverage the power of our Hydra configured training pipeline to find the best combination of model architecture and hyperparameters:
+- By gridsearching ranges of settings and parameters we think will address the issues
+- By using Hydra's integration with Optuna to intelligently search for the best settings and parameters
+
+### **Further develop the feature engineering process**
+
+We can already see that the features we engineered are informative, because the performance was often better when we relied on them over the raw pose landmarks.
+- We would like to engineer more features, and test their performance
+- We would also like to explore the feature importance to better understand which are most informative
+- We only used the 2D landmark coordinates, but our codebase is set up to easily use the 3D landmark coordinates too
+
+### **Further develop the data augmentation process**
+Since we experienced quite a difference in performance between the training and testing environments, we would at least like to experiment with more variety in the data augmentation process
+- At least try increasing the probability of application for more aggressive data augmentation
+- Try different ranges for the rotation and noise
+- Apply some new types of data augmentation
+
+### **Expand the dataset**
+
+We had 25 classes in our dataset. The signs for some of these were quite similar, resulting in some misclassification.
+
+We would like to expand the dataset to include more classes. Some distinct signs could improve the scope of our model without hurting overall performance. It could also potentially help the model generalize better by seeing more variety in the data.
+
+### **More sophisticated frame sampling**
+
+We would further develop the frame sampling implementation to include variable sequence length:
+- Set a target framerate, and determine the number of frames to sample based on the source duration
+- This would help to retain temporal info like speed of sign / amount of movement between each frame
 
 # **Demo Application Development**
 
+# **Contributors**
 
-# TODO
-- titles & captions for plots
-- 
+The main work for this project took place over 4 months, from February to June 2025. Below is a list of the people that contributed to the project. 
+
+Feel free to reach out to them if you have questions about any aspect of the project. Some members have also made additional changes & improvements since the end of the main project period.
+
+### **Project Leader**
+<p><a href="https://www.linkedin.com/in/ben-d-thompson/"><strong>Ben Thompson</strong></a></p>
+<ul>
+<li>Tasks: Research Resources, Data Scraping, Data Preprocessing, Model Development, Demo App Development</li>
+<li>Omdena Role: Project Leader & Lead ML Engineer</li>
+</ul>
+
+### **Task Leaders**
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+<div>
+
+<p><a href="https://www.linkedin.com/in/ayushya-pare/"><strong>Ayushya Pare</strong></a></p>
+<ul>
+<li>Tasks: Research Resources, Data Scraping</li>
+<li>Omdena Role: Lead ML Engineer</li>
+</ul>
+
+<p><a href="https://www.linkedin.com/in/gustavopsantos"><strong>Gustavo Santos</strong></a></p>
+<ul>
+<li>Tasks: Data Scraping, Data Cleaning & Organisation</li>
+<li>Omdena Role: Lead ML Engineer</li>
+</ul>
+
+</div>
+
+<div>
+
+<p><a href="https://www.linkedin.com/in/anastasiia-derzhanskaia/"><strong>Anastasiia Derzhanskaia</strong></a></p>
+<ul>
+<li>Tasks: Model Development</li>
+<li>Omdena Role: Lead ML Engineer</li>
+</ul>
+
+<p><a href="https://www.linkedin.com/in/patrick-fitz-b2186a11b/"><strong>Patrick Fitz</strong></a></p>
+<ul>
+<li>Tasks: Demo App Development</li>
+<li>Omdena Role: Lead ML Engineer</li>
+</ul>
+
+</div>
+
+</div>
+
+### **Task Contributors**
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+<div>
+
+<p><a href="https://www.linkedin.com/in/michael-spurgeon-jr-ab3661321/"><strong>Michael Spurgeon Jr</strong></a></p>
+<ul>
+<li>Tasks: Data Scraping, Model Development</li>
+<li>Omdena Role: ML Engineer</li>
+</ul>
+
+<p><a href="https://github.com/prajinip13"><strong>Pooja Prasad</strong></a></p>
+<ul>
+<li>Tasks: Data Review & Cleaning</li>
+<li>Omdena Role: Junior ML Engineer</li>
+</ul>
+
+<p><a href="https://www.linkedin.com/in/ethel-phiri261312/"><strong>Ethel Phiri</strong></a></p>
+<ul>
+<li>Tasks: Data Scraping</li>
+<li>Omdena Role: Junior ML Engineer</li>
+</ul>
+
+<p><a href="https://www.linkedin.com/in/damla-helvaci/"><strong>Damla Helvaci</strong></a></p>
+<ul>
+<li>Tasks: Data Review & Cleaning</li>
+<li>Omdena Role: Junior ML Engineer</li>
+</ul>
+
+</div>
+
+<div>
+
+<p><a href="https://www.linkedin.com/in/wafa-basoodan-9447616a/"><strong>Wafa Basudan</strong></a></p>
+<ul>
+<li>Tasks: Model Development</li>
+<li>Omdena Role: ML Engineer</li>
+</ul>
+
+<p><a href="https://www.linkedin.com/in/kunal-sood-3b993225b/"><strong>Kunal Sood</strong></a></p>
+<ul>
+<li>Tasks: Model Development</li>
+<li>Omdena Role: Junior ML Engineer</li>
+</ul>
+
+<p><a href="https://github.com/guluzar-gb"><strong>Gulzar Helvaci</strong></a></p>
+<ul>
+<li>Tasks: Data Review & Cleaning</li>
+<li>Omdena Role: Junior ML Engineer</li>
+</ul>
+
+</div>
+
+</div>
