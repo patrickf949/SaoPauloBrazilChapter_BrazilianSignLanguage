@@ -1,5 +1,3 @@
-<mark>This page is under construction</mark>
-
 # **Sign Language Translation for Brazilian Healthcare - Omdena Project Page**
 
 ## **Background**
