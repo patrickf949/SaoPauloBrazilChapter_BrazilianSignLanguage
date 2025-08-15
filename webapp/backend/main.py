@@ -35,7 +35,7 @@ async def predict_video(
     sampling_func: callable = Depends(get_sampling_func)
 ):
     # 1. Validate video
-    VideoValidator.validate_extension(file.filename)
+    await VideoValidator.validate_file(file)
 
     # 2. Save file
     video_path = await VideoSaver.save(file, config.INTERIM_DIR)
@@ -74,14 +74,13 @@ async def predict_video(
     ResultsSaver.save_txt(prediction, probs, label_encoding, file.filename, config.OUTPUT_DIR)
 
     # 10. Cleanup
-    cleanup_files([video_path, landmarks_path,output_video_path])
+    cleanup_files([config.DATA_DIR])
 
     # 11. Response
     return PredictionResponse(
         prediction={"class_id": int(prediction), "label": label_encoding[str(int(prediction))]},
         probabilities={label_encoding[str(i)]: float(p) for i, p in enumerate(probs)},
         output_files={
-            "skeleton_video": cloud_url,
-            "results_txt": str(config.OUTPUT_DIR / file.filename.replace(".mp4", ".txt"))
+            "skeleton_video": cloud_url
         }
     )
