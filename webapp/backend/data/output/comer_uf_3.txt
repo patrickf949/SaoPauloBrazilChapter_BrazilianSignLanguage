@@ -1,3 +1,0 @@
-prediction: 
-	class 11: comer
-probabilities: 	homem: 0.000, 	cabeça: 0.000, 	bebê: 0.000, 	aniversário: 0.000, 	jovem: 0.000, 	crescer: 0.000, 	ano: 0.000, 	cortar: 0.000, 	garganta: 0.000, 	banana: 0.000, 	ouvir: 0.000, 	comer: 1.000, 	vagina: 0.000, 	sopa: 0.000, 	casa: 0.000, 	ajudar: 0.000, 	carne: 0.000, 	sorvete: 0.000, 	banheiro: 0.000, 	família: 0.000, 	café: 0.000, 	animal: 0.000, 	pai: 0.000, 	filho: 0.000, 	cebola: 0.000, 
