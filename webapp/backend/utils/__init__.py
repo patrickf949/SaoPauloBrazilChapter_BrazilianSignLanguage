@@ -22,11 +22,11 @@ def cleanup_files(file_paths: list[str]) -> None:
     for file_path in file_paths:
         path_obj = Path(file_path)
 
-        # Delete the file if it exists
-        if path_obj.exists():
-            path_obj.unlink()
+        # Delete the data directory
         try:
-            path_obj.unlink()
-            logger.info(f"Deleted interim file: {file_path}")
+           
+            shutil.rmtree(path_obj)
+            logger.info(f"Deleted folder: {file_path}")
+            
         except Exception as e:
             logger.warning(f"Failed to delete {file_path}: {e}")
