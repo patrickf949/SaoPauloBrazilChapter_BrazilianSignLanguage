@@ -36,7 +36,13 @@ docs/*
 /webapp/backend/data/interim/RawMotionMeasurements/*/**
 /webapp/backend/data/preprocessed/*/**
 !/webapp/backend/data/interim/*/.gitkeep
+
+**/data/interim/
+**/data/output/
+
 /webapp/backend/shared_code
 
 # MacOS system files
 .DS_Store
+
+/docs
