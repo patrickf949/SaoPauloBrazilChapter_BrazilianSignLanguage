@@ -1,0 +1,14 @@
+source "https://rubygems.org"
+
+# Jekyll and GitHub Pages
+gem "github-pages", group: :jekyll_plugins
+
+# Jekyll plugins for GitBook theme
+gem "jekyll-feed"
+gem "jekyll-sitemap" 
+gem "jekyll-seo-tag"
+
+# For local development
+gem "webrick", "~> 1.7" if RUBY_VERSION >= "3.0.0"
+
+gem "jekyll", "~> 3.10"
