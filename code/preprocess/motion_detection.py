@@ -358,44 +358,52 @@ def get_frame(input_video_path, frame_number):
     cap.release()
     return np.array(frame)
 
-def create_frame_with_motion_graph(frame, motion_data, frame_number, legend_labels=None, target_width=1280, target_height=720, graph_height=300, figsize=(12, 4), dpi=100, alpha=1):
+def create_frame_with_motion_graph(
+    frame,
+    motion_data,
+    frame_number,
+    legend_labels=None,
+    target_width=None,
+    target_height=None, 
+    figsize=(12, 4), 
+    dpi=100, 
+    alpha=1, 
+    colors=plt.cm.tab10.colors,
+    ):
     '''
     Creates a single frame with video and motion graph.
     Returns the combined frame.
+    The plot is created first at the specified figsize and dpi, then the video frame
+    is resized to fit the specified height while maintaining aspect ratio.
     
     Args:
         frame: The video frame to display
         motion_data: List of motion measurement series
         frame_number: Current frame number for the vertical line
         legend_labels: List of labels for the legend. If None, uses "Series 1", "Series 2", etc.
-        target_width: Width of the output frame
-        target_height: Height of the video portion of the frame
-        graph_height: Height of the graph portion of the frame
-        figsize: Size of the matplotlib figure
+        target_width: Optional target width for the final output. If None, uses the plot's width
+        target_height: Target height for the video portion (will be padded if needed)
+        figsize: Size of the matplotlib figure in inches
         dpi: DPI of the matplotlib figure
-        alpha: Transparency for all lines except the last one (default: 0.5)
+        alpha: Transparency for all lines except the last one
     '''
-    # Get original video dimensions
-    original_height, original_width = frame.shape[:2]
-
     # Set up the plot for motion graph
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     ax.set_xlim(0, len(motion_data[0]))
-    ax.set_ylim(0, 1)  # Normalized data is between 0 and 1
-    ax.set_title("Motion Over Time (Normalized)")
-    ax.set_xlabel("Frame")
-    ax.set_ylabel("Motion Value")
+    ax.set_ylim(-0.05, 1.05)  # Normalized data is between 0 and 1
+    ax.set_title("Motion Measurement Over Time", fontweight='bold')
+    ax.set_xlabel("Frame", fontweight='bold')
+    ax.set_ylabel("Motion Measurement\n(0-1 normalized)", fontweight='bold')
     
     # Plot each motion data series with a legend
-    colors = plt.cm.tab10.colors  # Use a color map for distinct colors
     lines = []
     labels = []
     for i, series in enumerate(motion_data):
         label = legend_labels[i] if legend_labels and i < len(legend_labels) else f"Series {i + 1}"
         # Make all lines except the last one semi-transparent and dotted
-        line_alpha = alpha if i < len(motion_data) - 1 else 1.0
+        line_alpha = alpha if i < len(motion_data) - 1 else alpha
         line_style = '--' if i < len(motion_data) - 1 else '-'
-        line_width = 1 if i < len(motion_data) - 1 else 2
+        line_width = 1.5 if i < len(motion_data) - 1 else 3
         line, = ax.plot(range(len(series)), series, color=colors[i % len(colors)], 
                        lw=line_width, label=label, alpha=line_alpha, linestyle=line_style)
         lines.append(line)
@@ -407,33 +415,11 @@ def create_frame_with_motion_graph(frame, motion_data, frame_number, legend_labe
     # Create the vertical line that will move with the frames
     vertical_line, = ax.plot([0, 0], [0, 1], color="black", lw=2)
     vertical_line.set_xdata([frame_number, frame_number])
-
+    ax.hlines(1, 0, len(motion_data[0]), colors='gray', linestyles=':', linewidth=1, alpha=0.75)
+    ax.hlines(0, 0, len(motion_data[0]), colors='gray', linestyles=':', linewidth=1, alpha=0.75)
     # Disable the toolbar and set the figure to not block
     plt.tight_layout()
     plt.ion()
-
-    # Resize the input video to match the target width while maintaining aspect ratio
-    aspect_ratio = original_width / original_height
-    resized_width = target_width
-    resized_height = int(target_width / aspect_ratio)
-
-    # If the resized height exceeds the target height, adjust to fit
-    if resized_height > target_height:
-        resized_height = target_height
-        resized_width = int(target_height * aspect_ratio)
-
-    # Resize the video frame
-    resized_frame = cv2.resize(frame, (resized_width, resized_height), interpolation=cv2.INTER_LINEAR)
-
-    # Create a blank canvas with the target dimensions
-    combined_frame = np.zeros((target_height + graph_height, target_width, 3), dtype=np.uint8)
-
-    # Calculate padding to center the resized video on the canvas
-    x_offset = (target_width - resized_width) // 2
-    y_offset = (target_height - resized_height) // 2
-
-    # Place the resized video on the canvas
-    combined_frame[y_offset:y_offset + resized_height, x_offset:x_offset + resized_width] = resized_frame
 
     # Draw the plot
     fig.canvas.draw()
@@ -442,22 +428,65 @@ def create_frame_with_motion_graph(frame, motion_data, frame_number, legend_labe
     graph_img = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
     graph_img = graph_img.reshape(fig.canvas.get_width_height()[::-1] + (4,))
     graph_img = cv2.cvtColor(graph_img, cv2.COLOR_RGBA2BGR)
+    # Get the actual dimensions of the plot
+    graph_height = graph_img.shape[0]
+    graph_width = graph_img.shape[1]
+    
+    # If target_width is specified, resize the plot
+    if target_width is not None:
+        graph_img = cv2.resize(graph_img, (target_width, int(graph_height*target_width/graph_width)), interpolation=cv2.INTER_LINEAR)
+        graph_width = target_width
+        graph_height = graph_img.shape[0]
 
-    # Resize the graph to match the target width
-    graph_img = cv2.resize(graph_img, (target_width, graph_height), interpolation=cv2.INTER_AREA)
+    # Calculate available height for video frame
+    video_target_height = target_height - graph_height if target_height else frame.shape[0]
+    
+    # Calculate dimensions maintaining aspect ratio
+    frame_aspect_ratio = frame.shape[1] / frame.shape[0]
+    video_height = video_target_height
+    video_width = int(video_height * frame_aspect_ratio)
 
-    # Place the graph at the bottom of the canvas
-    combined_frame[target_height:, :] = graph_img
+    # If width exceeds target_width, scale down height to maintain aspect ratio
+    if video_width > target_width:
+        video_width = target_width
+        video_height = int(video_width / frame_aspect_ratio)
+        # Create black bars to fill remaining height
+        vertical_padding = (video_target_height - video_height) // 2
+        video_frame = np.zeros((video_target_height, target_width, 3), dtype=np.uint8)
+        # Resize frame to fit width
+        resized_frame = cv2.resize(frame, (video_width, video_height), interpolation=cv2.INTER_LINEAR)
+        # Place frame in center with black bars
+        video_frame[vertical_padding:vertical_padding + video_height, :] = resized_frame
+    else:
+        # Resize frame normally
+        video_frame = cv2.resize(frame, (video_width, video_height), interpolation=cv2.INTER_LINEAR)
+        if video_width < target_width:
+            # Add black bars on sides if needed
+            final_frame = np.zeros((video_height, target_width, 3), dtype=np.uint8)
+            x_offset = (target_width - video_width) // 2
+            final_frame[:, x_offset:x_offset + video_width] = video_frame
+            video_frame = final_frame
 
+    # Create the final combined frame
+    combined_frame = np.concatenate((video_frame, graph_img), axis=0)
     # Clean up matplotlib
     plt.close(fig)
     
     return combined_frame
 
-def play_video_with_motion_graph(input_video_path, motion_data, legend_labels=None, graph_height=300, figsize=(12, 4), dpi=100, alpha=1, output_video_path=None):
+def play_video_with_motion_graph(
+        input_video_path,
+        motion_data,
+        legend_labels=None,
+        target_width=None,
+        target_height=None, 
+        figsize=(12, 4), 
+        dpi=100, 
+        alpha=1, 
+        colors=plt.cm.tab10.colors,
+        output_video_path=None,
+        ):
     # Define target dimensions for the output video
-    target_width = 1280  # Set your desired width
-    target_height = 720  # Set your desired height
 
     # Open the video
     cap = cv2.VideoCapture(input_video_path)
@@ -474,12 +503,12 @@ def play_video_with_motion_graph(input_video_path, motion_data, legend_labels=No
     # Initialize video writer if output path is provided
     if output_video_path:
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_video_path, fourcc, fps, (target_width, target_height + graph_height))
+        out = cv2.VideoWriter(output_video_path, fourcc, fps, (target_width, target_height))
         print(f"Saving video to: {output_video_path}")
 
     # Create the OpenCV window
     cv2.namedWindow("Video with Motion Graph", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("Video with Motion Graph", target_width, target_height + graph_height)
+    cv2.resizeWindow("Video with Motion Graph", target_width, target_height)
 
     while True:  # Outer loop to allow replaying
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Reset video to the first frame
@@ -497,10 +526,10 @@ def play_video_with_motion_graph(input_video_path, motion_data, legend_labels=No
                 legend_labels=legend_labels,
                 target_width=target_width,
                 target_height=target_height,
-                graph_height=graph_height,
                 figsize=figsize,
                 dpi=dpi,
-                alpha=alpha
+                alpha=alpha,
+                colors=colors
             )
 
             # Show the combined frame
