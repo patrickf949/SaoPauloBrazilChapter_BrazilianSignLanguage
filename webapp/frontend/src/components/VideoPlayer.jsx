@@ -42,8 +42,8 @@ const VideoPlayer = () => {
               autoPlay
               style={{
                 borderRadius: 8,
-                maxWidth: "100%",
-                maxHeight: 250,
+                width: "100%",
+                height:220,
                 justifyContent: "center",
                 display: "flex",
                 marginLeft: "auto",

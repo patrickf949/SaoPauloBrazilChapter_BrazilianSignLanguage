@@ -17,7 +17,7 @@ const GlobalToast = () => {
       open={open}
       autoHideDuration={5000}
       onClose={hide}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
     >
       <Alert onClose={hide} severity={severity} variant="filled" sx={{ width: '100%' }}>
         {message}
