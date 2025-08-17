@@ -1,7 +1,6 @@
 from __future__ import annotations
 from fastapi import Depends
 from config import Config
-from omegaconf import DictConfig
 import torch
 import logging
 from typing import Callable
