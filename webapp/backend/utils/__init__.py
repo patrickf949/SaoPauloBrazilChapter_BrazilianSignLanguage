@@ -14,6 +14,16 @@ async def save_uploaded_file(file: UploadFile, interim_dir: Path) -> Path:
         shutil.copyfileobj(file.file, f)
     return video_path
 
+
+async def copy_existing_video(file: Path, interim_dir: Path) -> Path:
+    """
+    Copy an existing file to the interim directory.
+    """
+    video_path = interim_dir / file.name
+    # with open(video_path, "wb") as f:
+    shutil.copy2(file, video_path)
+    return video_path
+
 def cleanup_files(file_paths: list[str]) -> None:
     """
     Clean up interim files to free disk space.
