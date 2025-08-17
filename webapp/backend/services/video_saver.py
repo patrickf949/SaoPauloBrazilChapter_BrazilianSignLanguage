@@ -2,13 +2,16 @@
 from pathlib import Path
 from fastapi import HTTPException, UploadFile, status
 
+from services.converter import VideoConversionService
 from utils import copy_existing_video, save_uploaded_file
 
 
 class RequestVideoSaver:
     @staticmethod
     async def save(file: UploadFile, interim_dir: Path) -> Path:
-        return await save_uploaded_file(file, interim_dir)
+        path = await save_uploaded_file(file, interim_dir)
+        VideoConversionService.convert_to_mp4(path)
+        return path
     
 
 class LabelVideoSaver:
