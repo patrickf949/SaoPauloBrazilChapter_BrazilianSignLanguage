@@ -1,0 +1,2 @@
+filename,label,data_source,original_fps,original_frame_count,original_duration_sec,start_frame,end_frame,processed_frame_count,processed_duration_sec,preprocess_version,face_width,shoulders_width,face_midpoint_to_shoulders_height,left_hand_interpolated_none_frames,right_hand_interpolated_none_frames
+Chet had to teach the Thunder how to pop bottles 😂.mp4,,app,30.0,448,14.933333333333334,44,414,371,12.366666666666667,v0,0.16091407819031064,0.3282883078852734,0.0779703829149302,302,159
