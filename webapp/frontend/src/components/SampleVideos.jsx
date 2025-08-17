@@ -25,28 +25,34 @@ const fetchVideos = async () => {
     {
       url: "https://drive.google.com/file/d/1cT39EVXn-S0lOY_YrF62YC2I5OZWiJNQ/view?usp=drive_link",
       title: "Sample Video 1",
-      label: "comer_uf_3.mp4",
+      label: "comer_uf_3",
     },
     {
       url: "https://drive.google.com/file/d/1m3wDaqv2kOai9mq_ZCHkbthTdVTNOb2x/view?usp=sharing",
       title: "Sample Video 2",
-      label: "casa_vl_4.mp4",
+      label: "casa_vl_4",
     },
     {
       url: "https://drive.google.com/file/d/1vQGyP3820sJokH7qA4iPK5YI6bijT3tb/view?usp=drive_link",
       title: "Sample Video 3",
-      label: "cabeça_sb_2.mp4",
+      label: "cabeça_sb_2",
     },
     {
       url: "https://drive.google.com/file/d/1YliBNPaGb59qb9iHbm0iT53gFuYOFper/view?usp=drive_link",
       title: "Sample Video 4",
-      label: "ajudar_ne_1.mp4",
+      label: "ajudar_ne_1",
     },
   ];
 };
 
 const VideoLibrary = () => {
-  const { setVideo, resetVideo, setLoadingVideo } = useTranslationStore();
+  const { 
+    setVideo,
+    resetVideo,
+    setLoadingVideo,
+    resetResult,
+    result,
+  } = useTranslationStore();
   const [videos, setVideos] = useState([]);
   const [playingId, setPlayingId] = useState(null);
   const scrollRef = useRef();
@@ -62,7 +68,7 @@ const VideoLibrary = () => {
       });
       setVideos(videos);
     });
-  }, []);
+  }, [result]);
 
   useEffect(() => {
     const checkScroll = () => {
@@ -93,6 +99,7 @@ const VideoLibrary = () => {
     });
   };
   const handleVideo = (video) => {
+    resetResult();
     if (playingId === video.id) {
       resetVideo();
     } else {
@@ -102,6 +109,7 @@ const VideoLibrary = () => {
         label: video.label,
       });
     }
+    console.log({result});
   };
 
   const handlePlay = (id) => {
