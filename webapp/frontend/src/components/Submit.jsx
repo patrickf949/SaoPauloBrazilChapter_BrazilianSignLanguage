@@ -1,8 +1,11 @@
 import { Button } from "@mui/material";
+import { useRef } from "react";
 import { useTranslationStore } from "@/store/translationStore";
 import { keyframes } from "@emotion/react";
+import { useMediaQuery } from '@mui/material';
 import { getInterpretation } from "@/api/interprete";
 import { toast } from "@/lib/toast";
+import Loader from "./Loader";
 
 const pulse = keyframes`
   0% {
@@ -18,28 +21,71 @@ const pulse = keyframes`
 const SubmitButton = () => {
   const {
     info: { label, video },
+    resetVideo,
+    loading,
+    setResult,
     setLoading,
+    resetResult,
   } = useTranslationStore();
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+   const isMobile = useMediaQuery('(max-width:899px)');
+  const scrollToBottom = () => {
+    isMobile &&
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: "smooth", // smooth scroll
+    });
+  };
+
+  // // Optional: scroll automatically when component mounts
+  // useEffect(() => {
+  //   scrollToBottom();
+  // }, []);
+
   const handleSubmit = async () => {
-    // Call the interpretation api to 
+    // Call the interpretation api to
     // interpret the sign language video
+
+    resetResult();
     setLoading(true);
-    console.log("Submit button clicked");
-    const data = label ? { label } : { video };
-    try {
-      const response = await getInterpretation(data);
-      console.log("Response:", response);
+    // Check if the
+    if (!video && !label) {
+      toast.error(
+        "Please select a video file or select one of the sample videos."
+      );
+      return;
     }
-    catch (error) {
-      console.log({error});
-      toast.error("Error: " + error.message);
-    } finally {
+    
+    try {
+      console.log({video});
+      
+      const formData = new FormData();
+
+      if (label) {
+        formData.append("label", label);
+      } else {
+        formData.append("file", video);
+      }
+
+      const response = await getInterpretation(formData);
+      setResult({
+        videoUrl: response.data.output_files.skeleton_video,
+        label: response.data.prediction.label,
+      });
+
+      setLoading(false);
+      scrollToBottom();
+    } catch (error) {
+      console.log({ error });
+      toast.error(error.msg);
       setLoading(false);
     }
   };
-  return (
+
+  return !loading ? (
     <Button
+      ref ={containerRef}
       variant="contained"
       onClick={handleSubmit}
       color="primary"
@@ -52,6 +98,8 @@ const SubmitButton = () => {
     >
       Submit
     </Button>
+  ) : (
+    <Loader />
   );
 };
 
