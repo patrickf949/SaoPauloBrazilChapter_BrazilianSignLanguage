@@ -12,7 +12,7 @@ import theme from '@/theme';
 
 export default function RootLayout(props) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <ThemeProvider theme={theme}>
