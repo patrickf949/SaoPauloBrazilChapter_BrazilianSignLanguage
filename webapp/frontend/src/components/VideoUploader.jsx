@@ -14,17 +14,35 @@ import SubmitButton from "./Submit";
 
 const VideoUploader = () => {
   const {
-    info: { videoUrl, video },
+    info: { videoUrl,  },
     setVideo,
+    resetResult,
+    resetVideo
   } = useTranslationStore();
   const fileInputRef = useRef();
 
   const handleUpload = (event) => {
+    resetResult();
     const file = event.target.files?.[0];
+
+
     if (file && file.type.startsWith("video/")) {
       const url = URL.createObjectURL(file);
+      const video = document.createElement('video');
+      video.src = url;
 
-      setVideo({ video: file, videoUrl: url, label:null });
+      video.onloadedmetadata = () => {
+        console.log(`duration:${video.duration}`);
+        if (video.duration > 10) {
+          toast.error("Video must be 20 seconds or less.");
+          resetVideo();
+          URL.revokeObjectURL(url);
+        } else {
+         setVideo({ video: file, videoUrl: url, label:null });
+        }
+      };
+
+      
     } else {
       toast.error("Please select a valid video file.");
     }
