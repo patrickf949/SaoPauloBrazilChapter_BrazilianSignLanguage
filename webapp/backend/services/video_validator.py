@@ -1,3 +1,5 @@
+import os
+import shutil
 import tempfile
 from fastapi import HTTPException, UploadFile, status
 from moviepy import VideoFileClip
@@ -34,16 +36,24 @@ class VideoValidator:
     async def validate_duration(file: UploadFile):
         # Save to a temporary file to read with moviepy
         
-        with tempfile.NamedTemporaryFile(suffix=".mp4") as tmp:
-            tmp.write(await file.read())
-            tmp.flush()
+       # Create a temp directory that auto-cleans on exit
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = os.path.join(tmpdir, "upload.mp4")
 
-            clip = VideoFileClip(tmp.name)
+            # Copy the uploaded file into the temp dir
+            with open(tmp_path, "wb") as f:
+                shutil.copyfileobj(file.file, f)
+
+            # Open with MoviePy
+            clip = VideoFileClip(tmp_path)
             duration = clip.duration  # in seconds
             clip.close()
 
-            if duration > 20:
-                raise HTTPException(
-                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, 
-                    detail="Video too long (max 20s)"
-                )
+        # Reset file pointer so the uploaded file is still reusable later
+        file.file.seek(0)
+
+        if duration > 20:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Video too long (max 20s)"
+            )
