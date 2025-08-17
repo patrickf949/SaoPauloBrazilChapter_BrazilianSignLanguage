@@ -78,7 +78,7 @@ const SubmitButton = () => {
       scrollToBottom();
     } catch (error) {
       console.log({ error });
-      toast.error(error.msg);
+      toast.error(error?.response?.data?.detail||error.message);
       setLoading(false);
     }
   };
