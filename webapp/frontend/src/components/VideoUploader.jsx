@@ -41,8 +41,8 @@ const VideoUploader = () => {
 
       video.onloadedmetadata = () => {
         console.log(`duration:${video.duration}`);
-        if (video.duration > 20) {
-          toast.error("Video must be 20 seconds or less.");
+        if (video.duration > 10) {
+          toast.error("Video must be 10 seconds or less.");
           resetVideo();
           URL.revokeObjectURL(url);
         } else {
