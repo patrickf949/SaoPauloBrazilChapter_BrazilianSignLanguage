@@ -325,7 +325,7 @@ The project work will be divided into key tasks, which are each managed by Task 
 - Explore a variety of model architectures for the task: RNN, LSTM, and Transformer
 
 #### **Demo Application Development** [Task Leader: Patrick Fitz]
-- Develop and deploy a demo application that uses the final trained model to classify LIBRAS videos
+- Develop and deploy a [**demo application**](https://sao-paulo-brazil-chapter-brazilian-sign-language.vercel.app/) that uses the final trained model to classify LIBRAS videos 
 - The user can select from our library of words, or upload their own video
 
 
@@ -1217,6 +1217,10 @@ We would further develop the frame sampling implementation to include variable s
 - This would help to retain temporal info like speed of sign / amount of movement between each frame
 
 # **Demo Application Development**
+
+Along with this report, the second deliverable for this project was a [**demo application**](https://sao-paulo-brazil-chapter-brazilian-sign-language.vercel.app/). Users can select from sample videos, or upload their own videos, and see the model's prediction & pose estimation result.
+
+ We developed the Backend with Python & FastAPI, and deployed it with Hugging Face Spaces. It extracts pose landmarks from videos, runs inference with the final model, returning the classification result and a visualisation of the preprocessed landmarks. We developed the Frontend with Next.js & React, and deployed it with Vercel.
 
 # **Contributors**
 
