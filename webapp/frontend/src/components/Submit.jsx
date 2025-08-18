@@ -1,4 +1,4 @@
-import { Button } from "@mui/material";
+import { Button, Tooltip } from "@mui/material";
 import { useRef } from "react";
 import { useTranslationStore } from "@/store/translationStore";
 import { keyframes } from "@emotion/react";
@@ -83,23 +83,32 @@ const SubmitButton = () => {
     }
   };
 
-  return !loading ? (
-    <Button
-      ref ={containerRef}
+  const isDisabled = loading || (!video && !label);
+  
+  return (
+    <Tooltip 
+      title={isDisabled && !loading ? "Please select a sample video or upload your own video" : ""}
+      arrow
+    >
+      <span>
+        <Button
+      ref={containerRef}
       variant="contained"
       onClick={handleSubmit}
       color="primary"
+      disabled={loading || (!video && !label)}
       sx={{
         margin: "1rem auto",
-        animation: `${pulse} 2s 3`,
+        animation: loading ? "none" : `${pulse} 2s 3`,
         width: "100%",
         maxHeight: 50,
+        fontSize: "1rem",
       }}
     >
-      Submit
+      {loading ? <Loader /> : "Submit"}
     </Button>
-  ) : (
-    <Loader />
+      </span>
+    </Tooltip>
   );
 };
 
