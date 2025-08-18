@@ -55,13 +55,15 @@ const VideoPlayer = () => {
         </>
       ) : (
         <>
-          <Typography variant="subtitle1">
-            Select from our sample videos ☝️
+          <Typography variant="subtitle1" align="center">
+          ⬆️ Browse and select a sample video ⬆️
           </Typography>
-          <Typography variant="subtitle1">
-            OR Upload your own video file 👇
+          <Typography variant="subtitle1" align="center">
+            <b>OR</b>
           </Typography>
-          <Typography variant="subtitle1">For interpretation</Typography>
+          <Typography variant="subtitle1" align="center">
+          ⬇️ Upload your own video (maximum 10 seconds) ⬇️
+          </Typography>
         </>
       )}
     </Box>
