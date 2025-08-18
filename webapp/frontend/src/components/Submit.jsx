@@ -38,10 +38,6 @@ const SubmitButton = () => {
     });
   };
 
-  // // Optional: scroll automatically when component mounts
-  // useEffect(() => {
-  //   scrollToBottom();
-  // }, []);
 
   const handleSubmit = async () => {
     // Call the interpretation api to
@@ -78,7 +74,8 @@ const SubmitButton = () => {
       scrollToBottom();
     } catch (error) {
       console.log({ error });
-      toast.error(error?.response?.data?.detail||error.message);
+      toast.error(error.message);
+      toast.error("Please select a video with sign language or select one of the sample videos.");
       setLoading(false);
     }
   };
