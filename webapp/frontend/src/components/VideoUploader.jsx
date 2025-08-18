@@ -74,7 +74,7 @@ const VideoUploader = () => {
         variant="outlined" 
         onClick={triggerFileSelect}
         sx={{
-          fontSize: '1.1rem',
+          fontSize: '1rem',
           padding: '0.5rem 1rem',
         }}
       >
@@ -87,7 +87,7 @@ const VideoUploader = () => {
         />
         Upload Video File
       </Button>
-      {videoUrl && <SubmitButton />}
+      <SubmitButton />
     </Box>
   );
 };

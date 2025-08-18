@@ -85,7 +85,10 @@ const VideoPlayer = () => {
           ⬆️ Browse and select a sample video ⬆️
           </Typography>
           <Typography variant="subtitle1" sx={{ my: 1 }}>
+            <br />
             <b>OR</b>
+            <br />
+            <br />
           </Typography>
           <Typography variant="subtitle1">
           ⬇️ Upload your own video (maximum 10 seconds) ⬇️
