@@ -1,0 +1,2 @@
+filename,label,data_source,original_fps,original_frame_count,original_duration_sec,start_frame,end_frame,processed_frame_count,processed_duration_sec,preprocess_version,face_width,shoulders_width,face_midpoint_to_shoulders_height,left_hand_interpolated_none_frames,right_hand_interpolated_none_frames
+Movie on 17-08-2025 at 16.24.mov.mp4,,app,30.0,146,4.866666666666666,4,127,124,4.133333333333334,v0,0.16205034797465517,0.40186178247063575,0.30093095415731824,83,48
