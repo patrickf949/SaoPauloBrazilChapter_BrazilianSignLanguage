@@ -218,7 +218,7 @@ The main work for this project took place over 4 months, from February to June 2
 
 <div>
 
-<p><a href="https://www.linkedin.com/in/wafa-basoodan-9447616a/"><strong>Wafa Basudan</strong></a></p>
+<p><a href="https://www.linkedin.com/in/wafa-basoodan-9447616a/"><strong>Wafa Basoodan</strong></a></p>
 <ul>
 <li>Tasks: Model Development</li>
 <li>Omdena Role: ML Engineer</li>
@@ -230,7 +230,7 @@ The main work for this project took place over 4 months, from February to June 2
 <li>Omdena Role: Junior ML Engineer</li>
 </ul>
 
-<p><a href="https://github.com/guluzar-gb"><strong>Gulzar Helvaci</strong></a></p>
+<p><a href="https://github.com/guluzar-gb"><strong>Guluzar GB</strong></a></p>
 <ul>
 <li>Tasks: Data Review & Cleaning</li>
 <li>Omdena Role: Junior ML Engineer</li>

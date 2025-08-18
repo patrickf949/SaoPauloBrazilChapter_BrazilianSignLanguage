@@ -1307,7 +1307,7 @@ Feel free to reach out to them if you have questions about any aspect of the pro
 
 <div>
 
-<p><a href="https://www.linkedin.com/in/wafa-basoodan-9447616a/"><strong>Wafa Basudan</strong></a></p>
+<p><a href="https://www.linkedin.com/in/wafa-basoodan-9447616a/"><strong>Wafa Basoodan</strong></a></p>
 <ul>
 <li>Tasks: Model Development</li>
 <li>Omdena Role: ML Engineer</li>
@@ -1319,7 +1319,7 @@ Feel free to reach out to them if you have questions about any aspect of the pro
 <li>Omdena Role: Junior ML Engineer</li>
 </ul>
 
-<p><a href="https://github.com/guluzar-gb"><strong>Gulzar Helvaci</strong></a></p>
+<p><a href="https://github.com/guluzar-gb"><strong>Guluzar GB</strong></a></p>
 <ul>
 <li>Tasks: Data Review & Cleaning</li>
 <li>Omdena Role: Junior ML Engineer</li>
