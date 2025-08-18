@@ -61,38 +61,34 @@ const VideoUploader = () => {
   };
 
   return (
-    <Grid>
-      <Card sx={{ margin: "2rem auto", p: 2 }}>
-        <CardContent sx={{}}>
-          <Typography
-            sx={{ margin: "2rem auto " }}
-            variant="h7"
-            gutterBottom
-          ></Typography>
+    <Box sx={{ textAlign: 'center', mt: 2 }}>
+      <Input
+        type="file"
+        inputRef={fileInputRef}
+        onChange={handleUpload}
+        sx={{ display: "none" }}
+        inputProps={{ accept: "video/*" }}
+      />
 
-          <Input
-            type="file"
-            inputRef={fileInputRef}
-            onChange={handleUpload}
-            sx={{ display: "none" }}
-            inputProps={{ accept: "video/*" }}
-          />
-
-          <Button variant="outlined" onClick={triggerFileSelect}>
-            <img
-              style={{
-                height: "14px",
-                marginRight: "0.5rem",
-              }}
-              height="16px"
-              src="file.svg"
-            />
-            Upload Video File
-          </Button>
-          {videoUrl && <SubmitButton />}
-        </CardContent>
-      </Card>
-    </Grid>
+      <Button 
+        variant="outlined" 
+        onClick={triggerFileSelect}
+        sx={{
+          fontSize: '1.1rem',
+          padding: '0.5rem 1rem',
+        }}
+      >
+        <img
+          style={{
+            height: "12px",
+            marginRight: "0.5rem",
+          }}
+          src="file.svg"
+        />
+        Upload Video File
+      </Button>
+      {videoUrl && <SubmitButton />}
+    </Box>
   );
 };
 
