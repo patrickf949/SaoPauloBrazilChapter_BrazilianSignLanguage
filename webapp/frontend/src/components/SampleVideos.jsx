@@ -97,10 +97,23 @@ const VideoLibrary = () => {
   };
 
   return (
-    <Box sx={{ p: 3, position: "relative" }}>
-      <Typography variant="h5" sx={{ mb: 2 }}>Submit a Video</Typography>
-      <Typography variant="subtitle1" sx={{ mb: 2 }}>The video will be sent to the AI model for processing & prediction</Typography>
-      
+    <Box sx={{ padding: 2, height: "100%", textAlign: "center", mt: -2 }}>
+      <Typography variant="h5">Submit a Video</Typography>
+      {videos.length > 0 && (
+        <Box
+          sx={{
+            height: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center"
+          }}
+        >
+          <Typography variant="subtitle1">
+            The video will be sent to the AI model for processing & prediction
+          </Typography>
+        </Box>
+      )}
+      <hr />
       {videos.length === 0 ? (
         <Box textAlign="center" py={4}>
           <CircularProgress />

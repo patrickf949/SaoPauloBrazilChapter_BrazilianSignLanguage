@@ -9,7 +9,7 @@ const Results = () => {
     console.log({ result });
   }, [result]);
   return (
-    <Box sx={{ padding: 2, height: "100%", textAlign: "center" }}>
+    <Box sx={{ padding: 2, height: "100%", textAlign: "center", mt: -2 }}>
       <Typography variant="h5">Results</Typography>
       {!loading && (
         <Box
