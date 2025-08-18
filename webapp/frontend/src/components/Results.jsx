@@ -62,8 +62,8 @@ const Results = () => {
               style={{
                 borderRadius: 8,
                 marginTop: "0.5rem",
-                maxWidth: "100%",
-                maxHeight: 250,
+                width: "100%",
+                height:'auto',
                 justifyContent: "center",
                 display: "flex",
                 marginLeft: "auto",
