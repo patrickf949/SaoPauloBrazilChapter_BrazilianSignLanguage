@@ -2,9 +2,14 @@
 import Home from './page.client'
 
 export const metadata = {
-  title: "Sign Language Recognition - Brazil Sao Paulo",
+  title: "AI for Brazilian Sign Language Translation - Demo Application",
   description:
-    "This is an website/app recognizes Brazilian sign language and translates it accordingly.",
+    "This is the demo application for an AI model developed to translate " +
+    "Brazilian Sign Language in a healthcare context. It was developed as " +
+    "part of an Omdena local chapter challenge with the São Paulo chapter." +
+    "For more details about the project and our achievements, please visit our Project Page website." +
+    "The AI model was trained to recognize 25 different signs." +
+    "Below you can test it out on some sample sign videos from our dataset, or record & upload your own!",
   keywords: [
     "sign language",
     "translate",
@@ -16,9 +21,14 @@ export const metadata = {
   openGraph: {
     title: "My Landing Page",
     description:
-      "This is an website/app recognizes Brazilian sign language and translates it accordingly. Reconhecimento de Língua de Sinais",
+    "This is the demo application for an AI model developed to translate " +
+    "Brazilian Sign Language in a healthcare context. It was developed as " +
+    "part of an Omdena local chapter challenge with the São Paulo chapter." +
+    "For more details about the project and our achievements, please visit our Project Page website." +
+    "The AI model was trained to recognize 25 different signs." +
+    "Below you can test it out on some sample sign videos from our dataset, or record & upload your own!",
     url: "https://example.com",
-    siteName: "Sign Language Recognition - Brazil Sao Paulo",
+    siteName: "AI for Brazilian Sign Language Translation - Demo Application",
     images: [
     ],
     locale: "en_US",
@@ -26,9 +36,14 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sign Language Recognition - Brazil Sao Paulo",
+    title: "AI for Brazilian Sign Language Translation - Demo Application",
     description:
-      "This is an website/app recognizes Brazilian sign language and translates it accordingly. Reconhecimento de Língua de Sinais",
+    "This is the demo application for an AI model developed to translate " +
+    "Brazilian Sign Language in a healthcare context. It was developed as " +
+    "part of an Omdena local chapter challenge with the São Paulo chapter." +
+    "For more details about the project and our achievements, please visit our Project Page website." +
+    "The AI model was trained to recognize 25 different signs." +
+    "Below you can test it out on some sample sign videos from our dataset, or record & upload your own!",
   },
 };
 
