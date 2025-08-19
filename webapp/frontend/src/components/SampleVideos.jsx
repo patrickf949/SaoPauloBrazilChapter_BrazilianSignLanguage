@@ -222,7 +222,7 @@ const VideoLibrary = () => {
                         objectFit: 'cover',
                         flexShrink: 0,
                       }}
-                      image={`https://drive.google.com/thumbnail?id=${id}`}
+                      image={`/thumbnails/${video.label}.jpg`}
                       alt={`${video.word_br} - ${video.word_en}`}
                     />
                     {!isPlaying ? (
