@@ -78,7 +78,11 @@ const SubmitButton = () => {
       scrollToBottom();
     } catch (error) {
       console.log({ error });
-      toast.error(error?.response?.data?.detail||error.message);
+      // Ensure we always pass a string to toast.error
+      const errorMessage = error?.response?.data?.detail 
+        ? (typeof error.response.data.detail === 'string' ? error.response.data.detail : 'An error occurred. Please try a different video.')
+        : (error.message || 'An error occurred..');
+      toast.error(errorMessage);
       setLoading(false);
     }
   };
