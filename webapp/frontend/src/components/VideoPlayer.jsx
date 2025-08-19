@@ -9,8 +9,8 @@ const VideoPlayer = () => {
   return (
     <Box 
       sx={{
-        height: 280,
-        width: "auto",
+        height: 252,
+        width: "80%",
         border: "1px solid #e0e0e0",
         borderRadius: 2,
         display: "flex",
@@ -18,7 +18,7 @@ const VideoPlayer = () => {
         justifyContent: "center",
         alignItems: "center",
         padding: 1,
-        mx: 2,
+        margin: "0 auto",
         backgroundColor: videoUrl ? "#e3f2fd" : "#f5f5f5"
       }}
     >
