@@ -1,4 +1,4 @@
-import { Button } from "@mui/material";
+import { Button, Tooltip } from "@mui/material";
 import { useRef } from "react";
 import { useTranslationStore } from "@/store/translationStore";
 import { keyframes } from "@emotion/react";
@@ -74,29 +74,41 @@ const SubmitButton = () => {
       scrollToBottom();
     } catch (error) {
       console.log({ error });
-      toast.error(error.message);
-      toast.error("Please select a video with sign language or select one of the sample videos.");
+      // Ensure we always pass a string to toast.error
+      const errorMessage = error?.response?.data?.detail 
+        ? (typeof error.response.data.detail === 'string' ? error.response.data.detail : 'An error occurred. Please try a different video.')
+        : (error.message || 'An error occurred..');
+      toast.error(errorMessage);
       setLoading(false);
     }
   };
 
-  return !loading ? (
-    <Button
-      ref ={containerRef}
+  const isDisabled = loading || (!video && !label);
+  
+  return (
+    <Tooltip 
+      title={isDisabled && !loading ? "Please select a sample video or upload your own video" : ""}
+      arrow
+    >
+      <span>
+        <Button
+      ref={containerRef}
       variant="contained"
       onClick={handleSubmit}
       color="primary"
+      disabled={loading || (!video && !label)}
       sx={{
         margin: "1rem auto",
-        animation: `${pulse} 2s 3`,
+        animation: loading ? "none" : `${pulse} 2s 3`,
         width: "100%",
         maxHeight: 50,
+        fontSize: "1rem",
       }}
     >
-      Submit
+      {loading ? <Loader /> : "Submit"}
     </Button>
-  ) : (
-    <Loader />
+      </span>
+    </Tooltip>
   );
 };
 

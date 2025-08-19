@@ -32,8 +32,9 @@ export default function Home() {
   }, []);
 
   return (
-    <Container sx={{ padding: 4 }}>
-      <Box ref={dropdownRef} sx={{ display: 'flex', alignItems: 'center', mb: 0, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
+    <Box sx={{ bgcolor: '#f5fafd', minHeight: '100vh' }}>
+      <Container sx={{ padding: 4 }}>
+        <Box ref={dropdownRef} sx={{ display: 'flex', alignItems: 'center', mb: 0, mt: -3, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
         <Typography variant="h4" sx={{ margin: 2, fontWeight: "bold" }}>
           AI for Brazilian Sign Language Translation - Demo Application
         </Typography>
@@ -78,5 +79,6 @@ export default function Home() {
         </Grid>
       </Box>
     </Container>
+    </Box>
   );
 }
