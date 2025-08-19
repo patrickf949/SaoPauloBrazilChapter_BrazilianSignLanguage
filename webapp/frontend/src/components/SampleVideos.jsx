@@ -174,7 +174,19 @@ const VideoLibrary = () => {
               display: "flex",
               flexGrow: 1,
               "&::-webkit-scrollbar": {
-                display: "none", // Chrome, Safari
+                height: "8px",
+                width: "6px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "#f1f1f1",
+                borderRadius: "3px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "#888",
+                borderRadius: "10px",
+                "&:hover": {
+                  background: "#555",
+                },
               },
 
               gap: 2,
