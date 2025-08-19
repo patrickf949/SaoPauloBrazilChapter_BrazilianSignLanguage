@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { ArrowBackIos, ArrowForwardIos, CheckBox } from "@mui/icons-material";
 import { useTranslationStore } from "@/store/translationStore";
+import sampleVideosData from '../data/sampleVideos.json';
 
 // Utility to extract Drive File ID
 const extractDriveFileId = (url) => {
@@ -21,28 +22,7 @@ const extractDriveFileId = (url) => {
 
 // Mock API response (simulate full links)
 const fetchVideos = async () => {
-  return [
-    {
-      url: "https://drive.google.com/file/d/1cT39EVXn-S0lOY_YrF62YC2I5OZWiJNQ/view?usp=drive_link",
-      title: "Sample Video 1",
-      label: "comer_uf_3",
-    },
-    {
-      url: "https://drive.google.com/file/d/1m3wDaqv2kOai9mq_ZCHkbthTdVTNOb2x/view?usp=sharing",
-      title: "Sample Video 2",
-      label: "casa_vl_4",
-    },
-    {
-      url: "https://drive.google.com/file/d/1vQGyP3820sJokH7qA4iPK5YI6bijT3tb/view?usp=drive_link",
-      title: "Sample Video 3",
-      label: "cabeça_sb_2",
-    },
-    {
-      url: "https://drive.google.com/file/d/1YliBNPaGb59qb9iHbm0iT53gFuYOFper/view?usp=drive_link",
-      title: "Sample Video 4",
-      label: "ajudar_ne_1",
-    },
-  ];
+  return sampleVideosData;
 };
 
 const VideoLibrary = () => {
@@ -117,8 +97,23 @@ const VideoLibrary = () => {
   };
 
   return (
-    <Box sx={{ p: 3, position: "relative" }}>
-
+    <Box sx={{ padding: 2, height: "100%", textAlign: "center", mt: -2 }}>
+      <Typography variant="h5">Submit a Video</Typography>
+      {videos.length > 0 && (
+        <Box
+          sx={{
+            height: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center"
+          }}
+        >
+          <Typography variant="subtitle1">
+            The video will be sent to the AI model for processing & prediction
+          </Typography>
+        </Box>
+      )}
+      <hr />
       {videos.length === 0 ? (
         <Box textAlign="center" py={4}>
           <CircularProgress />
@@ -179,7 +174,19 @@ const VideoLibrary = () => {
               display: "flex",
               flexGrow: 1,
               "&::-webkit-scrollbar": {
-                display: "none", // Chrome, Safari
+                height: "8px",
+                width: "6px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "#f1f1f1",
+                borderRadius: "3px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "#888",
+                borderRadius: "10px",
+                "&:hover": {
+                  background: "#555",
+                },
               },
 
               gap: 2,
@@ -193,17 +200,17 @@ const VideoLibrary = () => {
               const isPlaying = playingId === id;
 
               return (
-                <Grid
-                  key={id}
-                  size={{ xs: 12, sm: 6 }}
-                  sx={{
-                    flex: {
-                      xs: "0 0 100%", // Full width on mobile
-                      sm: "0 0 calc(50% - 16px)", // 2 items per row on small screens and up
-                    },
-                    scrollSnapAlign: "start",
-                  }}
-                >
+                                  <Grid
+                    key={id}
+                    size={{ xs: 12, sm: 3 }}
+                    sx={{
+                      flex: {
+                        xs: "0 0 100%", // Full width on mobile
+                        sm: "0 0 calc(25% - 16px)", // 4 items per row on small screens and up
+                      },
+                      scrollSnapAlign: "start",
+                    }}
+                  >
                   <Card
                     onClick={() => {
                       setLoadingVideo(true);
@@ -211,46 +218,59 @@ const VideoLibrary = () => {
                       handleVideo(video);
                       setLoadingVideo(false);
                     }}
-                    sx={{ cursor: "pointer" }}
+                                          sx={{ 
+                        cursor: "pointer",
+                        height:160,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flexShrink: 1,
+                      }}
                   >
                     <CardMedia
                       component="img"
                       sx={{
-                        maxHeight: 124,
+                        height: 100,
+                        width: '100%',
+                        objectFit: 'cover',
+                        flexShrink: 0,
                       }}
-                      image={`https://drive.google.com/thumbnail?id=${id}`}
-                      alt={video.title}
+                      image={`/thumbnails/${video.label}.jpg`}
+                      alt={`${video.word_br} - ${video.word_en}`}
                     />
                     {!isPlaying ? (
                       <>
-                        <CardContent>
-                          <Typography variant="subtitle1">
-                            {video.title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Click to play
-                          </Typography>
+                        <CardContent sx={{ py: 0.5, pb: 0, px: 0 }}>
+                          <Box sx={{ textAlign: "center" }}>
+                            <Typography variant="subtitle1">
+                              {video.word_br}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {video.word_en}
+                            </Typography>
+                          </Box>
                         </CardContent>
                       </>
                     ) : (
-                      <Box sx={{ fontWeight: "bolder" }}>
-                        <CardContent
-                          sx={{
-                            borderBottom: "1px solid green",
-                            borderRight: "1px solid green",
-                            borderLeft: "1px solid green",
-                            borderRadius: "0px 0px 4px 4px",
+                      <>
+                        <CardContent 
+                          sx={{ 
+                            py: 0.5, 
+                            pb: 0, 
+                            px: 0,
+                            backgroundColor: '#e3f2fd',
+                            mt: 'auto',
                           }}
                         >
-                          <Typography color="text.primary" variant="subtitle1">
-                            <CheckBox />
-                            {video.title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Click again to deselect
-                          </Typography>
+                          <Box sx={{ textAlign: "center" }}>
+                            <Typography color="text.primary" variant="subtitle1" sx={{ fontWeight: "bolder" }}>
+                              {video.word_br}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: "bolder" }}>
+                              {video.word_en}
+                            </Typography>
+                          </Box>
                         </CardContent>
-                      </Box>
+                      </>
                     )}
                   </Card>
                 </Grid>
