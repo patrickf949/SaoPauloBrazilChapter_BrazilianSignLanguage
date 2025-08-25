@@ -1,2 +1,1 @@
-backend/sample_videos/*.mp4 !text !filter !merge !diff
-webapp/backend/sample_videos/*.mp4 !text !filter !merge !diff
+
