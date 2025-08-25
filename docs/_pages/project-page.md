@@ -21,7 +21,7 @@ This page contains an overview of the project work, and links to the other deliv
 The deliverables for this project consisted of a live demo application, the open source code, and a report of our work and results.
 
 **Demo Application:**
-[You can see the model in action and test it on your own videos in the **Demo App**](link-to-be-added).
+[You can see the model in action and test it on your own videos in the **Demo App**](https://sao-paulo-brazil-chapter-brazilian-sign-language.vercel.app/).
 
 **Open Source Code:**
 [You can find the project code and instructions for setup/usage in our  **Github Repo**](https://github.com/OmdenaAI/SaoPauloBrazilChapter_BrazilianSignLanguage)
@@ -218,7 +218,7 @@ The main work for this project took place over 4 months, from February to June 2
 
 <div>
 
-<p><a href="https://www.linkedin.com/in/wafa-basoodan-9447616a/"><strong>Wafa Basudan</strong></a></p>
+<p><a href="https://www.linkedin.com/in/wafa-basoodan-9447616a/"><strong>Wafa Basoodan</strong></a></p>
 <ul>
 <li>Tasks: Model Development</li>
 <li>Omdena Role: ML Engineer</li>
@@ -230,7 +230,7 @@ The main work for this project took place over 4 months, from February to June 2
 <li>Omdena Role: Junior ML Engineer</li>
 </ul>
 
-<p><a href="https://github.com/guluzar-gb"><strong>Gulzar Helvaci</strong></a></p>
+<p><a href="https://github.com/guluzar-gb"><strong>Guluzar GB</strong></a></p>
 <ul>
 <li>Tasks: Data Review & Cleaning</li>
 <li>Omdena Role: Junior ML Engineer</li>
@@ -294,4 +294,4 @@ The first deliverable for this project was a report of our work and results. We 
 
 ### **6. Demo App**
 
-The second deliverable for this project was a demo application. We developed the Backend with Python & FastAPI, and the Frontend with React. We deployed the application using Vercel, with the model backend running on Hugging Face.
+The second deliverable for this project was a [**demo application**](https://sao-paulo-brazil-chapter-brazilian-sign-language.vercel.app/). Users can select from sample videos, or upload their own videos, and see the model's prediction & pose estimation result. We developed the Backend with Python & FastAPI, and deployed it with Hugging Face Spaces. We developed the Frontend with Next.js & React, and deployed it with Vercel.

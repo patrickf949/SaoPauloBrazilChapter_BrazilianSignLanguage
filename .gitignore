@@ -18,13 +18,9 @@ __pycache__/
 # Docs
 docs/assets/*.mp4
 docs/assets/interim/*
-docs copy
-docs/*
-!docs/assets
-!docs/*.yml
-!docs/*.md
-!docs/Gemfile
-!docs/_pages
+docs/Gemfile.lock
+docs/_site/
+docs/_posts/
 
 # Data
 /data/interim/*/**
@@ -44,5 +40,3 @@ docs/*
 
 # MacOS system files
 .DS_Store
-
-/docs

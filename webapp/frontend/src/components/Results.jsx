@@ -9,7 +9,7 @@ const Results = () => {
     console.log({ result });
   }, [result]);
   return (
-    <Box sx={{ padding: 2, height: "100%", textAlign: "center" }}>
+    <Box sx={{ padding: 2, height: "100%", textAlign: "center", mt: -2 }}>
       <Typography variant="h5">Results</Typography>
       {!loading && (
         <Box
@@ -22,10 +22,10 @@ const Results = () => {
         >
           {!result?.label ? (
             <Typography variant="subtitle1">
-              The interpretation of your selected video will appear here.
+              The estimated pose landmarks and sign prediction will appear here
             </Typography>
           ) : (
-            <Typography variant="subtitle1">{result?.label}</Typography>
+            <Typography variant="subtitle1">Done!</Typography>
           )}
         </Box>
       )}
@@ -38,7 +38,7 @@ const Results = () => {
             alignItems: "center",
           }}
         >
-          <Typography variant="h5">Loading Results...</Typography>
+          <Typography variant="subtitle1">Processing video... Estimating pose landmarks... Calculating features... Making a prediction...</Typography>
           <Loader />
         </Box>
       )}
@@ -62,8 +62,8 @@ const Results = () => {
               style={{
                 borderRadius: 8,
                 marginTop: "0.5rem",
-                maxWidth: "100%",
-                maxHeight: 250,
+                width: "100%",
+                height:'auto',
                 justifyContent: "center",
                 display: "flex",
                 marginLeft: "auto",
@@ -104,9 +104,13 @@ const Results = () => {
           {result?.label && (
             <Typography
               variant="h5"
-              sx={{ color: "success.main", fontWeight: 500 }}
+              sx={{ 
+                color: "success.main", 
+                fontWeight: 500,
+                textTransform: 'capitalize'  // This will capitalize first letter of each word
+              }}
             >
-              Result: {result?.label}
+              Prediction: {result?.label}
             </Typography>
           )}
         </Box>

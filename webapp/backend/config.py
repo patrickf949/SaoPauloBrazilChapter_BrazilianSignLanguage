@@ -3,6 +3,7 @@ from pathlib import Path
 from omegaconf import OmegaConf
 import cloudinary
 import logging
+import tempfile
 # Configure logging
 
 logging.basicConfig(level=logging.INFO)
@@ -11,6 +12,7 @@ logging.basicConfig(level=logging.INFO)
 class Config:
     # Base directories
     BASE_DIR = Path(__file__).resolve().parent
+    SAMPLE_VIDEOS = BASE_DIR / "sample_videos"
     DATA_DIR = BASE_DIR / "data"
     INTERIM_DIR = DATA_DIR / "interim" / "RawCleanVideos"
     PREPROCESSED_DIR = DATA_DIR / "preprocessed"

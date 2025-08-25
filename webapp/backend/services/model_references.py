@@ -11,11 +11,12 @@ root_dir = current_dir.parent.parent
 # if /webapp doesn't need to be standalone, uncomment this line to import directly from /code:
 code_dir = root_dir / 'code'
 # ------------------------------------------------------------
-# if /webapp should be standalone, run sync_code.py script, and uncomment this line:
-# code_dir = current_dir / 'shared_code'
 
+print(f"code dir: {code_dir}")
 if str(code_dir) not in sys.path:
+    print(f"enters to insert code dir: {code_dir}")
     sys.path.insert(0, str(code_dir))
+    print(f"sys.path: {sys.path[0]}")
 
 # Import /code modules. (Type ignore comments for Pylance)
 from data.download_videos import get_video_metadata # type: ignore

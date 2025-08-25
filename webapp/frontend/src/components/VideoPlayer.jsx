@@ -7,62 +7,93 @@ const VideoPlayer = () => {
     loadingVideo,
   } = useTranslationStore();
   return (
-    <Box m={3} sx={{ maxHeight: 300 }}>
+    <Box 
+      sx={{
+        height: 252,
+        width: "80%",
+        border: "1px solid #e0e0e0",
+        borderRadius: 2,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 1,
+        margin: "0 auto",
+        backgroundColor: videoUrl ? "#e3f2fd" : "#f5f5f5"
+      }}
+    >
       {loadingVideo && (
         <Typography
           variant="subtitle1"
-          sx={{ marginTop: "0.5rem", verticalAlign: "middle" }}
+          sx={{ verticalAlign: "middle" }}
         >
-          Loading video... <CircularProgress />
+          Loading video... <CircularProgress size={20} />
         </Typography>
       )}
       {videoUrl ? (
         <>
-          <Typography variant="subtitle1">Preview:</Typography>
+          <Typography variant="subtitle1" sx={{ mt: 0, mb: 1.5, px: 1.5, fontWeight: "bold" }}>
+            {videoUrl.startsWith("blob") ? <b>Uploaded video:</b> : <b>Selected video:</b>}
+          </Typography>
           {videoUrl.startsWith("blob") ? (
-            <video
-              controls
-              src={videoUrl}
-              height={300}
-              style={{
-                borderRadius: 8,
-                marginTop: "0.5rem",
-                maxWidth: "100%",
-                maxHeight: 250,
-                justifyContent: "center",
-                display: "flex",
-                marginLeft: "auto",
-                marginRight: "auto",
-              }}
-            />
+            <Box sx={{ 
+              width: "100%",
+              height: "calc(100% - 30px)",
+              mt: -1,
+              mx: -1,
+              mb: -1,
+              overflow: "hidden",
+              borderRadius: 1
+            }}>
+              <video
+                controls
+                src={videoUrl}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                }}
+              />
+            </Box>
           ) : (
-            <iframe
-              src={`https://drive.google.com/file/d/${videoUrl}/preview`}
-              allow="autoplay"
-              autoPlay
-              style={{
-                borderRadius: 8,
-                width: "100%",
-                height:220,
-                justifyContent: "center",
-                display: "flex",
-                marginLeft: "auto",
-                marginRight: "auto",
-              }}
-              allowFullScreen
-            ></iframe>
+            <Box sx={{ 
+              width: "100%",
+              height: "calc(100% - 30px)",
+              mt: -1,
+              mx: -1,
+              mb: -1,
+              overflow: "hidden",
+              borderRadius: 1
+            }}>
+              <iframe
+                src={`https://drive.google.com/file/d/${videoUrl}/preview`}
+                allow="autoplay"
+                autoPlay
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                }}
+                allowFullScreen
+              ></iframe>
+            </Box>
           )}
         </>
       ) : (
-        <>
+        <Box sx={{ textAlign: "center" }}>
           <Typography variant="subtitle1">
-            Select from our sample videos ☝️
+          ⬆️ Browse and select a sample video ⬆️
+          </Typography>
+          <Typography variant="subtitle1" sx={{ my: 1 }}>
+            <br />
+            <b>OR</b>
+            <br />
+            <br />
           </Typography>
           <Typography variant="subtitle1">
-            OR Upload your own video file 👇
+          ⬇️ Upload your own video (maximum 10 seconds) ⬇️
           </Typography>
-          <Typography variant="subtitle1">For interpretation</Typography>
-        </>
+        </Box>
       )}
     </Box>
   );

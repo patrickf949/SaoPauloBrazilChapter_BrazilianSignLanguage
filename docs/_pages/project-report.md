@@ -325,7 +325,7 @@ The project work will be divided into key tasks, which are each managed by Task 
 - Explore a variety of model architectures for the task: RNN, LSTM, and Transformer
 
 #### **Demo Application Development** [Task Leader: Patrick Fitz]
-- Develop and deploy a demo application that uses the final trained model to classify LIBRAS videos
+- Develop and deploy a [**demo application**](https://sao-paulo-brazil-chapter-brazilian-sign-language.vercel.app/) that uses the final trained model to classify LIBRAS videos 
 - The user can select from our library of words, or upload their own video
 
 
@@ -1218,6 +1218,10 @@ We would further develop the frame sampling implementation to include variable s
 
 # **Demo Application Development**
 
+Along with this report, the second deliverable for this project was a [**demo application**](https://sao-paulo-brazil-chapter-brazilian-sign-language.vercel.app/). Users can select from sample videos, or upload their own videos, and see the model's prediction & pose estimation result.
+
+ We developed the Backend with Python & FastAPI, and deployed it with Hugging Face Spaces. It extracts pose landmarks from videos, runs inference with the final model, returning the classification result and a visualisation of the preprocessed landmarks. We developed the Frontend with Next.js & React, and deployed it with Vercel.
+
 # **Contributors**
 
 The main work for this project took place over 4 months, from February to June 2025. Below is a list of the people that contributed to the project. 
@@ -1303,7 +1307,7 @@ Feel free to reach out to them if you have questions about any aspect of the pro
 
 <div>
 
-<p><a href="https://www.linkedin.com/in/wafa-basoodan-9447616a/"><strong>Wafa Basudan</strong></a></p>
+<p><a href="https://www.linkedin.com/in/wafa-basoodan-9447616a/"><strong>Wafa Basoodan</strong></a></p>
 <ul>
 <li>Tasks: Model Development</li>
 <li>Omdena Role: ML Engineer</li>
@@ -1315,7 +1319,7 @@ Feel free to reach out to them if you have questions about any aspect of the pro
 <li>Omdena Role: Junior ML Engineer</li>
 </ul>
 
-<p><a href="https://github.com/guluzar-gb"><strong>Gulzar Helvaci</strong></a></p>
+<p><a href="https://github.com/guluzar-gb"><strong>Guluzar GB</strong></a></p>
 <ul>
 <li>Tasks: Data Review & Cleaning</li>
 <li>Omdena Role: Junior ML Engineer</li>
