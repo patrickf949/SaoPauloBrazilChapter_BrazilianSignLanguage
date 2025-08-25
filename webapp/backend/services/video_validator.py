@@ -7,6 +7,7 @@ from moviepy import VideoFileClip
 
 MAX_FILE_SIZE = 250 * 1024 * 1024  # 250 MB in bytes
 
+
 class VideoValidator:
     @staticmethod
     def validate_extension(filename: str):
