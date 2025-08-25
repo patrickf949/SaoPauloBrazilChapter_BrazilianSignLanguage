@@ -441,7 +441,7 @@ class Preprocessor:
         import os
         
         # Load average hand positions
-        json_path = os.path.join(self.path_to_root, "data", "interim", "average_hands.json")
+        json_path = os.path.join(os.path.dirname(__file__), "average_hands.json")
         with open(json_path, 'r') as f:
             average_hands = json.load(f)
         
